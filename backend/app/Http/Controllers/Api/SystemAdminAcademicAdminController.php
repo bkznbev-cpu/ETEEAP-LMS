@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\AdminNotifier;
 use App\Support\AuditLogger;
+use App\Rules\EmailDomainExists;
+use App\Rules\UniqueEmail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -46,7 +48,7 @@ class SystemAdminAcademicAdminController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'school_id' => ['required', 'string', 'max:255', Rule::unique('users', 'school_id')],
-            'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')],
+            'email' => ['nullable', 'email', 'max:255', new EmailDomainExists(), new UniqueEmail()],
             // Leave empty to have the server generate a temporary password.
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'is_active' => ['sometimes', 'boolean'],
@@ -176,7 +178,7 @@ class SystemAdminAcademicAdminController extends Controller
                 'nullable',
                 'email',
                 'max:255',
-                Rule::unique('users', 'email')->ignore($administrator->id),
+                new EmailDomainExists(), new UniqueEmail($administrator->id),
             ],
             'is_active' => ['sometimes', 'boolean'],
             'remove_profile_photo' => ['sometimes', 'boolean'],

@@ -20,7 +20,9 @@ class EmailChangeCode extends Notification
         private readonly string $code,
         private readonly int $minutes,
         private readonly string $name,
-        private readonly string $schoolId
+        private readonly string $schoolId,
+        // Where the code is entered, e.g. "on your profile page".
+        private readonly string $where = 'on your profile page'
     ) {
     }
 
@@ -34,10 +36,10 @@ class EmailChangeCode extends Notification
         return (new MailMessage)
             ->subject('Confirm your new email address — MPSU ETEEAP LMS')
             ->greeting('Hello ' . $this->name . ',')
-            ->line('You asked to use this email address for your MPSU ETEEAP LMS account (ID: ' . $this->schoolId . '). Enter this code on your profile page to confirm it:')
+            ->line('You asked to use this email address for your MPSU ETEEAP LMS account (ID: ' . $this->schoolId . '). Enter this code ' . $this->where . ' to confirm it:')
             ->line($this->codeCard())
             ->line("The code expires in {$this->minutes} minutes and can be used once. Do not share it with anyone; school staff will never ask for it.")
-            ->line('If you did not ask for this, you can ignore this email. The account will keep its current email address.')
+            ->line('If you did not ask for this, you can ignore this email. This address will not be added to the account.')
             ->salutation('MPSU ETEEAP LMS');
     }
 

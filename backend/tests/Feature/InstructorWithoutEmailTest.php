@@ -51,41 +51,30 @@ class InstructorWithoutEmailTest extends TestCase
             ->assertSuccessful();
     }
 
-    public function test_a_given_email_must_still_be_valid_and_unique(): void
+    public function test_an_email_sent_by_the_admin_is_ignored(): void
     {
-        User::factory()->create(['role' => 'learner', 'school_id' => '24-70001', 'email' => 'taken@x.edu']);
-
         $this->actingAs($this->admin)
             ->postJson('/api/admin/instructors', [
-                'name' => 'Bad', 'school_id' => 'INS-703', 'email' => 'not-an-email', 'password' => 'temporary-1',
+                'name' => 'Typed', 'school_id' => 'INS-703', 'email' => 'typed@x.edu', 'password' => 'temporary-1',
             ])
-            ->assertStatus(422)->assertJsonValidationErrors(['email']);
+            ->assertSuccessful();
 
-        $this->actingAs($this->admin)
-            ->postJson('/api/admin/instructors', [
-                'name' => 'Dup', 'school_id' => 'INS-704', 'email' => 'taken@x.edu', 'password' => 'temporary-1',
-            ])
-            ->assertStatus(422)->assertJsonValidationErrors(['email']);
+        $this->assertNull(User::where('school_id', 'INS-703')->value('email'));
     }
 
-    public function test_editing_can_clear_or_keep_the_email(): void
+    public function test_editing_never_changes_the_email(): void
     {
         $instructor = User::factory()->create([
             'role' => 'instructor', 'school_id' => 'INS-705', 'email' => 'keep@x.edu',
             'owner_admin_id' => $this->admin->id, 'is_active' => true,
         ]);
 
-        // Not sent: kept.
-        $this->actingAs($this->admin)
-            ->putJson("/api/admin/instructors/{$instructor->id}", ['name' => 'Renamed'])
-            ->assertOk();
-        $this->assertSame('keep@x.edu', $instructor->fresh()->email);
-
-        // Sent empty: removed.
-        $this->actingAs($this->admin)
-            ->putJson("/api/admin/instructors/{$instructor->id}", ['name' => 'Renamed', 'email' => null])
-            ->assertOk();
-        $this->assertNull($instructor->fresh()->email);
+        foreach ([null, 'other@x.edu'] as $sent) {
+            $this->actingAs($this->admin)
+                ->putJson("/api/admin/instructors/{$instructor->id}", ['name' => 'Renamed', 'email' => $sent])
+                ->assertOk();
+            $this->assertSame('keep@x.edu', $instructor->fresh()->email);
+        }
     }
 
     public function test_a_new_account_can_be_deactivated_and_reset_before_first_login(): void

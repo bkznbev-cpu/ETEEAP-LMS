@@ -61,14 +61,12 @@ class PasswordResetController extends Controller
             'email.email' => 'Please enter a valid email address.',
         ]);
 
-        $user = $this->findByEmail($validated['email']);
-
         // The School ID and the email saved when the account was set up
         // must both belong to the same account. Anything else fails.
-        $schoolIdMatches = $user
-            && mb_strtolower(trim((string) $user->school_id)) === mb_strtolower(trim($validated['school_id']));
+        // (Up to 2 accounts can share an email; the School ID picks one.)
+        $user = $this->findAccount($validated['email'], $validated['school_id']);
 
-        if (!$user || !$schoolIdMatches || !$user->password_setup_complete) {
+        if (!$user || !$user->password_setup_complete) {
             return response()->json([
                 'success' => false,
                 'message' => self::EMAIL_NOT_FOUND,
@@ -82,7 +80,7 @@ class PasswordResetController extends Controller
             ], 422);
         }
 
-        $existing = DB::table('password_reset_tokens')->where('email', $user->email)->first();
+        $existing = DB::table('password_reset_tokens')->where('email', $this->tokenKey($user))->first();
         $recentlySent = $existing
             && Carbon::parse($existing->created_at)->gt(now()->subSeconds(self::RESEND_SECONDS));
 
@@ -91,15 +89,15 @@ class PasswordResetController extends Controller
             $code = str_pad((string) random_int(0, 99999), 5, '0', STR_PAD_LEFT);
 
             DB::table('password_reset_tokens')->updateOrInsert(
-                ['email' => $user->email],
+                ['email' => $this->tokenKey($user)],
                 ['token' => Hash::make($code), 'created_at' => now()]
             );
-            RateLimiter::clear($this->triesKey($user->email));
+            RateLimiter::clear($this->triesKey($user));
 
             try {
                 $user->notify(new ResetPasswordCode($code, self::CODE_MINUTES));
             } catch (\Throwable $error) {
-                DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+                DB::table('password_reset_tokens')->where('email', $this->tokenKey($user))->delete();
 
                 // Mail server problems are logged for the administrator.
                 Log::error('Password reset code could not be emailed.', [
@@ -147,7 +145,7 @@ class PasswordResetController extends Controller
     {
         $this->validateCodeRequest($request);
 
-        $user = $this->findByEmail($request->input('email'));
+        $user = $this->findAccount($request->input('email'), $request->input('school_id'));
 
         // System Administrators need a longer password, as elsewhere.
         $minimum = $user?->role === 'system_admin' ? 15 : 8;
@@ -169,11 +167,11 @@ class PasswordResetController extends Controller
             $user->save();
 
             // The code can't be used again; sign out every device.
-            DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+            DB::table('password_reset_tokens')->where('email', $this->tokenKey($user))->delete();
             $user->tokens()->delete();
         });
 
-        RateLimiter::clear($this->triesKey($user->email));
+        RateLimiter::clear($this->triesKey($user));
         AuditLogger::log('password_reset', AuditLogger::AUTH, [
             'actor' => $user,
             'target' => $user,
@@ -191,6 +189,7 @@ class PasswordResetController extends Controller
     {
         $request->validate([
             'email' => ['required', 'string', 'email', 'max:255'],
+            'school_id' => ['nullable', 'string', 'max:100'],
             'code' => ['required', 'string', 'regex:/^\d{5}$/'],
         ], [
             'code.required' => 'Please enter the 5-digit code from the email.',
@@ -204,9 +203,9 @@ class PasswordResetController extends Controller
      */
     private function checkCode(Request $request): ?JsonResponse
     {
-        $user = $this->findByEmail($request->input('email'));
+        $user = $this->findAccount($request->input('email'), $request->input('school_id'));
         $record = $user
-            ? DB::table('password_reset_tokens')->where('email', $user->email)->first()
+            ? DB::table('password_reset_tokens')->where('email', $this->tokenKey($user))->first()
             : null;
 
         if (!$user || !$user->is_active || !$record) {
@@ -214,14 +213,14 @@ class PasswordResetController extends Controller
         }
 
         if (Carbon::parse($record->created_at)->lt(now()->subMinutes(self::CODE_MINUTES))) {
-            DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+            DB::table('password_reset_tokens')->where('email', $this->tokenKey($user))->delete();
             return $this->codeError('The verification code has expired. Please request a new code.');
         }
 
-        $key = $this->triesKey($user->email);
+        $key = $this->triesKey($user);
 
         if (RateLimiter::tooManyAttempts($key, self::MAX_WRONG_TRIES)) {
-            DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+            DB::table('password_reset_tokens')->where('email', $this->tokenKey($user))->delete();
             return $this->codeError(self::TOO_MANY_TRIES);
         }
 
@@ -230,7 +229,7 @@ class PasswordResetController extends Controller
             $left = self::MAX_WRONG_TRIES - RateLimiter::attempts($key);
 
             if ($left <= 0) {
-                DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+                DB::table('password_reset_tokens')->where('email', $this->tokenKey($user))->delete();
                 return $this->codeError(self::TOO_MANY_TRIES);
             }
 
@@ -249,17 +248,36 @@ class PasswordResetController extends Controller
         ], 422);
     }
 
-    private function findByEmail(?string $email): ?User
+    /**
+     * The account with this email (and School ID, when given). Up to 2
+     * accounts can share an email, so without a School ID only an email
+     * used by exactly one account is accepted.
+     */
+    private function findAccount(?string $email, ?string $schoolId): ?User
     {
         $email = mb_strtolower(trim((string) $email));
+        $schoolId = mb_strtolower(trim((string) $schoolId));
 
-        return $email === ''
-            ? null
-            : User::whereRaw('LOWER(email) = ?', [$email])->first();
+        if ($email === '') {
+            return null;
+        }
+
+        $matches = User::whereRaw('LOWER(TRIM(email)) = ?', [$email])
+            ->when($schoolId !== '', fn ($query) => $query->whereRaw('LOWER(TRIM(school_id)) = ?', [$schoolId]))
+            ->limit(2)
+            ->get();
+
+        return $matches->count() === 1 ? $matches->first() : null;
     }
 
-    private function triesKey(string $email): string
+    /** Reset codes are kept per account, as 2 accounts may share an email. */
+    private function tokenKey(User $user): string
     {
-        return 'password-reset-code:' . mb_strtolower($email);
+        return 'user:' . $user->id;
+    }
+
+    private function triesKey(User $user): string
+    {
+        return 'password-reset-code:user:' . $user->id;
     }
 }

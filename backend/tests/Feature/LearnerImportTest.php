@@ -80,43 +80,23 @@ class LearnerImportTest extends TestCase
         $this->assertFalse($learner->password_setup_complete);
     }
 
-    public function test_import_rejects_invalid_email_without_creating_learner(): void
-    {
-        $this->actingAs($this->admin());
-
-        $response = $this->postJson('/api/admin/learners/import', [
-            'file' => $this->spreadsheet([
-                ['Invalid Email Learner', '24-12346', 'not-an-email', 'ETEEAP', ''],
-            ]),
-        ]);
-
-        $response->assertStatus(422)
-            ->assertJsonFragment(['message' => 'Invalid email address.']);
-
-        $this->assertDatabaseMissing('users', [
-            'school_id' => '24-12346',
-        ]);
-    }
-
-    public function test_import_with_email_reports_mail_as_not_configured_in_tests(): void
+    public function test_import_ignores_the_email_column(): void
     {
         $this->actingAs($this->admin());
 
         $response = $this->postJson('/api/admin/learners/import', [
             'file' => $this->spreadsheet([
                 ['Email Learner', '24-12347', 'learner@example.com', 'ETEEAP', ''],
+                ['Bad Email Learner', '24-12346', 'not-an-email', 'ETEEAP', ''],
             ]),
         ]);
 
+        // Learners add and confirm their own email after first login.
         $response->assertCreated()
-            ->assertJsonPath('imported_count', 1)
-            ->assertJsonPath('email_summary.not_configured', 1)
-            ->assertJsonPath('learners.0.email_status', 'not_configured');
+            ->assertJsonPath('imported_count', 2)
+            ->assertJsonPath('email_summary.skipped_no_email', 2);
 
-        $this->assertDatabaseHas('users', [
-            'school_id' => '24-12347',
-            'email' => 'learner@example.com',
-            'role' => 'learner',
-        ]);
+        $this->assertDatabaseHas('users', ['school_id' => '24-12347', 'email' => null, 'role' => 'learner']);
+        $this->assertDatabaseHas('users', ['school_id' => '24-12346', 'email' => null, 'role' => 'learner']);
     }
 }

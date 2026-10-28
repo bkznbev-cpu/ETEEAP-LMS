@@ -51,8 +51,11 @@
         document.getElementById("accountFullName");
     const programInput =
         document.getElementById("accountProgram");
+    // The form has no email field (people add their own after first
+    // login); this blank stand-in keeps the old form code working.
     const emailInput =
-        document.getElementById("accountEmail");
+        document.getElementById("accountEmail") ||
+        document.createElement("input");
     const passwordInput =
         document.getElementById("accountPassword");
     const generatePasswordButton =
@@ -854,10 +857,10 @@
             saveLearnerAccountButton.textContent = "Saving changes...";
 
             try {
+                // No email: only the learner can set it.
                 const requestData = {
                     school_id: studentId,
-                    name: fullName,
-                    email: email || null
+                    name: fullName
                 };
 
                 if (password) {
@@ -941,7 +944,6 @@
                     },
                     body: JSON.stringify({
                         name: fullName,
-                        email: email || null,
                         school_id: studentId,
                         program: program,
                         password: password,
@@ -1387,18 +1389,22 @@ if (account) {
     );
 }
 
-            actionsCell.appendChild(
-                createActionButton(
-                    "Delete",
-                    "trash-2",
-                    () =>
-                        openDeleteAccountModal(
-                            learner.id
-                        ),
-                    true,
-                    true
-                )
-            );
+            // Accounts that were set up are never deleted (deactivate instead).
+            const setUp = Boolean(account?.accountSetUp || learner.accountSetUp);
+            if (!setUp) {
+                actionsCell.appendChild(
+                    createActionButton(
+                        "Delete",
+                        "trash-2",
+                        () =>
+                            openDeleteAccountModal(
+                                learner.id
+                            ),
+                        true,
+                        true
+                    )
+                );
+            }
 
             row.appendChild(
                 rowNumberCell
@@ -1738,7 +1744,7 @@ if (account) {
                     );
                 }
             } catch (error) {
-                alert(`Learner was not removed from the interface because server deletion failed: ${error.message}`);
+                alert(error.message || "The learner could not be deleted.");
                 return;
             }
         }
@@ -2103,6 +2109,7 @@ function enableCredentialDownloadForTwoMinutes() {
             status: learner.isActive === false ? "inactive" : "active",
             isActive: learner.isActive !== false,
             passwordSetupComplete: learner.passwordSetupComplete === true,
+            accountSetUp: learner.accountSetUp === true,
             backendManaged: true
         }));
 
@@ -2884,6 +2891,9 @@ await saveCredentialFile(
                 status: learner.status || "Active",
                 passwordSetupComplete:
                     Boolean(learner.password_setup_complete),
+                // Set up once: the server refuses to delete it.
+                accountSetUp:
+                    Boolean(learner.account_set_up),
                 isActive:
                     learner.is_active !== false,
                 lastActivity: learner.last_activity || "Never",

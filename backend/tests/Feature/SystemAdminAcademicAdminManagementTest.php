@@ -118,6 +118,12 @@ class SystemAdminAcademicAdminManagementTest extends TestCase
             'school_id' => 'AA-DUPLICATE-01',
             'email' => 'existing-academic@example.test',
         ]);
+        // The email already has the most accounts allowed (2).
+        User::factory()->create([
+            'role' => 'learner',
+            'school_id' => 'AA-DUPLICATE-02',
+            'email' => 'existing-academic@example.test',
+        ]);
 
         $this->withSystemAdminToken($systemAdmin)
             ->postJson('/api/system-admin/academic-administrators', [

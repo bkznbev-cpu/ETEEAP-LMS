@@ -18,10 +18,11 @@ class AcademicAdminSafeDeleteTest extends TestCase
     private ?User $admin = null;
 
     // Learners and instructors belong to this test's Academic Admin.
-    private function user(string $role): User
+    private function user(string $role, bool $setUp = true): User
     {
         return User::factory()->create([
             'role' => $role,
+            'password_setup_complete' => $setUp,
             'school_id' => fake()->unique()->numerify('SD-#####'),
             'is_active' => true,
             'owner_admin_id' => $role === 'academic_admin' ? null : $this->admin()->id,
@@ -94,7 +95,7 @@ class AcademicAdminSafeDeleteTest extends TestCase
 
     public function test_learner_without_records_can_be_deleted(): void
     {
-        $learner = $this->user('learner');
+        $learner = $this->user('learner', setUp: false);
         $learner->createToken('test');
 
         $this->actingAs($this->admin())
@@ -152,13 +153,94 @@ class AcademicAdminSafeDeleteTest extends TestCase
 
     public function test_instructor_without_records_can_be_deleted(): void
     {
-        $instructor = $this->user('instructor');
+        $instructor = $this->user('instructor', setUp: false);
 
         $this->actingAs($this->admin())
             ->deleteJson("/api/admin/instructors/{$instructor->id}")
             ->assertOk();
 
         $this->assertDatabaseMissing('users', ['id' => $instructor->id]);
+    }
+
+    public function test_set_up_accounts_can_never_be_deleted(): void
+    {
+        foreach (['learner' => 'learners', 'instructor' => 'instructors'] as $role => $path) {
+            foreach (['has@example.com', null] as $email) {
+                $account = $this->user($role);
+                $account->update(["email" => $email ? "{$role}.{$email}" : null]);
+
+                // Neither active nor deactivated.
+                foreach ([true, false] as $active) {
+                    $account->update(['is_active' => $active]);
+
+                    $this->actingAs($this->admin())
+                        ->deleteJson("/api/admin/{$path}/{$account->id}")
+                        ->assertStatus(409)
+                        ->assertJsonPath('message', "This {$role} has already set up their account, so it cannot be deleted. Deactivate the account instead.");
+                }
+
+                $this->assertDatabaseHas('users', ['id' => $account->id]);
+            }
+        }
+    }
+
+    public function test_deactivated_learner_with_submissions_still_cannot_be_deleted(): void
+    {
+        $learner = $this->user('learner');
+        $learner->update(['is_active' => false]);
+        [, $module] = $this->classWithModule();
+        Submission::create([
+            'module_id' => $module->id,
+            'learner_id' => $learner->id,
+            'status' => 'submitted',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->deleteJson("/api/admin/learners/{$learner->id}")
+            ->assertStatus(409);
+
+        $this->assertDatabaseHas('submissions', ['learner_id' => $learner->id]);
+    }
+
+    public function test_password_reset_does_not_make_a_set_up_account_deletable(): void
+    {
+        $learner = $this->user('learner', setUp: false);
+
+        // The learner sets their own password...
+        $this->withToken($learner->createToken('t')->plainTextToken)->postJson('/api/student/setup-password', [
+            'password' => 'Own-pass-123', 'password_confirmation' => 'Own-pass-123',
+        ])->assertOk();
+
+        // ...then the admin gives them a temporary one again.
+        $this->app['auth']->forgetGuards();
+        $this->actingAs($this->admin())
+            ->putJson("/api/admin/learners/{$learner->id}", ['password' => 'temporary-2'])
+            ->assertOk();
+        $this->assertFalse($learner->fresh()->password_setup_complete);
+
+        $this->actingAs($this->admin())
+            ->deleteJson("/api/admin/learners/{$learner->id}")
+            ->assertStatus(409);
+
+        $this->assertDatabaseHas('users', ['id' => $learner->id]);
+    }
+
+    public function test_account_lists_say_which_accounts_were_set_up(): void
+    {
+        $setUpLearner = $this->user('learner');
+        $newLearner = $this->user('learner', setUp: false);
+        $setUpInstructor = $this->user('instructor');
+        $newInstructor = $this->user('instructor', setUp: false);
+
+        $learners = collect($this->actingAs($this->admin())->getJson('/api/admin/learners')
+            ->assertOk()->json('learners'))->keyBy('id');
+        $this->assertTrue($learners[$setUpLearner->id]['account_set_up']);
+        $this->assertFalse($learners[$newLearner->id]['account_set_up']);
+
+        $instructors = collect($this->actingAs($this->admin())->getJson('/api/admin/instructors')
+            ->assertOk()->json('instructors'))->keyBy('id');
+        $this->assertTrue($instructors[$setUpInstructor->id]['account_set_up']);
+        $this->assertFalse($instructors[$newInstructor->id]['account_set_up']);
     }
 
     public function test_class_with_submissions_cannot_be_deleted(): void

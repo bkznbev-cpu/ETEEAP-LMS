@@ -166,6 +166,10 @@ function normalizeApiLearner(
         passwordSetupComplete:
             Boolean(learner.password_setup_complete),
 
+        // Set up once: can't be deleted (the Delete button is hidden).
+        accountSetUp:
+            Boolean(learner.account_set_up ?? learner.accountSetUp),
+
         isActive:
             learner.is_active !== false,
 

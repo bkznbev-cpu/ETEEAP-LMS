@@ -70,8 +70,11 @@ Route::middleware([
     // Revokes the current token (all roles)
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // Add your own email (the step after setting a new password)
-    Route::post('/account/email', [\App\Http\Controllers\Api\AccountEmailController::class, 'store']);
+    // Add your own email (the step after setting a new password): a code
+    // is sent to it, and the email is saved only after the code is entered.
+    Route::post('/account/email', [\App\Http\Controllers\Api\AccountEmailController::class, 'store'])->middleware('throttle:10,1');
+    Route::post('/account/email/verify', [\App\Http\Controllers\Api\AccountEmailController::class, 'verify'])->middleware('throttle:10,1');
+    Route::post('/account/email/resend', [\App\Http\Controllers\Api\AccountEmailController::class, 'resend'])->middleware('throttle:5,1');
 
     // Change your own email (all roles): current password + a code sent
     // to the new address. The email changes only after verification.

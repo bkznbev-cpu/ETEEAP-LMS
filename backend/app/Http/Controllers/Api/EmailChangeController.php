@@ -7,7 +7,10 @@ use App\Models\EmailChangeRequest;
 use App\Models\User;
 use App\Notifications\EmailChangeAlert;
 use App\Notifications\EmailChangeCode;
+use App\Rules\EmailDomainExists;
+use App\Rules\UniqueEmail;
 use App\Support\AuditLogger;
+use App\Support\EmailVerificationCode;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -57,7 +60,7 @@ class EmailChangeController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'new_email' => ['required', 'string', 'email', 'max:255'],
+            'new_email' => ['required', 'string', 'email', 'max:255', new EmailDomainExists()],
             'current_password' => ['required', 'string', 'max:255'],
         ], [
             'new_email.required' => 'Please enter your new email address.',
@@ -73,7 +76,7 @@ class EmailChangeController extends Controller
         }
 
         if ($this->emailIsTaken($newEmail, $user)) {
-            return $this->fieldError('new_email', 'That email address is already used by another account.');
+            return $this->fieldError('new_email', UniqueEmail::MESSAGE);
         }
 
         // Confirm it is the account owner (limited tries).
@@ -203,16 +206,13 @@ class EmailChangeController extends Controller
         if ($this->emailIsTaken($newEmail, $user)) {
             $pending->delete();
 
-            return $this->fieldError('code', 'That email address is now used by another account. Please choose a different one.');
+            return $this->fieldError('code', UniqueEmail::MESSAGE . ' Please choose a different one.');
         }
 
         $oldEmail = $user->email;
 
         DB::transaction(function () use ($user, $pending, $newEmail) {
-            $user->forceFill([
-                'email' => $newEmail,
-                'email_verified_at' => now(),
-            ])->save();
+            $user->confirmEmail($newEmail);
 
             // The code cannot be used again.
             $pending->delete();
@@ -261,7 +261,7 @@ class EmailChangeController extends Controller
         if ($this->emailIsTaken($pending->new_email, $user)) {
             $pending->delete();
 
-            return $this->fieldError('new_email', 'That email address is now used by another account. Please choose a different one.');
+            return $this->fieldError('new_email', UniqueEmail::MESSAGE . ' Please choose a different one.');
         }
 
         if ($error = $this->sendCode($user, $pending->new_email)) {
@@ -302,32 +302,7 @@ class EmailChangeController extends Controller
      */
     private function sendCode(User $user, string $newEmail): ?JsonResponse
     {
-        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
-        $pending = EmailChangeRequest::updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'new_email' => $newEmail,
-                'code_hash' => Hash::make($code),
-                'attempts' => 0,
-                'expires_at' => now()->addMinutes(self::CODE_MINUTES),
-                'last_sent_at' => now(),
-            ]
-        );
-
-        try {
-            Notification::route('mail', $newEmail)->notify(
-                new EmailChangeCode($code, self::CODE_MINUTES, (string) $user->name, (string) $user->school_id)
-            );
-        } catch (\Throwable $error) {
-            $pending->delete();
-
-            // Logged for the administrator, without the code.
-            Log::error('Email change code could not be sent.', [
-                'user_id' => $user->id,
-                'error' => $error->getMessage(),
-            ]);
-
+        if (!EmailVerificationCode::send($user, $newEmail, 'on your profile page')) {
             return response()->json([
                 'success' => false,
                 'message' => 'The verification email could not be sent right now, so your email was not changed. '
@@ -360,9 +335,7 @@ class EmailChangeController extends Controller
 
     private function emailIsTaken(string $email, User $user): bool
     {
-        return User::whereRaw('LOWER(email) = ?', [mb_strtolower($email)])
-            ->whereKeyNot($user->id)
-            ->exists();
+        return UniqueEmail::taken($email, $user->id);
     }
 
     /** What the profile page shows (never the code). */

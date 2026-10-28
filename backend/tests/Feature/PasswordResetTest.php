@@ -66,7 +66,8 @@ class PasswordResetTest extends TestCase
         $code = $this->sentCode($this->learner);
         $this->assertMatchesRegularExpression('/^\d{5}$/', $code);
 
-        $stored = DB::table('password_reset_tokens')->where('email', 'ana@example.com')->value('token');
+        // Kept per account (2 accounts may share an email).
+        $stored = DB::table('password_reset_tokens')->where('email', 'user:' . $this->learner->id)->value('token');
         $this->assertNotSame($code, $stored);
         $this->assertTrue(Hash::check($code, $stored));
 
@@ -230,5 +231,29 @@ class PasswordResetTest extends TestCase
             $this->requestCode('nobody@example.com')->assertStatus(422);
         }
         $this->requestCode('nobody@example.com')->assertStatus(429);
+    }
+    public function test_two_accounts_sharing_an_email_reset_only_the_one_asked_for(): void
+    {
+        $instructor = User::factory()->create([
+            'role' => 'instructor', 'school_id' => 'INS-SHARE', 'email' => 'ana@example.com',
+            'is_active' => true, 'password_setup_complete' => true,
+        ]);
+        $learnerPassword = $this->learner->fresh()->password;
+
+        $this->requestCode('ana@example.com', 'INS-SHARE')->assertOk();
+        $code = $this->sentCode($instructor);
+        Notification::assertNotSentTo($this->learner, ResetPasswordCode::class);
+
+        // Without the School ID the shared email can't pick an account.
+        $this->postJson('/api/password/verify-code', ['email' => 'ana@example.com', 'code' => $code])
+            ->assertStatus(422);
+
+        $this->postJson('/api/password/reset', [
+            'school_id' => 'INS-SHARE', 'email' => 'ana@example.com', 'code' => $code,
+            'password' => 'brand-new-pass', 'password_confirmation' => 'brand-new-pass',
+        ])->assertOk();
+
+        $this->assertTrue(Hash::check('brand-new-pass', $instructor->fresh()->password));
+        $this->assertSame($learnerPassword, $this->learner->fresh()->password);
     }
 }

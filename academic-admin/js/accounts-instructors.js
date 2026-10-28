@@ -203,10 +203,13 @@ let instructorCredentialsExpiryTimer = null;
             "instructorAccountName"
         );
 
+    // The form has no email field (people add their own after first
+    // login); this blank stand-in keeps the old form code working.
     const emailInput =
         document.getElementById(
             "instructorAccountEmail"
-        );
+        ) ||
+        document.createElement("input");
 
     const passwordInput =
         document.getElementById(
@@ -415,6 +418,10 @@ let instructorCredentialsExpiryTimer = null;
                             instructor.password_setup_complete
                         ),
 
+                    // Set up once: the server refuses to delete it.
+                    accountSetUp:
+                        Boolean(instructor.account_set_up),
+
                     isActive:
                         instructor.is_active !== false
 
@@ -464,6 +471,9 @@ let instructorCredentialsExpiryTimer = null;
 
                     passwordSetupComplete:
                         Boolean(instructor.password_setup_complete),
+
+                    accountSetUp:
+                        Boolean(instructor.account_set_up),
 
                     backendManaged:
                         true
@@ -1457,11 +1467,9 @@ let instructorCredentialsExpiryTimer = null;
                     school_id:
                         instructorId,
 
+                    // No email: only the instructor can set it.
                     name:
-                        instructorName,
-
-                    email:
-                        email || null
+                        instructorName
                 };
 
 
@@ -1544,9 +1552,6 @@ let instructorCredentialsExpiryTimer = null;
                             JSON.stringify({
                                 name:
                                     instructorName,
-
-                                email:
-                                    email || null,
 
                                 school_id:
                                     instructorId,
@@ -2073,26 +2078,31 @@ let instructorCredentialsExpiryTimer = null;
                     }
 
 
-                    actionsCell.appendChild(
+                    // Accounts that were set up are never deleted (deactivate instead).
+                    if (account.accountSetUp !== true) {
 
-                        createActionButton(
+                        actionsCell.appendChild(
 
-                            "Delete",
+                            createActionButton(
 
-                            "trash-2",
+                                "Delete",
 
-                            () =>
-                                openDeleteInstructorModal(
-                                    instructor.id
-                                ),
+                                "trash-2",
 
-                            true,
+                                () =>
+                                    openDeleteInstructorModal(
+                                        instructor.id
+                                    ),
 
-                            true
+                                true,
 
-                        )
+                                true
 
-                    );
+                            )
+
+                        );
+
+                    }
 
                 }
 

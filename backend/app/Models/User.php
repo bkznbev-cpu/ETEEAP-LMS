@@ -44,14 +44,42 @@ class User extends Authenticatable
     }
 
     /**
-     * Learners, instructors and academic admins must add their own
-     * email after setting their password, before using the LMS.
+     * Learners, instructors and academic admins must add their own email
+     * after setting their password, and confirm it with the code sent to
+     * it, before using the LMS. An email typed in by an admin is not
+     * confirmed, so they confirm it the same way.
      */
     public function needsEmail(): bool
     {
         return in_array($this->role, ['learner', 'instructor', 'academic_admin'], true)
             && (bool) $this->password_setup_complete
-            && trim((string) $this->email) === '';
+            && (trim((string) $this->email) === '' || $this->email_verified_at === null);
+    }
+
+    /** Set while confirmEmail() saves, so the email stays confirmed. */
+    private bool $confirmingEmail = false;
+
+    /** Saves an email its owner proved with a code, as confirmed. */
+    public function confirmEmail(string $email): void
+    {
+        $this->confirmingEmail = true;
+
+        try {
+            $this->forceFill(['email' => $email, 'email_verified_at' => now()])->save();
+        } finally {
+            $this->confirmingEmail = false;
+        }
+    }
+
+    protected static function booted(): void
+    {
+        // Any other change of email (e.g. typed in by an admin) is
+        // unconfirmed until its owner enters the code sent to it.
+        static::updating(function (User $user): void {
+            if ($user->isDirty('email') && !$user->confirmingEmail) {
+                $user->email_verified_at = null;
+            }
+        });
     }
 
     public function courses(): BelongsToMany

@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\User;
+use App\Rules\EmailDomainExists;
+use App\Rules\UniqueEmail;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -50,7 +52,7 @@ class CreateSystemAdmin extends Command
         $email = $this->option('email') ?: null;
         $validator = Validator::make(
             ['email' => $email],
-            ['email' => ['nullable', 'email', 'max:255', 'unique:users,email' . ($existing ? ",{$existing->id}" : '')]]
+            ['email' => ['nullable', 'email', 'max:255', new EmailDomainExists(), new UniqueEmail($existing?->id)]]
         );
 
         if ($validator->fails()) {

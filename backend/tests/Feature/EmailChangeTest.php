@@ -136,11 +136,13 @@ class EmailChangeTest extends TestCase
     public function test_an_address_used_by_another_account_is_refused(): void
     {
         $user = $this->account();
+        // Already used by the most accounts allowed (2).
         $other = $this->account('instructor', 'taken@example.com');
+        User::factory()->create(['role' => 'learner', 'school_id' => 'EC-TAKEN-2', 'email' => $other->email]);
 
         $this->request($user, strtoupper($other->email))
             ->assertStatus(422)
-            ->assertJsonPath('message', 'That email address is already used by another account.');
+            ->assertJsonPath('message', \App\Rules\UniqueEmail::MESSAGE);
 
         // Your own current address is not a change either.
         $this->request($user, $user->email)->assertStatus(422)->assertJsonValidationErrors('new_email');
@@ -267,12 +269,13 @@ class EmailChangeTest extends TestCase
         $this->request($user, 'race@example.com')->assertOk();
         $code = $this->sentCode('race@example.com');
 
-        // Another account gets the address first.
+        // Two other accounts get the address first.
         $this->account('learner', 'x@example.com')->forceFill(['email' => 'race@example.com'])->save();
+        $this->account('instructor', 'y@example.com')->forceFill(['email' => 'race@example.com'])->save();
 
         $this->actingAs($user)->postJson('/api/account/email-change/verify', ['code' => $code])
             ->assertStatus(422)
-            ->assertJsonPath('message', 'That email address is now used by another account. Please choose a different one.');
+            ->assertJsonPath('message', \App\Rules\UniqueEmail::MESSAGE . ' Please choose a different one.');
         $this->assertNotSame('race@example.com', $user->fresh()->email);
     }
 

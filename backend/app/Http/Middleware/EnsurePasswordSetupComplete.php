@@ -23,6 +23,8 @@ class EnsurePasswordSetupComplete
     private const EMAIL_STEP_PATHS = [
         'api/logout',
         'api/account/email',
+        'api/account/email/verify',
+        'api/account/email/resend',
     ];
 
     public function handle(Request $request, Closure $next): Response
@@ -49,7 +51,7 @@ class EnsurePasswordSetupComplete
             return response()->json([
                 'success' => false,
                 'code' => 'email_required',
-                'message' => 'Please add your email address before continuing.',
+                'message' => 'Please add and confirm your email address before continuing.',
             ], 403);
         }
 

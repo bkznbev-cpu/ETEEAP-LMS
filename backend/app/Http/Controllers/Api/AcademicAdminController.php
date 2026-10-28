@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Support\AuditLogger;
+use App\Rules\EmailDomainExists;
+use App\Rules\UniqueEmail;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
@@ -11,6 +13,7 @@ use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Illuminate\Support\Facades\Storage;
 
+use App\Models\AuditLogEntry;
 use App\Models\Module;
 use App\Models\Progress;
 use App\Models\Submission;
@@ -363,8 +366,11 @@ $user->save();
             'password_setup_complete',
             'is_active',
             'created_at',
-        ])
-        ->map(function (User $learner) {
+        ]);
+
+    $setUpIds = $this->setUpAccountIds($learners);
+
+    $learners = $learners->map(function (User $learner) use ($setUpIds) {
             $assignedModules = $learner->courses
                 ->flatMap(function ($course) {
                     return $course->modules->each(
@@ -435,6 +441,8 @@ $user->save();
                 'contact' => $learner->contact,
                 'password_setup_complete' =>
                     $learner->password_setup_complete,
+                // Set up once (even if reset since): can't be deleted.
+                'account_set_up' => isset($setUpIds[$learner->id]),
                 'is_active' => $learner->is_active,
                 'created_at' => $learner->created_at,
 
@@ -462,12 +470,7 @@ $user->save();
 $validated = $request->validate([
     'name' => ['required', 'string', 'max:255'],
 
-    'email' => [
-        'nullable',
-        'email',
-        'max:255',
-        'unique:users,email',
-    ],
+    // No email: learners add and confirm their own after first login.
 
     'school_id' => [
         'required',
@@ -486,7 +489,7 @@ $validated = $request->validate([
 $learner = User::create([
     'owner_admin_id' => $this->adminId($request),
     'name' => $validated['name'],
-    'email' => $validated['email'] ?? null,
+    'email' => null,
     'school_id' => $validated['school_id'],
     'program' => $validated['program'] ?? null,
     'contact' => $validated['contact'] ?? null,
@@ -536,13 +539,7 @@ $learner = User::create([
         $validated = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
 
-            'email' => [
-                'sometimes',
-                'nullable',
-                'email',
-                'max:255',
-                Rule::unique('users', 'email')->ignore($learner->id),
-            ],
+            // No email: only the learner can change it (Change Email).
 
             'school_id' => [
                 'sometimes',
@@ -596,6 +593,48 @@ $learner = User::create([
     }
 
     /**
+     * Accounts that already set their own password are in use, so they
+     * are never deleted, only deactivated. An admin password reset doesn't
+     * undo this: the audit log still shows they set one up before.
+     */
+    private function refuseDeleteAfterSetup(User $user, string $label): ?JsonResponse
+    {
+        if (!isset($this->setUpAccountIds(collect([$user]))[$user->id])) {
+            return null;
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => "This {$label} has already set up their account, so it cannot be deleted. Deactivate the account instead.",
+        ], 409);
+    }
+
+    /**
+     * IDs (as keys) of the given accounts that have set their own password,
+     * now or before an admin reset it.
+     */
+    private function setUpAccountIds($users): array
+    {
+        $ids = $users->filter(fn (User $user) => $user->password_setup_complete)
+            ->pluck('id')
+            ->all();
+
+        $others = $users->reject(fn (User $user) => $user->password_setup_complete)
+            ->pluck('id')
+            ->all();
+
+        if ($others !== []) {
+            $ids = array_merge($ids, AuditLogEntry::where('action', 'password_set')
+                ->whereIn('actor_id', $others)
+                ->distinct()
+                ->pluck('actor_id')
+                ->all());
+        }
+
+        return array_fill_keys($ids, true);
+    }
+
+    /**
      * Delete a learner.
      */
     public function destroyLearner(Request $request, int $id): JsonResponse
@@ -611,6 +650,10 @@ $learner = User::create([
                 'success' => false,
                 'message' => 'Learner not found.',
             ], 404);
+        }
+
+        if ($response = $this->refuseDeleteAfterSetup($learner, 'learner')) {
+            return $response;
         }
 
         // The database cascades a user delete to their submissions, grades
@@ -660,6 +703,13 @@ $learner = User::create([
                 'created_at',
             ]);
 
+        // Set up once (even if reset since): can't be deleted.
+        $setUpIds = $this->setUpAccountIds($instructors);
+        $instructors->each(fn (User $instructor) => $instructor->setAttribute(
+            'account_set_up',
+            isset($setUpIds[$instructor->id])
+        ));
+
         return response()->json([
             'success' => true,
             'instructors' => $instructors,
@@ -677,8 +727,7 @@ $learner = User::create([
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            // Optional: instructors can be added without an email address.
-            'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
+            // No email: instructors add and confirm their own after first login.
             'school_id' => ['required', 'string', 'max:255', 'unique:users,school_id'],
             'program' => ['nullable', 'string', 'max:255'],
             'contact' => ['nullable', 'string', 'max:255'],
@@ -689,7 +738,7 @@ $learner = User::create([
         $instructor = User::create([
             'owner_admin_id' => $this->adminId($request),
             'name' => $validated['name'],
-            'email' => $validated['email'] ?? null,
+            'email' => null,
             'school_id' => $validated['school_id'],
             'program' => $validated['program'] ?? null,
             'contact' => $validated['contact'] ?? null,
@@ -740,13 +789,7 @@ $learner = User::create([
         $validated = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
 
-            'email' => [
-                'sometimes',
-                'nullable',
-                'email',
-                'max:255',
-                Rule::unique('users', 'email')->ignore($instructor->id),
-            ],
+            // No email: only the instructor can change it (Change Email).
 
             'school_id' => [
                 'sometimes',
@@ -764,8 +807,7 @@ $learner = User::create([
 
         $updateData = [
             'name' => $validated['name'] ?? $instructor->name,
-            // Sent empty: remove the email. Not sent: keep it.
-            'email' => array_key_exists('email', $validated) ? $validated['email'] : $instructor->email,
+            'email' => $instructor->email,
             'school_id' => $validated['school_id'] ?? $instructor->school_id,
             'program' => array_key_exists('program', $validated)
                 ? $validated['program']
@@ -826,6 +868,10 @@ $learner = User::create([
                 'success' => false,
                 'message' => 'Instructor not found.',
             ], 404);
+        }
+
+        if ($response = $this->refuseDeleteAfterSetup($instructor, 'instructor')) {
+            return $response;
         }
 
         // Deleting an instructor would erase every grade they gave and leave
@@ -1803,7 +1849,8 @@ public function syncClassModules(Request $request, int $id): JsonResponse
                     return $value === '' ? null : $value;
                 };
 
-                $email = $getOptional('email');
+                // An "email" column is ignored: learners add and confirm their own.
+                $email = null;
 
                 if ($email !== null && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                     $errors[] = [
@@ -1827,7 +1874,15 @@ public function syncClassModules(Request $request, int $id): JsonResponse
                     $seenEmails[$emailKey] = true;
                 }
 
-                if ($email !== null && User::where('email', $email)->exists()) {
+                if ($email !== null && !EmailDomainExists::check($email)) {
+                    $errors[] = [
+                        'row' => $excelRow,
+                        'message' => 'Email address does not exist (check the part after "@").',
+                    ];
+                    continue;
+                }
+
+                if ($email !== null && UniqueEmail::taken($email)) {
                     $errors[] = [
                         'row' => $excelRow,
                         'message' => 'Email address already exists.',
@@ -2091,7 +2146,8 @@ public function importInstructors(Request $request): JsonResponse
                 return $value === '' ? null : $value;
             };
 
-            $email = $getOptional('email');
+            // An "email" column is ignored: instructors add and confirm their own.
+            $email = null;
 
             if ($email !== null && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $errors[] = [
@@ -2115,7 +2171,15 @@ public function importInstructors(Request $request): JsonResponse
 
                 $seenEmails[$emailKey] = true;
 
-                if (User::where('email', $email)->exists()) {
+                if (!EmailDomainExists::check($email)) {
+                    $errors[] = [
+                        'row' => $excelRow,
+                        'message' => 'Email address does not exist (check the part after "@").',
+                    ];
+                    continue;
+                }
+
+                if (UniqueEmail::taken($email)) {
                     $errors[] = [
                         'row' => $excelRow,
                         'message' => 'Email address already exists.',
