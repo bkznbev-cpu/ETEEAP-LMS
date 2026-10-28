@@ -48,7 +48,8 @@ $set = [
     "DB_PASSWORD" => $quote(getenv("DBP")),
 ];
 $mail = str_replace(" ", "", (string) getenv("MP"));
-if ($mail !== "") $set["MAIL_PASSWORD"] = $mail;
+// Empty when skipped: the placeholder text would make the file unreadable.
+$set["MAIL_PASSWORD"] = $mail;
 foreach ($set as $k => $v) {
     $text = preg_replace_callback("/^" . $k . "=.*$/m", fn () => $k . "=" . $v, $text, 1);
 }
