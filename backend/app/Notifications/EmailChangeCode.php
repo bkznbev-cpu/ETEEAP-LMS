@@ -34,10 +34,14 @@ class EmailChangeCode extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Confirm your new email address — MPSU ETEEAP LMS')
+            // The code is in the subject too: each email gets its own subject,
+            // so Gmail doesn't group them and hide the repeated code box.
+            ->subject('Your MPSU ETEEAP LMS email verification code: ' . $this->code)
             ->greeting('Hello ' . $this->name . ',')
             ->line('You asked to use this email address for your MPSU ETEEAP LMS account (ID: ' . $this->schoolId . '). Enter this code ' . $this->where . ' to confirm it:')
             ->line($this->codeCard())
+            // Plain text as well, for email apps that hide the box.
+            ->line(new HtmlString('Your verification code is: <strong>' . e($this->code) . '</strong>'))
             ->line("The code expires in {$this->minutes} minutes and can be used once. Do not share it with anyone; school staff will never ask for it.")
             ->line('If you did not ask for this, you can ignore this email. This address will not be added to the account.')
             ->salutation('MPSU ETEEAP LMS');

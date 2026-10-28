@@ -26,7 +26,7 @@ The site and its API share one address: `https://your-domain/` for the pages,
 - A domain name, e.g. `lms.mpsu.edu.ph`, with a DNS **A record** pointing at
   the server's public IP address.
 - Ports **80** and **443** open in the server's firewall.
-- The Gmail App Password for `mspsueteeaplms@gmail.com`
+- The Gmail App Password for `mpsueteeaplms@gmail.com`
   (Google Account → Security → 2-Step Verification on → App passwords).
 
 Shared web hosting (cPanel, without SSH or Docker) is **not** enough: the LMS
