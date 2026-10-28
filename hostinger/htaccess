@@ -1,0 +1,67 @@
+# Web server rules for Hostinger Web Hosting (see HOSTINGER.md).
+# hostinger/install.sh copies this file to public_html/.htaccess.
+# It does the same job as docker/nginx.prod.conf on a Docker server.
+
+Options -Indexes -MultiViews +SymLinksIfOwnerMatch
+DirectoryIndex index.html
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Always use https://
+    RewriteCond %{HTTPS} off
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+    # Pass the sign-in token through to Laravel.
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Laravel's entry file: run it, nothing else to do.
+    RewriteRule ^laravel\.php$ - [L]
+
+    # The API and the health check (/up) go to Laravel.
+    RewriteRule ^api(/.*)?$ laravel.php [L]
+    RewriteRule ^up$ laravel.php [L]
+
+    # The Instructor portal used to be at /teacher/: old links still work.
+    RewriteRule ^teacher(/.*)?$ /instructor$1 [R=301,L]
+
+    # Never serve dotfiles (except .well-known for the SSL certificate),
+    # other PHP files, settings, logs or old copies of files.
+    RewriteRule (^|/)\.(?!well-known/) - [R=404,L]
+    RewriteRule \.(php|md|txt|yml|yaml|sql|sqlite|log|lock|bak|backup|save|zip|sh|conf|example)$ - [R=404,L]
+    RewriteRule (\.bak|\.save|\.before-|\.recovery|-backup|\.orig|~)$ - [R=404,L]
+
+    # Clean addresses: /student/dashboard.html -> /student/dashboard
+    RewriteCond %{THE_REQUEST} \s/+((?:[^?\s]*/)?)index\.html[\s?]
+    RewriteRule ^ /%1 [R=301,L]
+    RewriteCond %{THE_REQUEST} \s/+([^?\s]+)\.html[\s?]
+    RewriteRule ^ /%1 [R=301,L]
+
+    # ...and /student/dashboard opens student/dashboard.html.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}.html -f
+    RewriteRule ^(.+)$ $1.html [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+
+    # Pages: always check for a newer version. The sk_clean cookie tells
+    # the pages that addresses without ".html" work here.
+    <FilesMatch "\.html$">
+        Header set Cache-Control "no-cache"
+        Header set Set-Cookie "sk_clean=1; Path=/; SameSite=Lax; Secure"
+    </FilesMatch>
+    <FilesMatch "\.(css|js)$">
+        Header set Cache-Control "public, max-age=600"
+    </FilesMatch>
+    <FilesMatch "\.(png|jpe?g|gif|webp|svg|ico|woff2?|ttf)$">
+        Header set Cache-Control "public, max-age=604800"
+    </FilesMatch>
+</IfModule>
