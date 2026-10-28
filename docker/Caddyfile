@@ -1,0 +1,16 @@
+# HTTPS for the hosted site (docker-compose.prod.yml).
+# Caddy gets and renews a free Let's Encrypt certificate for SITE_DOMAIN
+# by itself, redirects http:// to https://, and passes requests to Nginx.
+# Needs: the domain pointing at this server, and ports 80 and 443 open.
+
+{$SITE_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		# Browsers use https:// only, for a year.
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+
+	reverse_proxy web:80
+}

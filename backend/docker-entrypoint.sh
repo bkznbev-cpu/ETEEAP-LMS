@@ -45,4 +45,10 @@ else
     php artisan optimize:clear >/dev/null 2>&1 || true
 fi
 
+# Production image (Dockerfile.production): PHP-FPM runs as www-data, which
+# must be able to write logs, uploads, backups and caches.
+if [ "${SIKNAYAN_FIX_PERMISSIONS:-}" = "1" ] && [ "$(id -u)" = "0" ]; then
+    chown -R www-data:www-data storage bootstrap/cache
+fi
+
 exec "$@"

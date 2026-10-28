@@ -1,0 +1,79 @@
+# Production image for the Laravel API (used by docker-compose.prod.yml).
+#
+# Differences from the development Dockerfile:
+# - PHP-FPM behind Nginx instead of "php artisan serve" (the built-in
+#   server is for development only and handles requests slowly);
+# - the code and its PHP packages are built into the image (no live
+#   folder mount), without the development-only packages;
+# - OPcache never re-reads files, so code changes need a rebuild.
+
+FROM php:8.4-fpm
+
+# pdo_mysql (database), zip + gd (Excel imports), intl (email domains),
+# opcache (speed). default-mysql-client: mysqldump for the Data Backup page.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git \
+        unzip \
+        default-mysql-client \
+        libzip-dev \
+        libpng-dev \
+        libjpeg-dev \
+        libfreetype6-dev \
+        libicu-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" pdo_mysql zip gd intl opcache \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
+    && { \
+        echo 'opcache.enable=1'; \
+        echo 'opcache.memory_consumption=128'; \
+        echo 'opcache.interned_strings_buffer=16'; \
+        echo 'opcache.max_accelerated_files=20000'; \
+        echo 'opcache.validate_timestamps=0'; \
+        echo 'realpath_cache_size=4096K'; \
+        echo 'realpath_cache_ttl=600'; \
+        echo 'expose_php=Off'; \
+        echo 'upload_max_filesize=512M'; \
+        echo 'post_max_size=520M'; \
+        echo 'memory_limit=512M'; \
+        echo 'max_execution_time=300'; \
+    } > /usr/local/etc/php/conf.d/siknayan-production.ini \
+    && { \
+        echo '[www]'; \
+        echo 'pm = dynamic'; \
+        echo 'pm.max_children = 20'; \
+        echo 'pm.start_servers = 4'; \
+        echo 'pm.min_spare_servers = 2'; \
+        echo 'pm.max_spare_servers = 8'; \
+        echo 'request_terminate_timeout = 300'; \
+    } > /usr/local/etc/php-fpm.d/zz-siknayan.conf
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
+
+# PHP packages first, so they are only re-downloaded when composer.lock changes.
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-interaction --prefer-dist --no-progress --no-scripts --no-autoloader
+
+COPY . .
+# Caches copied from a development computer would list development-only
+# packages; they are rebuilt here and on start.
+RUN rm -f bootstrap/cache/*.php \
+    && composer dump-autoload --optimize --no-dev \
+    && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache
+
+# Windows checkouts can turn line endings into CRLF, which breaks a shell script.
+COPY docker-entrypoint.sh /usr/local/bin/siknayan-entrypoint
+RUN sed -i 's/\r$//' /usr/local/bin/siknayan-entrypoint \
+    && chmod +x /usr/local/bin/siknayan-entrypoint
+
+ENV SIKNAYAN_FIX_PERMISSIONS=1
+
+EXPOSE 9000
+
+ENTRYPOINT ["siknayan-entrypoint"]
+CMD ["php-fpm"]
