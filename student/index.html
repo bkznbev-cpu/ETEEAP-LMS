@@ -32,10 +32,36 @@
             flex: 1 1 260px;
         }
 
+        /* Phones: the search on the right of "My Classes". */
         @media (max-width: 700px) {
+            .classes-header {
+                flex-wrap: nowrap;
+                gap: 10px;
+            }
+
+            .classes-header > div:first-child {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+
             .toolbar {
-                width: 100%;
-                margin-left: 0;
+                flex: 0 0 46%;
+                width: auto;
+                max-width: 210px;
+                margin-left: auto;
+            }
+
+            .search {
+                flex: 1 1 auto;
+            }
+
+            .search input {
+                min-height: 40px;
+                padding: 8px 10px 8px 34px;
+            }
+
+            .search i {
+                left: 12px;
             }
         }
 

@@ -163,6 +163,29 @@
             margin-left: auto;
         }
 
+        /* Phones: the file name keeps the full width (it was squeezed to a
+           few letters per line); View and Download go under it. */
+        @media (max-width: 600px) {
+            .file-row {
+                flex-wrap: wrap;
+            }
+
+            .file-name {
+                flex: 1 1 100%;
+            }
+
+            .file-actions {
+                flex: 1 1 100%;
+                margin-left: 0;
+            }
+
+            .file-actions .file-btn {
+                flex: 1 1 0;
+                justify-content: center;
+                height: 40px;
+            }
+        }
+
         .file-btn {
             display: inline-flex;
             align-items: center;

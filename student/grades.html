@@ -92,6 +92,139 @@
                 padding-left: 14px !important;
             }
         }
+
+        /* ---------- Phones ---------- */
+        @media (max-width: 700px) {
+            /* "All classes" and "All modules" on the right of "Grades". */
+            .page-header {
+                flex-wrap: nowrap;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .page-header > div:first-child {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+
+            .filters {
+                flex: 0 0 46%;
+                width: auto;
+                max-width: 210px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+
+            .filters .field {
+                width: 100%;
+            }
+
+            .filters .field label {
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                overflow: hidden;
+                clip: rect(0 0 0 0);
+                white-space: nowrap;
+            }
+
+            .filters select {
+                width: 100%;
+                min-height: 40px;
+                padding-top: 6px;
+                padding-bottom: 6px;
+            }
+
+            /* The table as cards: a heading per class, then one card per
+               module with its status, score and date. No sideways scrolling. */
+            .table-wrap {
+                overflow-x: visible;
+            }
+
+            table.data {
+                min-width: 0;
+            }
+
+            table.data thead {
+                display: none;
+            }
+
+            table.data,
+            table.data tbody,
+            table.data tr,
+            table.data td {
+                display: block;
+                width: 100%;
+            }
+
+            table.data tr.class-row {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 12px;
+                margin-top: 6px;
+                padding: 12px 14px;
+                border-radius: 10px;
+                background: #f6fbf8;
+            }
+
+            table.data tr.class-row td {
+                width: auto;
+                padding: 0;
+                border: 0;
+                background: transparent;
+            }
+
+            table.data tr.class-row td:first-child {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+
+            table.data tr:not(.class-row) {
+                margin: 8px 0;
+                padding: 10px 14px;
+                border: 1px solid var(--border-light, #e3e8e5);
+                border-radius: 10px;
+            }
+
+            table.data tr:not(.class-row) td {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 4px 0 !important;
+                border: 0;
+                text-align: right;
+            }
+
+            table.data tr:not(.class-row) td:first-child,
+            table.data td[colspan] {
+                display: block;
+                text-align: left;
+            }
+
+            table.data tr:not(.class-row) td:first-child:not([colspan]) {
+                margin-bottom: 4px;
+                padding-bottom: 8px !important;
+                border-bottom: 1px solid #eef2ef;
+            }
+
+            table.data tr:not(.class-row) td:not(:first-child)::before {
+                flex-shrink: 0;
+                color: var(--muted);
+                font-size: 12px;
+                font-weight: 600;
+            }
+
+            table.data tr:not(.class-row) td:nth-child(2)::before { content: "Status"; }
+            table.data tr:not(.class-row) td:nth-child(3)::before { content: "Score"; }
+            table.data tr:not(.class-row) td:nth-child(4)::before { content: "Graded"; }
+
+            .score-items {
+                text-align: left;
+            }
+        }
     </style>
 </head>
 <body data-page="grades">

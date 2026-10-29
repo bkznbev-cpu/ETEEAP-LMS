@@ -356,14 +356,30 @@
             }
         }
 
+        /* Phones: the arrow stays on the right of the card (it dropped to
+           its own line), and a long file name wraps inside the card. */
         @media (max-width: 700px) {
             .module {
-                grid-template-columns: auto 1fr;
+                grid-template-columns: auto minmax(0, 1fr) auto;
+                gap: 12px;
+                padding: 14px;
+            }
+
+            .module > div:not(.module-actions) {
+                min-width: 0;
             }
 
             .module-actions {
-                grid-column: 1 / -1;
-                justify-content: flex-start;
+                grid-column: auto;
+                align-self: center;
+                justify-content: flex-end;
+            }
+
+            .module-tags .badge {
+                max-width: 100%;
+                white-space: normal;
+                overflow-wrap: anywhere;
+                text-align: left;
             }
         }
     </style>
