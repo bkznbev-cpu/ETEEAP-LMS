@@ -922,3 +922,66 @@
         max-width: 200px;
     }
 }
+
+/* =========================================================
+   PHONES (700px and narrower), extra tidy-ups
+   - No dropdown arrow beside the profile photo in the header.
+   - Search bars: smaller placeholder text so "Search submissions..."
+     and "Search notification..." fit. (Typed text stays 16px so
+     iPhones do not zoom in when the field is tapped.)
+   - Class page: "Announcements" / "Learning Resources" on the left,
+     the Create Announcement / Add Resource button on the right.
+========================================================= */
+@media (max-width: 700px) {
+    .header .profile-chevron {
+        display: none;
+    }
+
+    .main-content .search-wrapper input::placeholder {
+        font-size: 12.5px;
+    }
+
+    .section-header.announcement-header {
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+    .section-header.announcement-header > div:first-child {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .section-header.announcement-header h2 {
+        margin-bottom: 2px;
+        font-size: 16px;
+        line-height: 1.25;
+        white-space: nowrap;
+    }
+
+    .section-header.announcement-header p {
+        font-size: 11px;
+    }
+
+    .section-header.announcement-header .create-announcement-btn {
+        flex: 0 0 auto;
+        margin-left: auto;
+        gap: 6px;
+        padding: 8px 10px;
+        border-radius: 7px;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+
+    /* Class page tabs: "Announcements" fits on one line instead of
+       breaking into "Announceme / nts". */
+    .tabs .tab-btn {
+        padding-left: 1px;
+        padding-right: 1px;
+        font-size: 10px;
+        letter-spacing: -0.2px;
+        overflow-wrap: normal;
+        word-break: normal;
+    }
+}
