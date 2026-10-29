@@ -1983,6 +1983,24 @@ if (account) {
     renderTable();
     refreshIcons();
 
+    // learners.js only loads the list from Laravel on the Learners page
+    // (it needs that page's table). Load it here too, or this page would
+    // show nothing on a browser that never opened the Learners page.
+    // The "siknayan:learners-refreshed" listener above re-renders the table.
+    if (
+        !document.getElementById("learnerTableBody") &&
+        typeof syncLearnersFromApi === "function"
+    ) {
+        syncLearnersFromApi().catch(error => {
+            console.error("Learner accounts API load failed:", error);
+            window.dispatchEvent(
+                new CustomEvent("siknayan:learners-api-error", {
+                    detail: { message: error.message }
+                })
+            );
+        });
+    }
+
 
     /* ---------------- EXCEL LEARNER IMPORT ---------------- */
 
