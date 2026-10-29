@@ -699,3 +699,71 @@
         font-size: 24px;
     }
 }
+
+/* Phones: smaller dashboard cards (no longer forced square), and a
+   header with the logo on the left beside the menu button and the
+   profile photo fully inside the header (name and role hidden). */
+@media (max-width: 640px) {
+    .dashboard-overview-grid {
+        gap: 10px;
+    }
+
+    .dashboard-stat-card {
+        aspect-ratio: auto;
+        justify-content: flex-start;
+        gap: 6px;
+        padding: 10px 12px;
+        border-radius: 12px;
+    }
+
+    .dashboard-stat-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+    }
+
+    .dashboard-stat-icon svg {
+        width: 17px;
+        height: 17px;
+    }
+
+    .dashboard-stat-content > span {
+        font-size: 12.5px;
+    }
+
+    .dashboard-stat-content > strong {
+        font-size: 22px;
+    }
+
+    .dashboard-stat-content > small {
+        font-size: 11px;
+    }
+
+    .dashboard-stat-art {
+        height: 20px;
+    }
+}
+
+@media (max-width: 700px) {
+    .topbar .brand {
+        margin-right: auto;
+    }
+
+    .topbar-right {
+        gap: 18px;
+    }
+
+    .topbar .profile {
+        gap: 0;
+    }
+
+    .topbar .profile-info,
+    .topbar .profile-chevron {
+        display: none;
+    }
+
+    .topbar .profile-avatar {
+        width: 42px;
+        height: 42px;
+    }
+}
