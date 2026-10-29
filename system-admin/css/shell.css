@@ -758,6 +758,48 @@
     object-fit: cover;
 }
 
+/* Pen on the picture to change it (the same as the Learner's). */
+.sa-profile-photo-wrap {
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.sa-photo-edit {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border: 3px solid #ffffff;
+    border-radius: 50%;
+    background: #e2ac2f;
+    color: #3d0a0d;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.sa-photo-edit svg {
+    width: 14px;
+    height: 14px;
+}
+
+.sa-photo-edit:hover {
+    background: #f2cf74;
+    transform: scale(1.08);
+}
+
+.sa-photo-edit:focus-within {
+    outline: 3px solid #f3cd6b;
+    outline-offset: 2px;
+}
+
+.sa-profile-photo-upload[hidden] {
+    display: none;
+}
+
 .sa-profile-cover h2 {
     margin-bottom: 8px;
     font-size: 23px;
@@ -1859,4 +1901,42 @@
 .sa-btn.primary:hover {
     border-color: var(--sa-green-800);
     background: var(--sa-green-800);
+}
+
+/* Dashboard cards on phones: two square cards per row (icon on top,
+   then the label and the number) instead of one wide card each. */
+@media (max-width: 700px) {
+    .dashboard-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .dashboard-card {
+        aspect-ratio: 1 / 1;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: space-between;
+        padding: 16px;
+    }
+
+    .dashboard-card .card-label {
+        display: block;
+        line-height: 1.3;
+        overflow-wrap: anywhere;
+    }
+
+    .dashboard-card .card-value {
+        font-size: 30px;
+    }
+}
+
+@media (max-width: 360px) {
+    .dashboard-card {
+        padding: 13px;
+    }
+
+    .dashboard-card .card-value {
+        font-size: 26px;
+    }
 }

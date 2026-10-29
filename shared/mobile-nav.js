@@ -70,7 +70,62 @@
         });
     }
 
+
+    // Initials in a circle, as a picture (used when there is no photo, or
+    // the photo can't be loaded, instead of an empty ring or a broken image).
+    function initialsAvatar(name) {
+        const letters = String(name || "")
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map(word => word[0].toUpperCase())
+            .join("") || "?";
+        const svg =
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">' +
+            '<rect width="80" height="80" fill="#fbefd2"/>' +
+            '<text x="40" y="40" dy=".35em" text-anchor="middle" ' +
+            'font-family="Arial, sans-serif" font-size="32" font-weight="700" fill="#6f0d0d">' +
+            letters.replace(/[<>&"']/g, "") + '</text></svg>';
+        return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    }
+
+    // A header or sidebar photo that can't be loaded (a file missing on the
+    // server) shows the person's initials instead of a broken image.
+    function nameFor(image) {
+        const alt = String(image.alt || "").replace(/\s*profile (photo|picture)\s*$/i, "").trim();
+        const header = document.querySelector("#topbarAdminName, #headerInstructorName, #headerName, .profile-info strong");
+        const fromHeader = header ? header.textContent.trim() : "";
+        return /avatar|logo|profile|picture/i.test(alt) || !alt ? fromHeader : alt;
+    }
+
+    function fixBrokenAvatar(image) {
+        if (!image || image.dataset.skInitials === "1") return;
+        image.dataset.skInitials = "1";
+        image.src = initialsAvatar(nameFor(image));
+        image.style.visibility = "visible";
+    }
+
+    const AVATARS = "header img.profile-avatar, header #headerAvatar, header .avatar-ring img, .sidebar-avatar, #sidebarAdminAvatar";
+
+    document.addEventListener("error", function (event) {
+        const image = event.target;
+        if (image && image.tagName === "IMG" && image.matches(AVATARS)) fixBrokenAvatar(image);
+    }, true);
+
+    // A new photo (after an upload) may be tried again.
+    document.addEventListener("load", function (event) {
+        const image = event.target;
+        if (image && image.tagName === "IMG" && image.matches(AVATARS) && !String(image.src).startsWith("data:")) {
+            delete image.dataset.skInitials;
+        }
+    }, true);
+
     function start() {
+        document.querySelectorAll(AVATARS).forEach(image => {
+            if (image.complete && image.getAttribute("src") && image.naturalWidth === 0) fixBrokenAvatar(image);
+        });
+
         const header = document.querySelector("header.topbar, header.header");
         if (header) linkLogoToDashboard(header);
 

@@ -1633,16 +1633,6 @@ aspect-ratio: 1 / 1;
 
     <button
         type="button"
-        class="sik-profile-button"
-        id="sikOpenPassword"
-        data-sik-action="password"
-    >
-        <i data-lucide="lock"></i>
-        Change Password
-    </button>
-
-    <button
-        type="button"
         class="sik-profile-button primary"
         id="sikSaveProfile"
         hidden
@@ -2170,7 +2160,6 @@ function setProfileEditMode(editing) {
     $("sikProfileNameInput").hidden = !editing;
 
     $("sikEditProfile").hidden = editing;
-    $("sikOpenPassword").hidden = editing;
     $("sikSaveProfile").hidden = !editing;
     $("sikCancelProfileEdit").hidden = !editing;
 

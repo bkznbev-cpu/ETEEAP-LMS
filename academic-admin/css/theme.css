@@ -664,3 +664,38 @@
     width: 18px;
     height: 18px;
 }
+
+/* Dashboard cards on phones: two square cards per row (icon on top,
+   then the label, number and note) instead of one wide card each. */
+@media (max-width: 640px) {
+    .dashboard-overview-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .dashboard-stat-card {
+        aspect-ratio: 1 / 1;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 14px;
+    }
+
+    .dashboard-stat-content > span,
+    .dashboard-stat-content > small {
+        display: block;
+        line-height: 1.3;
+        overflow-wrap: anywhere;
+    }
+}
+
+@media (max-width: 360px) {
+    .dashboard-stat-card {
+        padding: 12px;
+    }
+
+    .dashboard-stat-content > strong {
+        font-size: 24px;
+    }
+}

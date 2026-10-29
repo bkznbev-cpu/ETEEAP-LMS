@@ -640,7 +640,8 @@
 
                     <!-- PROFILE PHOTO -->
 
-                    <div class="form-group">
+                    <!-- PROFILE PHOTO (create only) -->
+                    <div class="form-group" id="administratorPhotoGroup">
 
                         <label for="administratorPhoto">
 
@@ -727,9 +728,9 @@
                     </div>
                     </div>
 
-                    <!-- STATUS -->
+                    <!-- STATUS (create only; the table has Activate / Deactivate) -->
 
-                    <div class="form-group">
+                    <div class="form-group" id="administratorStatusGroup">
 
                         <label for="administratorStatus">
                             Status
@@ -747,6 +748,18 @@
 
                         </select>
 
+                    </div>
+
+                    <!-- RESET PASSWORD (edit only) -->
+                    <div class="form-group" id="administratorResetGroup" hidden>
+                        <label for="editResetPasswordButton">Password</label>
+                        <button type="button" class="secondary-button" id="editResetPasswordButton">
+                            <i data-lucide="key-round"></i>
+                            Reset Password
+                        </button>
+                        <span class="form-hint">
+                            Gives a new temporary password. They choose their own at their next sign-in.
+                        </span>
                     </div>
 
 

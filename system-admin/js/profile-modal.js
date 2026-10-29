@@ -59,7 +59,15 @@
             <button type="button" class="sa-profile-close" id="saProfileClose" aria-label="Close profile">${ICON.x}</button>
 
             <header class="sa-profile-cover">
-                <div class="sa-profile-photo" id="saProfilePhoto" aria-hidden="true">${ICON.user}</div>
+                <div class="sa-profile-photo-wrap">
+                    <div class="sa-profile-photo" id="saProfilePhoto" aria-hidden="true">${ICON.user}</div>
+                    <label class="sa-photo-edit" title="Change profile picture">
+                        ${ICON.pencil}
+                        <span class="sa-visually-hidden">Change profile picture</span>
+                        <input type="file" id="saPhotoInput" class="sa-visually-hidden"
+                            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                    </label>
+                </div>
                 <div>
                     <h2 id="saProfileName">System Administrator</h2>
                     <p>Mountain Province State University</p>
@@ -67,16 +75,12 @@
                 </div>
             </header>
 
-            <div class="sa-profile-photo-upload">
+            <!-- Shown only after choosing a picture (or for a message) -->
+            <div class="sa-profile-photo-upload" id="saPhotoStrip" hidden>
                 <div class="sa-profile-photo-actions">
-                    <span class="sa-photo-label">Profile Picture</span>
-                    <label class="sa-change-photo">
-                        Change Profile Picture
-                        <input type="file" id="saPhotoInput" class="sa-visually-hidden"
-                            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
-                    </label>
                     <span class="sa-photo-name" id="saPhotoName"></span>
                     <button type="button" class="sa-upload-photo" id="saUploadPhoto" hidden>Upload Photo</button>
+                    <button type="button" class="sa-btn" id="saCancelPhoto" hidden>Cancel</button>
                 </div>
                 <p class="sa-message" id="saPhotoMessage" role="status" aria-live="polite"></p>
             </div>
@@ -144,19 +148,10 @@
                         </div>
                     </form>
 
-                    <div class="sa-security-row">
-                        <div class="sa-security-icon">${ICON.shield}</div>
-                        <div class="sa-security-info">
-                            <h4>Account Status</h4>
-                            <p>System administrator access.</p>
-                        </div>
-                        <span class="sa-profile-status">Active</span>
-                    </div>
                 </section>
 
                 <div class="sa-profile-actions" id="saViewActions">
                     <button type="button" class="sa-profile-button primary" data-sa-action="edit">${ICON.pencil} Edit Profile</button>
-                    <button type="button" class="sa-profile-button" data-sa-action="password">${ICON.lock} Change Password</button>
                 </div>
 
                 <div class="sa-profile-actions" id="saEditActions" hidden>
@@ -413,18 +408,24 @@
         $("saPhotoInput").value = "";
         $("saPhotoName").textContent = "";
         $("saUploadPhoto").hidden = true;
+        $("saCancelPhoto").hidden = true;
+        $("saPhotoStrip").hidden = true;
         message("saPhotoMessage", "");
     }
+
+    $("saCancelPhoto").addEventListener("click", resetPhoto);
 
     $("saPhotoInput").addEventListener("change", event => {
         const file = event.target.files[0];
         resetPhoto();
         if (!file) return;
+        $("saPhotoStrip").hidden = false;
         if (!PHOTO_TYPES.includes(file.type)) return message("saPhotoMessage", "Please choose a JPG, PNG or WEBP image.", "error");
         if (file.size > MAX_PHOTO) return message("saPhotoMessage", "The photo must be 25 MB or smaller.", "error");
         chosenPhoto = file;
         $("saPhotoName").textContent = file.name;
         $("saUploadPhoto").hidden = false;
+        $("saCancelPhoto").hidden = false;
     });
 
     $("saUploadPhoto").addEventListener("click", async () => {
@@ -435,6 +436,7 @@
         try {
             await saveProfile({ name: profile.fullName || "System Administrator", photo: chosenPhoto });
             resetPhoto();
+            $("saPhotoStrip").hidden = false;
             message("saPhotoMessage", "Profile picture updated.", "success");
         } catch (error) {
             message("saPhotoMessage", error.message, "error");
@@ -448,5 +450,5 @@
     window.siknayanSystemAdminProfileOverlay = overlay;
 
     // The old My Profile page opens the pop-up straight away.
-    if (/\/profile\.html$/i.test(window.location.pathname)) open();
+    if (/\/profile(\.html)?$/i.test(window.location.pathname)) open();
 })();

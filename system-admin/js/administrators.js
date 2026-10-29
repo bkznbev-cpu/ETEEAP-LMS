@@ -165,15 +165,12 @@
                         <button type="button" class="table-action" data-action="edit" data-id="${item.id}" aria-label="Edit ${escapeHtml(item.name)}">
                             <i data-lucide="pencil"></i><span>Edit</span>
                         </button>
-                        <button type="button" class="table-action" data-action="reset" data-id="${item.id}" aria-label="Reset password for ${escapeHtml(item.name)}">
-                            <i data-lucide="key-round"></i><span>Reset Password</span>
-                        </button>
                         <button type="button" class="table-action" data-action="toggle" data-id="${item.id}" aria-label="${item.is_active ? "Deactivate" : "Activate"} ${escapeHtml(item.name)}">
                             <i data-lucide="${item.is_active ? "user-round-x" : "user-round-check"}"></i>
                             <span>${item.is_active ? "Deactivate" : "Activate"}</span>
                         </button>
-                        <button type="button" class="table-action delete" data-action="delete" data-id="${item.id}" aria-label="Delete ${escapeHtml(item.name)}">
-                            <i data-lucide="trash-2"></i><span>Delete</span>
+                        <button type="button" class="table-action delete icon-only" data-action="delete" data-id="${item.id}" aria-label="Delete ${escapeHtml(item.name)}" title="Delete">
+                            <i data-lucide="trash-2"></i>
                         </button>
                     </div>
                 </td>
@@ -259,6 +256,15 @@
         if (generatePasswordGroup) generatePasswordGroup.hidden = !creating;
         if (typedPasswordFields) typedPasswordFields.hidden = !creating || generate;
 
+        // Status and photo are set when creating; when editing, the table's
+        // Activate / Deactivate changes the status and Reset Password is here.
+        const photoGroup = document.getElementById("administratorPhotoGroup");
+        const statusGroup = document.getElementById("administratorStatusGroup");
+        const resetGroup = document.getElementById("administratorResetGroup");
+        if (photoGroup) photoGroup.hidden = !creating;
+        if (statusGroup) statusGroup.hidden = !creating;
+        if (resetGroup) resetGroup.hidden = creating;
+
         const typed = creating && !generate;
         passwordInput.required = typed;
         confirmPasswordInput.required = typed;
@@ -285,7 +291,10 @@
         openModal(modalOverlay, schoolIdInput);
     }
 
+    let editingAdministrator = null;
+
     function openEditModal(administrator) {
+        editingAdministrator = administrator;
         form.reset();
         idInput.value = administrator.id;
         const nameParts = String(administrator.name || "").trim().split(/\s+/);
@@ -301,6 +310,7 @@
         syncPasswordMode();
         document.getElementById("administratorModalTitle").textContent = "Edit Academic Administrator";
         document.getElementById("administratorModalDescription").textContent = "Update the account details below. To give a new password, use Reset Password.";
+        window.refreshIcons?.();
         saveButtonText.textContent = "Save Changes";
         renderPhotoPreview(administrator.profile_photo_url, true);
         openModal(modalOverlay, firstNameInput);
@@ -573,6 +583,13 @@
                 openDeleteModal(administrator);
                 break;
         }
+    });
+
+    document.getElementById("editResetPasswordButton")?.addEventListener("click", () => {
+        const administrator = editingAdministrator;
+        if (!administrator || requestInProgress) return;
+        closeEditModal();
+        openResetModal(administrator);
     });
 
     document.getElementById("closeAdministratorModal")?.addEventListener("click", closeEditModal);

@@ -372,19 +372,38 @@ function applySiknayanSystemAdminProfile(
             element.textContent = name;
         });
 
-    // Header and sidebar: show a photo only when one was uploaded (as in
-    // the Academic Admin portal). The My Profile page keeps its default.
+
+    // Initials in a circle, as a picture (used when there is no photo, or
+    // the photo can't be loaded, instead of an empty ring or a broken image).
+    function initialsAvatar(name) {
+        const letters = String(name || "")
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map(word => word[0].toUpperCase())
+            .join("") || "?";
+        const svg =
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">' +
+            '<rect width="80" height="80" fill="#fbefd2"/>' +
+            '<text x="40" y="40" dy=".35em" text-anchor="middle" ' +
+            'font-family="Arial, sans-serif" font-size="32" font-weight="700" fill="#6f0d0d">' +
+            letters.replace(/[<>&"']/g, "") + '</text></svg>';
+        return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    }
+
+    // Header and sidebar: the uploaded photo, or the initials. A photo that
+    // can't be loaded (for example a file missing on the server) also falls
+    // back to the initials, instead of a broken image with its alt text.
     document
         .querySelectorAll(".profile-avatar, .sidebar-avatar")
         .forEach((image) => {
-            if (photo) {
-                image.src = photo;
-                image.style.visibility = "visible";
-            } else {
-                image.removeAttribute("src");
-                image.style.visibility = "hidden";
-            }
-
+            image.onerror = () => {
+                image.onerror = null;
+                image.src = initialsAvatar(name);
+            };
+            image.src = photo || initialsAvatar(name);
+            image.style.visibility = "visible";
             image.alt = `${name} profile photo`;
         });
 
@@ -825,7 +844,7 @@ applySiknayanSystemAdminProfile();
             event.preventDefault();
             event.stopPropagation();
 
-            const onNotificationsPage = /\/notifications\.html$/i.test(
+            const onNotificationsPage = /\/notifications(\.html)?$/i.test(
                 window.location.pathname
             );
 

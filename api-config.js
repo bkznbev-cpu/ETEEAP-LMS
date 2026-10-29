@@ -57,7 +57,7 @@
     let redirecting = false;
 
     function setupRedirect(code) {
-        if (redirecting || /\/setup\.html$/i.test(window.location.pathname)) return;
+        if (redirecting || /\/setup(\.html)?$/i.test(window.location.pathname)) return;
 
         let role = "";
         try {

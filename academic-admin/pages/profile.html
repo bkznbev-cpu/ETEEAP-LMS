@@ -54,6 +54,38 @@
             color: #086642;
         }
 
+        /* Pen on the picture to change it (the same as the Learner's). */
+        .profile-avatar-wrap {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .profile-photo-edit {
+            position: absolute;
+            right: -2px;
+            bottom: -2px;
+            width: 32px;
+            height: 32px;
+            display: grid;
+            place-items: center;
+            padding: 0;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            background: #e2ac2f;
+            color: #3d0a0d;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+        }
+
+        .profile-photo-edit svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .profile-photo-edit:hover {
+            background: #f2cf74;
+        }
+
         .profile-avatar img {
             width: 100%;
             height: 100%;
@@ -514,8 +546,16 @@
 
                 <article class="profile-card">
                     <section class="profile-cover">
-                        <div class="profile-avatar">
-                            <i data-lucide="user-round"></i>
+                        <div class="profile-avatar-wrap">
+                            <div class="profile-avatar">
+                                <i data-lucide="user-round"></i>
+                            </div>
+                            <button type="button" class="profile-photo-edit"
+                                    data-profile-action="photo"
+                                    title="Change profile picture"
+                                    aria-label="Change profile picture">
+                                <i data-lucide="pencil"></i>
+                            </button>
                         </div>
                         <div>
                             <h2 id="profileName"></h2>
@@ -567,16 +607,6 @@
                                 </button>
                             </div>
 
-                            <div class="security-row">
-                                <div class="security-icon">
-                                    <i data-lucide="shield-check"></i>
-                                </div>
-                                <div class="security-info">
-                                    <h4>Account Status</h4>
-                                    <p>Administrator account access.</p>
-                                </div>
-                                <span class="profile-status">Active*</span>
-                            </div>
                         </section>
 
                         <div class="profile-actions">
@@ -584,11 +614,6 @@
                                     data-profile-action="edit">
                                 <i data-lucide="pencil"></i>
                                 Edit Profile
-                            </button>
-                            <button type="button" class="profile-button"
-                                    data-profile-action="password">
-                                <i data-lucide="lock-keyhole"></i>
-                                Change Password
                             </button>
                         </div>
                     </div>

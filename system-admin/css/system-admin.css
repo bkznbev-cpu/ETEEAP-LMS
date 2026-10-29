@@ -4410,3 +4410,62 @@ select:focus-visible {
         width: 370px;
     }
 }
+
+/* Icon-only table button (Delete): a square the height of the others. */
+.table-action.icon-only {
+    width: 36px;
+    padding: 0;
+}
+
+/* Reset Password inside the Edit Academic Administrator window. */
+#administratorResetGroup .secondary-button {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#administratorResetGroup .secondary-button svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Rows the script hides in the Academic Administrator window (photo,
+   status, generated password when editing; Reset Password when creating).
+   .form-group sets display, which otherwise overrides "hidden". */
+#administratorModalOverlay .form-group[hidden],
+#administratorModalOverlay #typedPasswordFields[hidden] {
+    display: none !important;
+}
+
+/* Academic Administrators table: room for all the action buttons
+   (View, Edit, Activate/Deactivate, Delete) instead of cutting off the
+   last ones. On narrower screens the table scrolls sideways in its box. */
+.administrators-table {
+    min-width: 960px;
+}
+
+.administrators-table th:nth-child(1),
+.administrators-table td:nth-child(1) {
+    width: 21%;
+}
+
+.administrators-table th:nth-child(2),
+.administrators-table td:nth-child(2) {
+    width: 12%;
+}
+
+.administrators-table th:nth-child(3),
+.administrators-table td:nth-child(3) {
+    width: 22%;
+}
+
+.administrators-table th:nth-child(4),
+.administrators-table td:nth-child(4) {
+    width: 10%;
+}
+
+.administrators-table th:nth-child(5),
+.administrators-table td:nth-child(5) {
+    width: 35%;
+}

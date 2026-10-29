@@ -131,19 +131,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // The buttons on this page use the profile pop-up (js/shared.js), which
+    // saves to Laravel: Edit Profile, change password, change picture.
     document.querySelectorAll("[data-profile-action]").forEach(button => {
         button.addEventListener("click", () => {
-            if (button.dataset.profileAction === "edit") {
-                alert(
-                    "Edit Profile is not connected yet. A secure Laravel profile-update endpoint is needed to save changes."
-                );
-            }
+            const header = document.getElementById("profileHeaderButton");
+            if (header) header.click();
 
-            if (button.dataset.profileAction === "password") {
-                alert(
-                    "Change Password is not connected yet. A secure Laravel password-update endpoint is needed."
-                );
-            }
+            const action = button.dataset.profileAction;
+            const target =
+                action === "edit" ? document.getElementById("sikEditProfile") :
+                action === "password" ? document.querySelector('.sik-profile-change[data-sik-action="password"]') :
+                action === "photo" ? document.getElementById("sikProfilePhotoInput") :
+                null;
+
+            if (target) target.click();
         });
     });
     console.log("PROFILE REQUEST", new Date().toISOString());

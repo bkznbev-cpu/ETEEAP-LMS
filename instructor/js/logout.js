@@ -15,7 +15,7 @@
     "use strict";
 
     const LOGIN_PAGE = "../index.html";
-    const onLogoutPage = /\/logout\.html$/i.test(window.location.pathname);
+    const onLogoutPage = /\/logout(\.html)?$/i.test(window.location.pathname);
 
     const dialog = document.createElement("div");
     dialog.className = "logout-confirm-overlay";

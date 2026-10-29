@@ -13,7 +13,7 @@
     "use strict";
 
     const API_BASE_URL = window.SIKNAYAN_API_ROOT;
-    const onNotificationsPage = /\/notification\.html$/i.test(window.location.pathname);
+    const onNotificationsPage = /\/notification(\.html)?$/i.test(window.location.pathname);
 
     function getToken() {
         try {
