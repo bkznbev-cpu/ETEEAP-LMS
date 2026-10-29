@@ -114,8 +114,9 @@
                     <h3>Personal Information</h3>
                     <div class="lp-profile-grid">
                         <div class="lp-profile-field">
-                            <span class="label">Full Name</span>
+                            <label class="label" for="lpNameInput">Full Name</label>
                             <p id="lpFullName">—</p>
+                            <input id="lpNameInput" type="text" maxlength="255" autocomplete="name" hidden>
                         </div>
                         <div class="lp-profile-field">
                             <span class="label">Instructor ID</span>
@@ -127,7 +128,7 @@
                         </div>
                     </div>
                     <p class="lp-profile-note" id="lpEditNote" hidden>
-                        To change your email, use “Change Email” under Account &amp; Security. Your name and instructor ID are managed by your administrator.
+                        Correct your full name here. To change your email, use “Change Email” under Account &amp; Security. Your instructor ID is managed by your administrator.
                     </p>
                 </form>
 
@@ -187,9 +188,6 @@
                     <button type="button" class="lp-profile-button primary" data-lp-action="edit">
                         <i class="fa-solid fa-pen" aria-hidden="true"></i> Edit Profile
                     </button>
-                    <button type="button" class="lp-profile-button" data-lp-action="password">
-                        <i class="fa-solid fa-lock" aria-hidden="true"></i> Change Password
-                    </button>
                 </div>
 
                 <div class="lp-profile-actions" id="lpEditActions" hidden>
@@ -204,9 +202,8 @@
         </section>`;
     document.body.appendChild(overlay);
 
-    // The email is changed in Account & Security (verified with a code),
-    // so "Edit Profile" has nothing left to edit here.
-    overlay.querySelectorAll('[data-lp-action="edit"]').forEach(button => { button.hidden = true; });
+    // Edit Profile corrects the full name. The email is changed in Account &
+    // Security (verified with a code), the password with the Password row.
 
     let emailChangeMounted = false;
 
@@ -245,19 +242,55 @@
             .map(part => part.charAt(0).toUpperCase()).join("") || "I";
     }
 
+    /** Initials in a circle, as a picture for the header (no MPSU logo). */
+    function initialsPicture(name) {
+        const svg =
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">' +
+            '<rect width="80" height="80" fill="#e7f4ed"/>' +
+            '<text x="40" y="40" dy=".35em" text-anchor="middle" font-family="Arial, sans-serif" ' +
+            'font-size="32" font-weight="700" fill="#086642">' + escape(initials(name)) + '</text></svg>';
+        return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    }
+
+    // What the header should show: the instructor's photo, or their initials.
+    // Older page scripts still put the MPSU logo back; that is undone.
+    let headerPicture = "";
+
+    function setHeaderPicture(src) {
+        headerPicture = src;
+        const headerPhoto = $("headerAvatar");
+        if (headerPhoto && headerPhoto.tagName === "IMG" && headerPhoto.getAttribute("src") !== src) {
+            headerPhoto.src = src;
+        }
+    }
+
+    (function keepHeaderPicture() {
+        const headerPhoto = $("headerAvatar");
+        if (!headerPhoto || headerPhoto.tagName !== "IMG" || !window.MutationObserver) return;
+        new MutationObserver(() => {
+            const src = headerPhoto.getAttribute("src") || "";
+            if (headerPicture && src !== headerPicture && /(logo\.png|ui-avatars\.com)/i.test(src)) {
+                headerPhoto.src = headerPicture;
+            }
+        }).observe(headerPhoto, { attributes: true, attributeFilter: ["src"] });
+        headerPhoto.addEventListener("error", () => {
+            if (profile) setHeaderPicture(initialsPicture(profile.name));
+        });
+    })();
+
     /** The photo in the header and in the pop-up cover (initials when none). */
     function showPhoto(url, name) {
         const cover = $("lpProfilePhoto");
-        const headerPhoto = $("headerAvatar");
 
         if (url) {
             cover.innerHTML = `<img src="${escape(url)}" alt="">`;
             cover.querySelector("img").addEventListener("error", () => {
                 cover.textContent = initials(name);
             });
-            if (headerPhoto && headerPhoto.tagName === "IMG") headerPhoto.src = url;
+            setHeaderPicture(url);
         } else {
             cover.textContent = initials(name);
+            setHeaderPicture(initialsPicture(name));
         }
     }
 
@@ -327,6 +360,12 @@
         $("lpEditNote").hidden = !editing;
         $("lpViewActions").hidden = editing;
         $("lpEditActions").hidden = !editing;
+        $("lpFullName").hidden = editing;
+        $("lpNameInput").hidden = !editing;
+        if (editing) {
+            $("lpNameInput").value = profile?.name || "";
+            $("lpNameInput").focus();
+        }
     }
 
     /* ---------- Change Password (inline under the Password row) ---------- */
@@ -362,12 +401,19 @@
         event.preventDefault();
         // Contact number is no longer shown; keep whatever is saved.
         const contact = profile?.contact || "";
+        const name = $("lpNameInput").value.trim().replace(/\s+/g, " ");
+
+        if (!name) {
+            message("lpProfileMessage", "Please enter your full name.", "error");
+            $("lpNameInput").focus();
+            return;
+        }
 
 
         $("lpSaveProfile").disabled = true;
         $("lpCancelEdit").disabled = true;
         try {
-            const data = await api("/instructor/profile", { method: "PUT", body: { contact } });
+            const data = await api("/instructor/profile", { method: "PUT", body: { name, contact } });
             fill(data.user);
             setEditing(false);
             message("lpProfileMessage", "Your profile was updated.", "success");

@@ -18,6 +18,104 @@
     document.head.appendChild(script);
 })();
 
+/* =========================================================
+   MESSAGES IN THE PAGE
+   The browser's own alert box shows the site address first
+   ("mediumblue-dragonfly-....hostingersite.com says"). Every message on
+   the Academic Admin pages (for example "Learner account created
+   successfully.") is shown in an LMS-styled window instead, with OK.
+========================================================= */
+(function () {
+    if (window.SiknayanNotice) return;
+
+    const SUCCESS = /\b(success|successfully|created|updated|saved|deleted|removed|reset|added|imported|published|sent|activated|deactivated|changed)\b/i;
+    const PROBLEM = /\b(unable|cannot|can't|could not|failed|error|invalid|please|missing|not |must|denied|expired)\b/i;
+    const queue = [];
+    let box = null;
+
+    function build() {
+        const style = document.createElement("style");
+        style.textContent = `
+            .sik-notice-overlay { position: fixed; inset: 0; z-index: 99999; display: none;
+                align-items: center; justify-content: center; padding: 16px;
+                background: rgba(10, 20, 15, 0.45); }
+            .sik-notice-overlay.open { display: flex; }
+            .sik-notice { width: min(380px, 100%); padding: 24px 22px 18px; border-radius: 16px;
+                background: #ffffff; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28); text-align: center;
+                font-family: inherit; animation: sik-notice-in 0.16s ease-out; }
+            @keyframes sik-notice-in { from { transform: translateY(8px) scale(0.98); opacity: 0; } }
+            .sik-notice-icon { width: 52px; height: 52px; margin: 0 auto 12px; display: grid;
+                place-items: center; border-radius: 50%; background: #e7f4ed; color: #087443; }
+            .sik-notice.problem .sik-notice-icon { background: #fdecec; color: #9b1c22; }
+            .sik-notice-icon svg { width: 26px; height: 26px; }
+            .sik-notice p { margin: 0 0 18px; color: #1f2a24; font-size: 16px; line-height: 1.5;
+                white-space: pre-line; overflow-wrap: anywhere; }
+            .sik-notice button { min-width: 110px; min-height: 44px; padding: 0 22px; border: 0;
+                border-radius: 10px; background: #087443; color: #ffffff; font: inherit;
+                font-size: 15px; font-weight: 600; cursor: pointer; }
+            .sik-notice button:hover { background: #065c36; }
+            .sik-notice button:focus-visible { outline: 3px solid #f3cd6b; outline-offset: 2px; }
+            @media (prefers-reduced-motion: reduce) { .sik-notice { animation: none; } }`;
+        document.head.appendChild(style);
+
+        box = document.createElement("div");
+        box.className = "sik-notice-overlay";
+        box.innerHTML = `
+            <div class="sik-notice" role="alertdialog" aria-modal="true" aria-labelledby="sikNoticeText">
+                <div class="sik-notice-icon" aria-hidden="true"></div>
+                <p id="sikNoticeText"></p>
+                <button type="button" id="sikNoticeOk">OK</button>
+            </div>`;
+        document.body.appendChild(box);
+
+        box.querySelector("#sikNoticeOk").addEventListener("click", next);
+        box.addEventListener("keydown", event => {
+            if (event.key === "Escape" || event.key === "Enter") {
+                event.preventDefault();
+                next();
+            }
+        });
+    }
+
+    const ICON_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+    const ICON_PROBLEM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9.5" stroke-width="2"/></svg>';
+
+    let lastFocus = null;
+
+    function show(text) {
+        if (!box) build();
+        const problem = PROBLEM.test(text) && !SUCCESS.test(text) || /\b(unable|cannot|could not|failed|error)\b/i.test(text);
+        const card = box.querySelector(".sik-notice");
+        card.classList.toggle("problem", problem);
+        box.querySelector(".sik-notice-icon").innerHTML = problem ? ICON_PROBLEM : ICON_OK;
+        box.querySelector("#sikNoticeText").textContent = text;
+        if (!box.classList.contains("open")) lastFocus = document.activeElement;
+        box.classList.add("open");
+        box.querySelector("#sikNoticeOk").focus();
+    }
+
+    function next() {
+        queue.shift();
+        if (queue.length) {
+            show(queue[0]);
+            return;
+        }
+        box.classList.remove("open");
+        if (lastFocus && typeof lastFocus.focus === "function" && document.contains(lastFocus)) lastFocus.focus();
+    }
+
+    function notice(message) {
+        const text = String(message === undefined ? "" : message);
+        queue.push(text);
+        if (queue.length > 1) return;
+        if (document.body) show(text);
+        else document.addEventListener("DOMContentLoaded", () => show(queue[0]), { once: true });
+    }
+
+    window.SiknayanNotice = notice;
+    window.alert = notice;
+})();
+
 /* Phone and tablet menu for every portal (shared/mobile-nav.js). */
 (function () {
     const current = document.currentScript;

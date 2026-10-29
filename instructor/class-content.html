@@ -2385,6 +2385,55 @@
             .tm-module {
                 flex-wrap: wrap;
             }
+
+            /* The title keeps a readable width (it was squeezed to one
+               letter per line next to the buttons); View and Download go
+               on their own row under it. */
+            .tm-module-text {
+                flex: 1 1 160px;
+            }
+
+            .tm-file-actions {
+                flex: 1 1 100%;
+                margin-left: 0;
+            }
+
+            .tm-file-btn {
+                flex: 1 1 0;
+                justify-content: center;
+                height: 40px;
+            }
+
+            /* The four tabs on one row: icon, name and count stacked in
+               four equal columns. */
+            .tabs {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 2px;
+            }
+
+            .tab-btn {
+                flex-direction: column;
+                justify-content: flex-start;
+                gap: 4px;
+                min-width: 0;
+                padding: 9px 2px 8px;
+                font-size: 11.5px;
+                line-height: 1.2;
+                text-align: center;
+                white-space: normal;
+                overflow-wrap: anywhere;
+            }
+
+            .tab-btn i {
+                font-size: 16px;
+            }
+
+            .tab-badge {
+                min-width: 20px;
+                padding: 1px 6px;
+                font-size: 10.5px;
+            }
         }
     </style>
     <!-- Header and sidebar shared by all Instructor pages (load last) -->

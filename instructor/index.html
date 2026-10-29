@@ -1376,9 +1376,48 @@
             }
         }
 
+        /* Phones: two square stat cards per row (icon on top, then the
+           label and number), and the class filter and search on one row. */
         @media (max-width: 640px) {
             .stats-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 12px;
+            }
+
+            .stat-card {
+                aspect-ratio: 1 / 1;
+                min-height: 0;
+                flex-direction: column;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 8px;
+                padding: 14px;
+            }
+
+            .stat-info p {
+                line-height: 1.3;
+                overflow-wrap: anywhere;
+            }
+
+            .records-tools {
+                flex-wrap: nowrap;
+                gap: 8px;
+            }
+
+            .records-tools .class-filter,
+            .records-tools .search-box {
+                flex: 1 1 0;
+                min-width: 0;
+            }
+
+            .records-tools .class-filter select {
+                width: 100%;
+                min-width: 0;
+                text-overflow: ellipsis;
+            }
+
+            .records-tools .search-box input {
+                min-width: 0;
             }
         }
     </style>
