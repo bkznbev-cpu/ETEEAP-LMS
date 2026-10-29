@@ -925,10 +925,6 @@ button.sik-profile-avatar {
     border-radius: 50%;
 }
 
-    box-sizing: border-box;
-padding: 0;
-aspect-ratio: 1 / 1;
-
         .sik-profile-cover h2 {
             margin: 0 0 8px;
             font-size: 23px;
@@ -1593,6 +1589,141 @@ aspect-ratio: 1 / 1;
             }
         }
 
+        /* Phones: tidy profile pop-up. Smaller photo, the X sits in the
+           corner without covering the name, Upload/Cancel side by side,
+           and the email gets its own full-width line. */
+        @media (max-width: 600px) {
+            .sik-profile-close {
+                top: 10px;
+                right: 10px;
+                width: 32px;
+                height: 32px;
+            }
+
+            .sik-profile-close svg {
+                width: 18px;
+                height: 18px;
+            }
+
+            .sik-profile-cover {
+                align-items: center;
+                gap: 14px;
+                padding: 20px 50px 20px 16px;
+            }
+
+            .sik-profile-avatar,
+            button.sik-profile-avatar {
+                width: 72px;
+                height: 72px;
+                min-width: 72px;
+                min-height: 72px;
+                flex-basis: 72px;
+            }
+
+            .sik-photo-edit {
+                width: 28px;
+                height: 28px;
+                right: -4px;
+                bottom: -4px;
+            }
+
+            .sik-photo-edit svg {
+                width: 12px;
+                height: 12px;
+            }
+
+            .sik-profile-cover h2 {
+                margin-bottom: 4px;
+                font-size: 18px;
+                line-height: 1.25;
+                overflow-wrap: normal;
+            }
+
+            .sik-profile-cover p {
+                margin-bottom: 8px;
+                font-size: 13px;
+                line-height: 1.35;
+            }
+
+            .sik-profile-tags .sik-profile-role {
+                padding: 3px 10px;
+                font-size: 12.5px;
+            }
+
+            .sik-profile-role svg {
+                width: 14px;
+                height: 14px;
+            }
+
+            .sik-profile-photo-upload {
+                padding: 12px 16px;
+            }
+
+            .sik-profile-photo-actions {
+                flex-direction: row;
+                align-items: center;
+                justify-content: flex-start;
+                gap: 10px;
+            }
+
+            #sikUploadProfilePhoto,
+            #sikCancelProfilePhoto {
+                flex: 1 1 0;
+                min-width: 0;
+                height: 38px;
+                margin: 0;
+                padding: 0 12px;
+                font-size: 14px;
+            }
+
+            #sikProfilePhotoMessage {
+                text-align: left;
+            }
+
+            .sik-profile-body {
+                padding: 20px 16px;
+            }
+
+            .sik-profile-body h3 {
+                margin-bottom: 14px;
+                font-size: 17px;
+            }
+
+            .sik-profile-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 14px 12px;
+            }
+
+            /* Email on its own line so it never breaks mid-word */
+            .sik-profile-grid > .sik-profile-field:nth-child(3) {
+                grid-column: 1 / -1;
+            }
+
+            .sik-profile-field label {
+                margin-bottom: 4px;
+                font-size: 13px;
+            }
+
+            .sik-profile-field p {
+                font-size: 14.5px;
+                overflow-wrap: break-word;
+            }
+
+            .sik-profile-security {
+                margin-top: 18px;
+                padding-top: 16px;
+            }
+
+            .sik-profile-security-row {
+                gap: 12px;
+            }
+
+            .sik-profile-security-icon {
+                width: 40px;
+                height: 40px;
+            }
+        }
+
     `;
     document.head.appendChild(style);
 
@@ -1771,12 +1902,33 @@ aspect-ratio: 1 / 1;
         });
     }
 
+    // Shown in the header and sidebar when there is no profile photo
+    // (or it fails to load), so the profile button is never blank.
+    const DEFAULT_AVATAR =
+        "data:image/svg+xml," + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">' +
+            '<circle cx="24" cy="24" r="24" fill="#e7f4ed"/>' +
+            '<circle cx="24" cy="19" r="8" fill="none" stroke="#086642" stroke-width="2.6"/>' +
+            '<path d="M11 39c2-7 7-10 13-10s11 3 13 10" fill="none" stroke="#086642" stroke-width="2.6" stroke-linecap="round"/>' +
+            '</svg>'
+        );
+
+    function showDefaultAvatar(img) {
+        delete img.dataset.profilePhotoUrl;
+
+        if (img.tagName !== "IMG") {
+            img.style.visibility = "hidden";
+            return;
+        }
+
+        img.src = DEFAULT_AVATAR;
+        img.alt = "No profile picture";
+        img.style.visibility = "visible";
+    }
+
     function setPageAvatar(img, photoUrl, profileName = "") {
         if (!photoUrl) {
-            img.removeAttribute("src");
-            delete img.dataset.profilePhotoUrl;
-            img.alt = "No profile picture";
-            img.style.visibility = "hidden";
+            showDefaultAvatar(img);
             return;
         }
 
@@ -1800,7 +1952,7 @@ aspect-ratio: 1 / 1;
                 return;
             }
 
-            img.style.visibility = "hidden";
+            showDefaultAvatar(img);
         });
 
         img.addEventListener("load", () => {

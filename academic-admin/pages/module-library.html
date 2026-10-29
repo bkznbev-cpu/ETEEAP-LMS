@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Program Module Library - MPSU ETEEAP LMS</title>
+    <title>Module Library/Program - MPSU ETEEAP LMS</title>
 
     <link rel="stylesheet" href="../css/style.css">
     <!-- MPSU look: header art, sidebar (load after style.css) -->
@@ -544,17 +544,73 @@
                 padding: 18px;
             }
 
+            /* Title on its own line; summary and Add Program below it */
             .module-library-header {
-                flex-direction: column;
-                align-items: stretch;
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                align-items: center;
+                gap: 6px 12px;
+                margin-bottom: 18px;
+            }
+
+            .module-library-title {
+                display: contents;
+            }
+
+            .module-library-title h2 {
+                grid-column: 1 / -1;
+                font-size: 21px;
+                line-height: 1.2;
+            }
+
+            .module-library-title p {
+                margin: 0;
+                font-size: 13px;
             }
 
             .add-program-btn {
-                align-self: flex-start;
+                flex-shrink: 0;
+                padding: 9px 12px;
+                font-size: 13px;
+                gap: 5px;
+            }
+
+            .add-program-btn svg {
+                width: 16px;
+                height: 16px;
             }
 
             .program-grid {
                 grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .program-card {
+                min-height: 0;
+                padding: 14px 14px 44px;
+            }
+
+            .program-icon-badge {
+                width: 40px;
+                height: 40px;
+                border-radius: 10px;
+            }
+
+            .program-icon {
+                width: 20px;
+                height: 20px;
+            }
+
+            .program-card h3 {
+                font-size: 16.5px;
+            }
+
+            .program-card-name {
+                font-size: 12px;
+            }
+
+            .program-card-stats {
+                padding-top: 10px;
             }
 
             .program-modal {
@@ -754,7 +810,7 @@
 
                     <div class="module-library-title">
 
-                        <h2>Program Module Library</h2>
+                        <h2>Module Library/Program</h2>
 
                         <p id="librarySummary">
                             200 modules across 7 programs
