@@ -430,7 +430,7 @@
                         <span class="mcard-icon" aria-hidden="true"><i class="fa-solid fa-cloud-arrow-up"></i></span>
                         <div>
                             <h3>Submit your activity</h3>
-                            <p>One file: PDF, DOC or DOCX, up to 10 MB. You can unsubmit it until your instructor grades it.</p>
+                            <p>One file: PDF, Word, Excel or a photo (JPG, PNG), up to 10 MB. You can unsubmit it until your instructor grades it.</p>
                         </div>
                     </div>
 
@@ -438,9 +438,9 @@
                         <label class="dropzone" id="dropzone">
                             <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
                             <strong>Click to choose a file or drag it here</strong>
-                            <span>PDF, DOC or DOCX · Maximum 10 MB</span>
+                            <span>PDF, Word, Excel or photo · Maximum 10 MB</span>
                             <span class="chosen" id="chosenFile"></span>
-                            <input type="file" id="fileInput" accept=".pdf,.doc,.docx" class="visually-hidden">
+                            <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/jpeg,image/png,image/webp" class="visually-hidden">
                         </label>
 
                         <div class="field" style="margin-top: 16px">
@@ -498,7 +498,7 @@
             const moduleId = params.get("module") || params.get("module_id") || params.get("id");
 
             const MAX_SIZE = 10 * 1024 * 1024;
-            const ALLOWED = ["pdf", "doc", "docx"];
+            const ALLOWED = ["pdf", "doc", "docx", "xls", "xlsx", "jpg", "jpeg", "png", "webp"];
             let chosenFile = null;
             let currentModule = null;
 
@@ -517,6 +517,8 @@
                 const extension = String(name || "").split(".").pop().toLowerCase();
                 if (extension === "pdf") return "fa-solid fa-file-pdf";
                 if (extension === "doc" || extension === "docx") return "fa-solid fa-file-word";
+                if (extension === "xls" || extension === "xlsx") return "fa-solid fa-file-excel";
+                if (["jpg", "jpeg", "png", "webp"].includes(extension)) return "fa-solid fa-file-image";
                 return "fa-solid fa-file-lines";
             }
 
@@ -638,7 +640,7 @@
 
                 const extension = file.name.split(".").pop().toLowerCase();
                 if (!ALLOWED.includes(extension)) {
-                    error.textContent = "Please choose a PDF, DOC or DOCX file.";
+                    error.textContent = "Please choose a PDF, Word, Excel or image (JPG, PNG) file.";
                     error.hidden = false;
                     return;
                 }

@@ -30,7 +30,8 @@ class SubmissionController extends Controller
             'file' => [
                 'required',
                 'file',
-                'mimes:pdf,doc,docx',
+                // PDF, Word, Excel or a photo of the work.
+                'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp',
                 'max:10240'
             ],
 

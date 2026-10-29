@@ -1231,16 +1231,17 @@ public function uploadModuleFile(Request $request): JsonResponse
     }
 
     $request->validate([
-        // Module materials must open in any browser: PDF or an image.
-        // (Save Word/PowerPoint files as PDF before uploading.)
+        // Module materials: PDF, an image, Word or Excel. PDF and images
+        // open in the browser, Word .docx is shown as a page, and the rest
+        // are downloaded (instructor/js/file-viewer.js).
         'file' => [
             'required',
             'file',
             'max:25600',
-            'mimes:pdf,jpg,jpeg,png',
+            'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx',
         ],
     ], [
-        'file.mimes' => 'Upload a PDF or an image (JPG, PNG). Save Word or PowerPoint files as PDF first.',
+        'file.mimes' => 'Upload a PDF, an image (JPG, PNG), a Word file (DOC, DOCX) or an Excel file (XLS, XLSX).',
         'file.max' => 'The file must be 25 MB or smaller.',
     ]);
 

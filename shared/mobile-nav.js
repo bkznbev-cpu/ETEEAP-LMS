@@ -1,5 +1,6 @@
 /* =========================================================
    SIKNAYAN - PHONE AND TABLET MENU (mobile-nav.js + mobile-nav.css)
+   and the header logo link to the dashboard (every screen size).
 
    On screens 900px wide or narrower, each portal's sidebar becomes a
    slide-in menu opened with a menu button in the header. Wider
@@ -38,9 +39,42 @@
         'stroke-width="2.2" stroke-linecap="round" aria-hidden="true" focusable="false">' +
         '<path d="M6 6l12 12M18 6L6 18"/></svg>';
 
+    // The logo and the "MPSU ETEEAP LMS" title in the header open this
+    // portal's dashboard, on every page and every screen size.
+    const DASHBOARDS = ["academic-admin", "system-admin", "instructor"];
+
+    function linkLogoToDashboard(header) {
+        if (!script) return;
+        const portal = DASHBOARDS.find(name =>
+            location.pathname.split("/").includes(name));
+        if (!portal) return;
+        const dashboard = new URL("../" + portal + "/", script.src).href;
+
+        const targets = header.querySelectorAll(".brand, .logo-box, .header-titles");
+        targets.forEach(target => {
+            if (target.closest("a, button")) return;
+            target.classList.add("sk-home-link");
+            target.setAttribute("role", "link");
+            target.setAttribute("tabindex", "0");
+            target.setAttribute("aria-label", "Go to the dashboard");
+            target.title = "Dashboard";
+            target.addEventListener("click", function () {
+                location.href = dashboard;
+            });
+            target.addEventListener("keydown", function (event) {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    location.href = dashboard;
+                }
+            });
+        });
+    }
+
     function start() {
-        const sidebar = document.getElementById("sidebar") || document.querySelector("aside.sidebar");
         const header = document.querySelector("header.topbar, header.header");
+        if (header) linkLogoToDashboard(header);
+
+        const sidebar = document.getElementById("sidebar") || document.querySelector("aside.sidebar");
         if (!sidebar || !header) return;
 
         let button = header.querySelector("#menuToggle");

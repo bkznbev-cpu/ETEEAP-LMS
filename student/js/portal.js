@@ -313,11 +313,13 @@
                         aria-label="Open menu" aria-expanded="false" aria-controls="sidebar">
                         <i class="fa-solid fa-bars" aria-hidden="true"></i>
                     </button>
-                    <img src="../images/logo.png" alt="MPSU logo" class="brand-logo">
-                    <div class="brand-text">
-                        <h1>MPSU ETEEAP LMS</h1>
-                        <p>Mountain Province State University</p>
-                    </div>
+                    <a class="brand-home" href="index.html" title="My Classes" aria-label="MPSU ETEEAP LMS: go to My Classes">
+                        <img src="../images/logo.png" alt="" class="brand-logo">
+                        <div class="brand-text">
+                            <h1>MPSU ETEEAP LMS</h1>
+                            <p>Mountain Province State University</p>
+                        </div>
+                    </a>
                 </div>
 
                 <div class="topbar-right">

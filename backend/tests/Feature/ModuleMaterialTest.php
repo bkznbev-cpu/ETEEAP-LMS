@@ -176,22 +176,23 @@ class ModuleMaterialTest extends TestCase
         $this->actingAs($enrolled)->get($url)->assertOk();
     }
 
-    public function test_only_pdf_and_images_can_be_uploaded(): void
+    public function test_only_pdf_images_word_and_excel_can_be_uploaded(): void
     {
         Storage::fake('local');
         $admin = $this->user('academic_admin', 'ADM-M5');
 
-        foreach (['notes.pdf', 'diagram.png', 'photo.jpg', 'photo.jpeg'] as $name) {
+        foreach (['notes.pdf', 'diagram.png', 'photo.jpg', 'photo.jpeg', 'photo.webp',
+            'notes.docx', 'old-notes.doc', 'sheet.xlsx', 'old-sheet.xls'] as $name) {
             $this->upload($admin, $name);
         }
 
-        foreach (['notes.docx', 'slides.pptx', 'sheet.xlsx', 'archive.zip', 'page.html'] as $name) {
+        foreach (['slides.pptx', 'archive.zip', 'page.html', 'script.php'] as $name) {
             $this->actingAs($admin)
                 ->post('/api/admin/module-files', [
                     'file' => UploadedFile::fake()->createWithContent($name, 'X'),
                 ], ['Accept' => 'application/json'])
                 ->assertStatus(422)
-                ->assertJsonPath('errors.file.0', 'Upload a PDF or an image (JPG, PNG). Save Word or PowerPoint files as PDF first.');
+                ->assertJsonPath('errors.file.0', 'Upload a PDF, an image (JPG, PNG), a Word file (DOC, DOCX) or an Excel file (XLS, XLSX).');
         }
     }
 

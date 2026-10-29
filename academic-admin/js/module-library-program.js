@@ -1398,9 +1398,9 @@
                 file.name || ""
             ).toLowerCase();
 
-        // PDF or an image: every browser can show these.
+        // PDF, an image, Word or Excel (the same list as the server).
         const extensionAllowed =
-            [".pdf", ".jpg", ".jpeg", ".png"]
+            [".pdf", ".jpg", ".jpeg", ".png", ".webp", ".doc", ".docx", ".xls", ".xlsx"]
                 .some(extension => name.endsWith(extension));
 
         const sizeAllowed =
@@ -2027,6 +2027,14 @@ async function openStoredModuleFile(module) {
         }
 
         const blob = await response.blob();
+
+        // Word and Excel can't be shown by the browser itself: the shared
+        // viewer shows .docx as a page and offers a named download for the rest.
+        if (window.SiknayanFileViewer) {
+            await window.SiknayanFileViewer.show(blob, module.fileName || "module-file", fileTab);
+            return;
+        }
+
         const fileUrl = URL.createObjectURL(blob);
 
         fileTab.location.href = fileUrl;

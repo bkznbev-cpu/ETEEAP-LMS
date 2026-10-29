@@ -1815,3 +1815,19 @@ table.data tbody tr:hover {
         display: none;
     }
 }
+
+/* Header logo and title: a link to My Classes (js/portal.js). */
+.brand-home {
+    display: flex;
+    align-items: center;
+    gap: inherit;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+}
+
+.brand-home:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 3px;
+    border-radius: 6px;
+}

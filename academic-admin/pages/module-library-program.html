@@ -1056,7 +1056,7 @@
 
 
                         <div class="file-drop-sub">
-                            PDF or image (JPG, PNG) · Maximum 25 MB
+                            PDF, image, Word or Excel · Maximum 25 MB
                         </div>
 
 
@@ -1069,7 +1069,7 @@
                         <input
                             type="file"
                             id="moduleFileInput"
-                            accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/jpeg,image/png,image/webp"
                         >
 
                     </div>
@@ -1079,7 +1079,7 @@
                         class="form-error"
                         id="moduleFileError"
                     >
-                        Please select a PDF or an image (JPG, PNG) up to 25 MB. Save Word or PowerPoint files as PDF first.
+                        Please select a PDF, an image (JPG, PNG), a Word file (DOC, DOCX) or an Excel file (XLS, XLSX) up to 25 MB.
                     </div>
 
                 </div>
@@ -1185,6 +1185,8 @@
     <script src="../../api-config.js"></script>
     <script src="../js/shared.js"></script>
     <script src="../js/module-library-data.js"></script>
+    <!-- Shows module files: PDF and images, Word as a page, others to download -->
+    <script src="../../instructor/js/file-viewer.js"></script>
     <script src="../js/module-library-program.js"></script>
 
 

@@ -10,6 +10,17 @@
     display: none;
 }
 
+/* Header logo and title: a link to the dashboard (mobile-nav.js). */
+.sk-home-link {
+    cursor: pointer;
+}
+
+.sk-home-link:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 3px;
+    border-radius: 6px;
+}
+
 @media (max-width: 900px) {
 
     /* ---------- Menu button in the header ---------- */

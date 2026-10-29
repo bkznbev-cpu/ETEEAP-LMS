@@ -59,6 +59,25 @@ class LearnerPortalTest extends TestCase
         ], ['Accept' => 'application/json']);
     }
 
+    public function test_learner_can_submit_pdf_word_excel_or_a_photo(): void
+    {
+        $modules = [];
+        foreach (['work.pdf', 'work.docx', 'work.doc', 'sheet.xlsx', 'sheet.xls', 'photo.jpg', 'photo.png'] as $i => $name) {
+            $module = Module::create(['course_id' => $this->class->id, 'title' => "Activity $i", 'is_published' => true, 'module_order' => 10 + $i]);
+            $this->actingAs($this->learner)->post('/api/student/submissions', [
+                'module_id' => $module->id,
+                'file' => UploadedFile::fake()->createWithContent($name, 'content'),
+            ], ['Accept' => 'application/json'])->assertCreated();
+        }
+
+        foreach (['slides.pptx', 'archive.zip', 'page.html'] as $name) {
+            $this->actingAs($this->learner)->post('/api/student/submissions', [
+                'module_id' => $this->module->id,
+                'file' => UploadedFile::fake()->createWithContent($name, 'content'),
+            ], ['Accept' => 'application/json'])->assertStatus(422)->assertJsonValidationErrors('file');
+        }
+    }
+
     public function test_class_list_shows_counts_and_only_the_instructor_name(): void
     {
         $this->submit()->assertCreated();
