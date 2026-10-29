@@ -1,0 +1,38 @@
+/* =========================================================
+   SIKNAYAN - FORM FIELDS ON TOUCH SCREENS (phone-forms.css)
+
+   iPhones zoom the whole page in when you tap a text field whose
+   text is smaller than 16px, and the page stays zoomed. Fields were
+   14-15px on most forms, so on phones and tablets (including a phone
+   in "Desktop site" mode) they use 16px. Desktop with a mouse keeps
+   the original sizes.
+
+   Loaded by mobile-nav.css (Academic Admin, System Admin, Instructor),
+   student/css/portal.css (Learner), and the sign-in, Forgot Password
+   and first sign-in setup pages.
+========================================================= */
+
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="submit"]):not([type="button"]),
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+}
+
+/* Small tap targets on the sign-in and setup pages: the "show password"
+   eye (12-18px) gets an invisible 40px+ touch area, and "Back to Login"
+   some height. They look the same. */
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+    .toggle-password::after,
+    .password-toggle::after {
+        content: "";
+        position: absolute;
+        inset: -12px;
+    }
+
+    .back-login,
+    .back-link {
+        padding-block: 10px;
+    }
+}
