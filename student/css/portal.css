@@ -1756,3 +1756,62 @@ table.data tbody tr:hover {
     width: 18px;
     height: 18px;
 }
+
+
+/* ---------------- HEADER ON TABLETS AND PHONES ----------------
+   The theme above sets the title to 22px for every screen, which
+   undid the smaller phone sizes: on phones "MPSU ETEEAP LMS" ran under
+   the bell and profile icons. These come last so they win. */
+
+@media (max-width: 900px) {
+    .brand {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .brand-text {
+        min-width: 0;
+    }
+
+    .brand-text h1,
+    .brand-text p {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .brand-text h1 {
+        font-size: 17px;
+    }
+
+    .brand-text p {
+        font-size: 12px;
+    }
+
+    .topbar-right {
+        flex: 0 0 auto;
+    }
+}
+
+@media (max-width: 520px) {
+    .topbar {
+        padding: 0 10px;
+    }
+
+    .brand {
+        gap: 8px;
+    }
+
+    .brand-logo {
+        width: 38px;
+        height: 38px;
+    }
+
+    .brand-text h1 {
+        font-size: 14px;
+    }
+
+    .brand-text p {
+        display: none;
+    }
+}

@@ -250,84 +250,258 @@
 
 <body>
     <header class="topbar">
-        <div class="topbar-left">
-            <div>
-                <div class="topbar-title">MPSU ETEEAP LMS</div>
-                <div class="topbar-subtitle">
+
+        <div class="brand">
+
+            <img
+                src="../assets/images/logo.png"
+                alt="MPSU Logo"
+                class="brand-logo"
+            >
+
+            <div class="brand-text">
+
+                <h1>
+                    MPSU ETEEAP LMS
+                </h1>
+
+                <p>
                     Mountain Province State University
-                </div>
+                </p>
+
             </div>
+
         </div>
+
 
         <div class="topbar-right">
-            <a href="notifications.html" aria-label="Notifications">
-                <i data-lucide="bell"></i>
-            </a>
 
-            <button type="button" id="profileHeaderButton"
-                    class="topbar-profile" aria-label="Profile settings">
-                <span class="header-avatar">
-                    <i data-lucide="user-round"></i>
-                </span>
-                <span>
-                    <span id="topbarAdminName"></span>
-                    <small>Academic Administrator</small>
-                </span>
-                <i data-lucide="chevron-down"></i>
+            <button
+                class="icon-button notification-button"
+                type="button"
+                aria-label="Notifications"
+            >
+
+                <i data-lucide="bell"></i>
+
+                <span
+                    class="notification-dot"
+                ></span>
+
             </button>
+
+
+            <div
+    class="profile"
+    id="profileHeaderButton"
+    role="button"
+    tabindex="0"
+    aria-label="Open profile settings"
+>
+    <img
+        alt="Profile picture"
+        class="profile-avatar"
+        style="visibility: hidden"
+    >
+
+    <div class="profile-info">
+        <strong id="topbarAdminName"></strong>
+        <span>Administrator</span>
+    </div>
+
+    <i data-lucide="chevron-down" class="profile-chevron"></i>
+</div>
+
         </div>
+
     </header>
 
-    <div class="dashboard-layout">
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-user">
-                <a href="profile.html" class="sidebar-avatar"
-                   aria-label="Open profile settings">
-                    <i data-lucide="user-round"></i>
-                </a>
-                <a href="profile.html" id="sidebarAdminName"
-                   style="color: inherit; text-decoration: none;">
-                </a>
+
+
+    <!-- =================================
+         APPLICATION LAYOUT
+    ================================== -->
+
+    <div class="app-layout">
+
+
+        <!-- =================================
+             SIDEBAR
+        ================================== -->
+
+        <aside
+            class="sidebar"
+            id="sidebar"
+        >
+
+            <div class="sidebar-top">
+
+                <span class="sidebar-view-text">
+                    View
+                </span>
+
+                <button
+                    class="sidebar-toggle"
+                    id="sidebarToggle"
+                    type="button"
+                    aria-label="Toggle sidebar"
+                >
+
+                    <i data-lucide="panel-left"></i>
+
+                </button>
+
             </div>
+
+
+            <!-- Sidebar Profile -->
+<div
+    class="sidebar-profile"
+    id="sidebarAdminProfile"
+    role="button"
+    tabindex="0"
+    aria-label="Open profile settings"
+>
+    <img
+        alt="Profile picture"
+        class="sidebar-avatar"
+        style="visibility: hidden"
+    >
+
+    <span class="sidebar-profile-name" id="sidebarAdminName">
+    </span>
+</div>
+
 
             <nav class="sidebar-nav">
-                <a href="../index.html" class="nav-item">
+
+
+                <!-- Dashboard -->
+
+                <a
+                    href="../index.html"
+                    class="nav-item"
+                >
+
                     <i data-lucide="layout-dashboard"></i>
-                    <span>Dashboard</span>
+
+                    <span class="nav-label">
+                        Dashboard
+                    </span>
+
                 </a>
-                <a href="learners.html" class="nav-item">
+
+
+                <!-- Learners -->
+
+                <a
+                    href="learners.html"
+                    class="nav-item"
+                >
+
                     <i data-lucide="users"></i>
-                    <span>Learners</span>
+
+                    <span class="nav-label">
+                        Learners
+                    </span>
+
                 </a>
-                <a href="classes.html" class="nav-item">
+
+
+                <!-- Classes -->
+
+                <a
+                    href="classes.html"
+                    class="nav-item"
+                >
+
                     <i data-lucide="book-open"></i>
-                    <span>Classes</span>
+
+                    <span class="nav-label">
+                        Classes
+                    </span>
+
                 </a>
-                <a href="module-library.html" class="nav-item">
-                    <i data-lucide="library"></i>
-                    <span>Module Library</span>
+
+
+                <!-- Module Library -->
+
+                <a
+                    href="module-library.html"
+                    class="nav-item"
+                >
+
+                    <i data-lucide="folder"></i>
+
+                    <span class="nav-label">
+                        Module Library
+                    </span>
+
                 </a>
-                <a href="accounts.html" class="nav-item">
-                    <i data-lucide="user-cog"></i>
-                    <span>Accounts</span>
+
+
+                <!-- Accounts -->
+
+                <a
+                    href="accounts.html"
+                    class="nav-item"
+                >
+
+                    <i data-lucide="circle-user-round"></i>
+
+                    <span class="nav-label">
+                        Accounts
+                    </span>
+
                 </a>
-                <a href="reports.html" class="nav-item">
-                    <i data-lucide="chart-no-axes-column"></i>
-                    <span>Reports</span>
+
+
+                <!-- Reports -->
+
+                <a
+                    href="reports.html"
+                    class="nav-item"
+                >
+
+                    <i data-lucide="pie-chart"></i>
+
+                    <span class="nav-label">
+                        Reports
+                    </span>
+
                 </a>
-                <a href="notifications.html" class="nav-item">
+
+
+                <!-- Notifications -->
+
+                <a
+                    href="notifications.html"
+                    class="nav-item"
+                >
+
                     <i data-lucide="bell"></i>
-                    <span>Notifications</span>
+
+                    <span class="nav-label">
+                        Notifications
+                    </span>
+
                 </a>
+
+
             </nav>
 
-            <div class="sidebar-bottom">
-                <a href="#" class="nav-item logout"
-                   id="academicAdminLogoutBtn">
-                    <i data-lucide="log-out"></i>
-                    <span>Logout</span>
-                </a>
-            </div>
+
+<div class="sidebar-bottom">
+    <a
+        href="#"
+        class="nav-item logout"
+        id="academicAdminLogoutBtn"
+    >
+        <i data-lucide="log-out"></i>
+        <span class="nav-label">Logout</span>
+    </a>
+</div>
+
         </aside>
 
         <main class="main-content">

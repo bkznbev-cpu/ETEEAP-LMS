@@ -182,6 +182,10 @@
         }
 
         .backup-table-wrap {
+            /* relative: the table's hidden screen-reader labels are placed
+               inside this scroll box, not at the far right of the page
+               (which made phones zoom out to fit a 720px-wide page). */
+            position: relative;
             overflow-x: auto;
         }
 

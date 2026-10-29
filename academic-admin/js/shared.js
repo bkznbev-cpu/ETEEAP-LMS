@@ -18,6 +18,15 @@
     document.head.appendChild(script);
 })();
 
+/* Phone and tablet menu for every portal (shared/mobile-nav.js). */
+(function () {
+    const current = document.currentScript;
+    if (!current || window.SiknayanMobileNav) return;
+    const script = document.createElement("script");
+    script.src = new URL("../../shared/mobile-nav.js", current.src).href;
+    document.head.appendChild(script);
+})();
+
 
 
 /* =========================================================

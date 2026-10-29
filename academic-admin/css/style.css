@@ -11036,3 +11036,77 @@ body:has(.instructor-accounts-page) .instructor-accounts-page .learner-accounts-
 .report-type-card.active:hover {
     border-color: #0e7490;
 }
+
+
+/* =========================================================
+   MODULE LIBRARY PROGRAM PAGE ON PHONES (700px and narrower)
+   The Courses list and the modules were side by side, leaving the
+   modules about 150px wide. Here they stack: Courses on top (a short
+   list that scrolls by itself), modules below, and the page scrolls
+   normally instead of being locked to the window height.
+   ========================================================= */
+@media (max-width: 700px) {
+    body:has(.program-library-page) {
+        overflow: auto;
+    }
+
+    .main-content.program-library-main,
+    .main-content:has(.program-library-page) {
+        height: auto !important;
+        min-height: calc(100vh - var(--header-height));
+        overflow: visible !important;
+    }
+
+    .program-library-page {
+        flex-direction: column;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    .program-library-page .course-sidebar {
+        width: 100% !important;
+        min-width: 0 !important;
+        flex: 0 0 auto !important;
+        height: auto !important;
+        border-right: 0;
+        border-bottom: 1px solid #d8d8d8;
+    }
+
+    .program-library-page .course-list-scroll {
+        flex: 0 0 auto;
+        max-height: 220px;
+    }
+
+    .program-library-page .program-library-content {
+        width: auto;
+        height: auto;
+        padding: 20px 16px 32px;
+        overflow: visible;
+    }
+}
+
+
+/* =========================================================
+   ACCOUNT TABLES ON PHONES (700px and narrower)
+   The Learner and Instructor Accounts tables squeezed every column
+   into the screen, breaking emails into pieces. They keep readable
+   columns and scroll sideways inside their card instead.
+   ========================================================= */
+@media (max-width: 700px) {
+    .learner-accounts-table-card,
+    .learner-accounts-table-card .table-wrapper,
+    .learner-accounts-page .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .learner-accounts-table {
+        min-width: 680px;
+    }
+
+    /* Emails and IDs break only at spaces, never mid-word. */
+    .learner-accounts-table td {
+        overflow-wrap: normal;
+        word-break: normal;
+    }
+}
