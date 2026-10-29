@@ -278,6 +278,62 @@
     <link rel="stylesheet" href="CSS/shell.css">
     <!-- Profile pop-up (same as the learner portal) -->
     <link rel="stylesheet" href="CSS/profile-modal.css">
+    <!-- "No notifications" (and other list messages): icon and text
+         centered in the list instead of sitting at the top left. -->
+    <style>
+        .notification-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 220px;
+            padding: 30px 16px;
+            color: #6b7280;
+            text-align: center;
+        }
+
+        .notification-empty i {
+            width: 52px;
+            height: 52px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: #e8f4ed;
+            color: #0b6b3e;
+            font-size: 22px;
+        }
+
+        .notification-empty p {
+            margin: 0;
+            color: #1f2a24;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .notification-empty small {
+            max-width: 280px;
+            font-size: 12px;
+            overflow-wrap: anywhere;
+        }
+
+        @media (max-width: 700px) {
+            .notification-empty {
+                min-height: 200px;
+                padding: 24px 12px;
+            }
+
+            .notification-empty i {
+                width: 46px;
+                height: 46px;
+                font-size: 19px;
+            }
+
+            .notification-empty p {
+                font-size: 13.5px;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -1219,7 +1275,7 @@
                     <i class="fa-regular fa-bell-slash"></i>
 
                     <p>
-                        No notifications found.
+                        No notifications.
                     </p>
 
                 </div>

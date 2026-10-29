@@ -940,6 +940,143 @@
     <link rel="stylesheet" href="../shared/class-cards.css">
     <!-- Profile pop-up (same as the learner portal) -->
     <link rel="stylesheet" href="CSS/profile-modal.css">
+    <!-- Phones: search beside the "My Classes" title, and two smaller
+         class cards per row. Loaded last so it wins over the files above. -->
+    <style>
+        @media (max-width: 700px) {
+            .page-top {
+                flex-wrap: nowrap;
+                align-items: flex-start;
+                gap: 10px;
+                margin-bottom: 14px;
+            }
+
+            .page-top .page-heading-text {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+
+            .page-top .page-title {
+                margin-bottom: 2px;
+                font-size: 22px;
+                line-height: 1.25;
+                white-space: nowrap;
+            }
+
+            .page-top .page-description {
+                font-size: 11.5px;
+                line-height: 1.4;
+            }
+
+            .page-top .controls-row {
+                flex: 0 0 46%;
+                width: auto;
+                max-width: 180px;
+                margin: 0 0 0 auto;
+            }
+
+            .page-top .search-wrapper {
+                width: 100%;
+            }
+
+            .main-content .page-top .search-wrapper {
+                height: 36px;
+                border-radius: 9px;
+            }
+
+            .main-content .page-top .search-wrapper .search-icon-box {
+                padding: 0 6px 0 10px;
+                font-size: 13px;
+            }
+
+            .main-content .page-top .search-wrapper input {
+                height: 34px;
+            }
+
+            .classes-card-container {
+                min-height: 0;
+                padding: 10px;
+            }
+
+            /* Two cards per row */
+            #classesGrid.sk-class-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+            }
+
+            #classesGrid .sk-class-card {
+                border-radius: 12px;
+            }
+
+            #classesGrid .sk-class-banner {
+                min-height: 82px;
+                gap: 6px;
+                padding: 9px 10px 12px;
+            }
+
+            #classesGrid .sk-class-tags {
+                gap: 4px;
+            }
+
+            #classesGrid .sk-class-program,
+            #classesGrid .sk-class-code {
+                padding: 3px 7px;
+                font-size: 9.5px;
+                letter-spacing: 0.2px;
+            }
+
+            #classesGrid .sk-class-go {
+                display: none;
+            }
+
+            #classesGrid .sk-class-title {
+                padding-right: 0;
+                font-size: 13px;
+                line-height: 1.3;
+            }
+
+            /* The round badge is decoration; no room for it here */
+            #classesGrid .sk-class-badge {
+                display: none;
+            }
+
+            #classesGrid .sk-class-body {
+                gap: 6px;
+                padding: 10px 10px 10px;
+            }
+
+            #classesGrid .sk-class-meta {
+                gap: 6px;
+                font-size: 11.5px;
+            }
+
+            #classesGrid .sk-class-meta-icon {
+                width: 22px;
+                height: 22px;
+                border-radius: 6px;
+                font-size: 10px;
+            }
+
+            #classesGrid .sk-class-footer {
+                padding-top: 8px;
+            }
+
+            #classesGrid .sk-class-chips {
+                gap: 4px;
+            }
+
+            #classesGrid .sk-class-chip {
+                gap: 4px;
+                padding: 3px 7px;
+                font-size: 10.5px;
+            }
+
+            /* "No classes" / loading message spans both columns */
+            #classesGrid .empty-state {
+                grid-column: 1 / -1;
+            }
+        }
+    </style>
 </head>
 
 <body>
