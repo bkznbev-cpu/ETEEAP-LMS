@@ -1384,19 +1384,112 @@
                 gap: 12px;
             }
 
+            /* Small cards: icon beside the label and number. */
             .stat-card {
-                aspect-ratio: 1 / 1;
                 min-height: 0;
-                flex-direction: column;
-                align-items: flex-start;
-                justify-content: space-between;
-                gap: 8px;
-                padding: 14px;
+                align-items: center;
+                gap: 10px;
+                padding: 12px;
+            }
+
+            .stat-card::after {
+                height: 26px;
+            }
+
+            .stat-icon {
+                width: 36px;
+                height: 36px;
+                flex: 0 0 36px;
+                font-size: 15px;
+                border-radius: 10px;
+            }
+
+            .stat-info {
+                min-width: 0;
             }
 
             .stat-info p {
-                line-height: 1.3;
+                margin: 0;
+                font-size: 12px;
+                line-height: 1.25;
                 overflow-wrap: anywhere;
+            }
+
+            .stat-info h2 {
+                margin-top: 2px;
+                font-size: 22px;
+                line-height: 1.1;
+            }
+
+            /* Learner Records: one card per learner and class, no sideways
+               scrolling. The column names come from the table heading. */
+            .table-wrapper {
+                overflow-x: visible;
+            }
+
+            .table-wrapper table {
+                min-width: 0;
+            }
+
+            .table-wrapper thead {
+                display: none;
+            }
+
+            .table-wrapper table,
+            .table-wrapper tbody,
+            .table-wrapper tr,
+            .table-wrapper td {
+                display: block;
+                width: 100%;
+            }
+
+            .table-wrapper tbody tr {
+                margin-bottom: 10px;
+                padding: 10px 12px;
+                border: 1px solid #e6ece8;
+                border-radius: 12px;
+                background: #ffffff;
+            }
+
+            .table-wrapper tbody td {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 5px 0;
+                border: 0;
+                text-align: right;
+            }
+
+            .table-wrapper tbody td:first-child {
+                display: block;
+                margin-bottom: 4px;
+                padding-bottom: 8px;
+                border-bottom: 1px solid #eef2ef;
+                text-align: left;
+            }
+
+            .table-wrapper tbody td[colspan] {
+                display: block;
+                text-align: center;
+            }
+
+            .table-wrapper tbody td:not(:first-child):not([colspan])::before {
+                flex-shrink: 0;
+                color: #667085;
+                font-size: 12px;
+                font-weight: 600;
+                text-align: left;
+            }
+
+            .table-wrapper tbody td:nth-child(2):not([colspan])::before { content: "Class"; }
+            .table-wrapper tbody td:nth-child(3)::before { content: "Modules"; }
+            .table-wrapper tbody td:nth-child(4)::before { content: "Progress"; }
+            .table-wrapper tbody td:nth-child(5)::before { content: "Pending"; }
+            .table-wrapper tbody td:nth-child(6)::before { content: "Status"; }
+
+            .table-wrapper tbody td > * {
+                min-width: 0;
             }
 
             .records-tools {

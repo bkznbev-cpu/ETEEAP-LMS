@@ -1955,6 +1955,95 @@ body {
     }
 }
 
+
+/* =========================================================
+   PHONES: one card per submission, no sideways scrolling
+   The learner's name on top, then each detail with its column name,
+   and the action button across the card.
+========================================================= */
+@media (max-width: 640px) {
+    .table-card {
+        overflow-x: visible;
+        border: 0;
+        background: transparent;
+    }
+
+    .submissions-table {
+        min-width: 0;
+    }
+
+    .submissions-table thead {
+        display: none;
+    }
+
+    .submissions-table,
+    .submissions-table tbody {
+        display: block;
+        width: 100%;
+    }
+
+    .submissions-table tbody tr {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 10px;
+        padding: 12px 14px;
+        border: 1px solid #e3e8e5;
+        border-radius: 12px;
+        background: #ffffff;
+    }
+
+    .submissions-table tbody td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 5px 0;
+        border: 0;
+        text-align: right;
+        overflow-wrap: anywhere;
+    }
+
+    .submissions-table tbody td[colspan] {
+        display: block;
+        text-align: center;
+    }
+
+    .submissions-table tbody td:not([colspan])::before {
+        flex-shrink: 0;
+        color: #667085;
+        font-size: 12px;
+        font-weight: 600;
+        text-align: left;
+    }
+
+    .submissions-table tbody td:nth-child(1):not([colspan])::before { content: "Learner ID"; }
+    .submissions-table tbody td:nth-child(3)::before { content: "Class"; }
+    .submissions-table tbody td:nth-child(4)::before { content: "Module"; }
+    .submissions-table tbody td:nth-child(5)::before { content: "Submitted"; }
+    .submissions-table tbody td:nth-child(6)::before { content: "Status"; }
+
+    /* Learner name first, as the card title. */
+    .submissions-table tbody td:nth-child(2) {
+        order: -1;
+        display: block;
+        margin-bottom: 4px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #eef2ef;
+        font-size: 14px;
+        text-align: left;
+    }
+
+    /* The action button across the card. */
+    .submissions-table tbody td:nth-child(7) {
+        display: block;
+        padding-top: 8px;
+    }
+
+    .submissions-table tbody td:nth-child(7) > * {
+        width: 100%;
+        justify-content: center;
+    }
+}
 </style>
 
     <!-- Header and sidebar shared by all Instructor pages (load last) -->

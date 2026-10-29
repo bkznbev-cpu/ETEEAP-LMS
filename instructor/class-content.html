@@ -2434,6 +2434,46 @@
                 padding: 1px 6px;
                 font-size: 10.5px;
             }
+
+            /* Enrolled Learners fits the screen: activity counts may wrap. */
+            .learners-table {
+                table-layout: fixed;
+            }
+
+            .learners-table th,
+            .learners-table td {
+                padding: 11px 10px;
+            }
+
+            .learners-table th:first-child,
+            .learners-table td:first-child {
+                width: 56%;
+            }
+
+            .learners-table th:last-child,
+            .learners-table td:last-child {
+                width: 32px;
+                padding-left: 0;
+                padding-right: 8px;
+            }
+
+            .learner-activity {
+                white-space: normal;
+            }
+
+            .learner-activity .activity-count {
+                display: block;
+                margin: 0 0 4px;
+            }
+
+            .learner-profile-cell {
+                min-width: 0;
+            }
+
+            .learner-name,
+            .learner-id {
+                overflow-wrap: anywhere;
+            }
         }
     </style>
     <!-- Header and sidebar shared by all Instructor pages (load last) -->

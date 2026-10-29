@@ -814,3 +814,111 @@
         height: 33px;
     }
 }
+
+/* =========================================================
+   HEADER LOGO: one thin ring on every Instructor page
+   Below 1100px each page drew a white disc with a 2px white border
+   behind the seal (a thick white ring); the Notifications page had
+   none. Now all pages show the seal with a thin 1px ring.
+========================================================= */
+@media (max-width: 1100px) {
+    .header .logo-box {
+        padding: 0;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.85);
+        border-radius: 50%;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .header .logo-box img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: contain;
+        border: 0;
+        border-radius: 50%;
+    }
+}
+
+/* =========================================================
+   SEARCH BARS ON PHONES (Classes, Submissions, Notifications)
+   A compact 40px box without the small "Search" label; on Submissions
+   and Notifications it sits to the right of the page title.
+========================================================= */
+@media (max-width: 700px) {
+    .main-content .search-wrapper {
+        min-height: 0;
+        height: 40px;
+        padding: 0;
+        align-items: center;
+        border-radius: 10px;
+    }
+
+    .main-content .search-wrapper .search-icon-box {
+        padding: 0 8px 0 12px;
+        border: 0;
+        font-size: 14px;
+    }
+
+    .main-content .search-wrapper .dropdown-label {
+        display: none;
+    }
+
+    .main-content .search-wrapper .dropdown-input-wrapper,
+    .main-content .search-wrapper .input-with-arrow {
+        flex: 1 1 auto;
+        min-width: 0;
+        padding: 0;
+    }
+
+    .main-content .search-wrapper input {
+        width: 100%;
+        min-width: 0;
+        height: 38px;
+        padding: 0 10px 0 0;
+    }
+
+    /* Submissions: title on the left, search on the right. */
+    .submissions-header {
+        flex-wrap: nowrap;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .submissions-header > div:first-child {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .submissions-header .search-container {
+        flex: 0 0 46%;
+        width: auto;
+        max-width: 200px;
+        margin: 4px 0 0 auto;
+        padding: 0;
+    }
+
+    .submissions-header .search-wrapper {
+        width: 100%;
+    }
+
+    /* Notifications: the same. */
+    .notifications-header-wrapper {
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .notifications-header-wrapper .page-title {
+        flex: 1 1 auto;
+        min-width: 0;
+        margin: 0;
+    }
+
+    .notifications-header-wrapper .search-wrapper {
+        flex: 0 0 46%;
+        width: auto;
+        max-width: 200px;
+    }
+}
