@@ -225,6 +225,122 @@
                 text-align: left;
             }
         }
+
+        /* Phones: "All classes" and "All modules" side by side on the
+           same line as "Grades", smaller; tidier grade cards. */
+        @media (max-width: 700px) {
+            .page-header {
+                display: grid;
+                grid-template-columns: auto minmax(0, 1fr);
+                align-items: center;
+                gap: 4px 10px;
+            }
+
+            .page-header > div:first-child {
+                display: contents;
+            }
+
+            .page-header h2 {
+                grid-column: 1;
+                grid-row: 1;
+                margin: 0;
+            }
+
+            .page-header > div:first-child > p {
+                grid-column: 1 / -1;
+                grid-row: 2;
+                margin: 0;
+                font-size: 12.5px;
+            }
+
+            .filters {
+                grid-column: 2;
+                grid-row: 1;
+                flex: none;
+                width: 100%;
+                max-width: none;
+                flex-direction: row;
+                justify-content: flex-end;
+                gap: 6px;
+            }
+
+            .filters .field {
+                flex: 1 1 0;
+                min-width: 0;
+                max-width: 130px;
+            }
+
+            .filters select {
+                min-height: 0;
+                height: 32px;
+                padding: 0 22px 0 8px !important;
+                background-position: right 6px center;
+                border-radius: 8px;
+                font-size: 12px !important;
+                text-overflow: ellipsis;
+            }
+
+            /* Class heading */
+            table.data tr.class-row {
+                align-items: center;
+                padding: 10px 12px;
+            }
+
+            table.data tr.class-row .class-name {
+                font-size: 14px;
+                line-height: 1.3;
+            }
+
+            table.data tr.class-row td.class-average {
+                flex-shrink: 0;
+                font-size: 13px;
+            }
+
+            /* Module cards */
+            table.data tr:not(.class-row) {
+                padding: 10px 12px;
+            }
+
+            table.data tr:not(.class-row) td:first-child .muted {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            table.data tr:not(.class-row) td {
+                min-height: 28px;
+                font-size: 13px;
+            }
+
+            /* Score: label on the left; score, percentage and activity
+               scores stacked on the right. */
+            table.data tr:not(.class-row) td:nth-child(3):not([colspan]) {
+                display: grid;
+                grid-template-columns: auto minmax(0, 1fr);
+                align-items: start;
+                column-gap: 12px;
+                row-gap: 4px;
+            }
+
+            table.data tr:not(.class-row) td:nth-child(3)::before {
+                grid-column: 1;
+                grid-row: 1 / span 3;
+                padding-top: 2px;
+            }
+
+            table.data tr:not(.class-row) td:nth-child(3) > * {
+                grid-column: 2;
+                justify-self: end;
+                margin: 0 !important;
+            }
+
+            table.data tr:not(.class-row) td:nth-child(3) .score-items {
+                padding: 0;
+                list-style: none;
+                text-align: right;
+                font-size: 11.5px;
+            }
+        }
     </style>
 </head>
 <body data-page="grades">
