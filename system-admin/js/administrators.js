@@ -541,9 +541,9 @@
     photoInput?.addEventListener("change", () => {
         const file = photoInput.files[0];
         if (!file) return;
-        if (!["image/jpeg", "image/png"].includes(file.type) || file.size > 2 * 1024 * 1024) {
+        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 25 * 1024 * 1024) {
             photoInput.value = "";
-            setMessage("Choose a JPG or PNG image no larger than 2 MB.", "error");
+            setMessage("Choose a JPG, PNG or WEBP photo of 25 MB or smaller.", "error");
             return;
         }
         removeExistingPhoto = false;

@@ -21,7 +21,7 @@
         : "../shared/email-change.js";
 
     const MIN_PASSWORD = 15;
-    const MAX_PHOTO = 2 * 1024 * 1024;
+    const MAX_PHOTO = 25 * 1024 * 1024; // the server shrinks it
     const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
     const svg = inner =>
@@ -421,7 +421,7 @@
         resetPhoto();
         if (!file) return;
         if (!PHOTO_TYPES.includes(file.type)) return message("saPhotoMessage", "Please choose a JPG, PNG or WEBP image.", "error");
-        if (file.size > MAX_PHOTO) return message("saPhotoMessage", "The image is larger than 2 MB.", "error");
+        if (file.size > MAX_PHOTO) return message("saPhotoMessage", "The photo must be 25 MB or smaller.", "error");
         chosenPhoto = file;
         $("saPhotoName").textContent = file.name;
         $("saUploadPhoto").hidden = false;

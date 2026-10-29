@@ -39,9 +39,9 @@ class SystemAdminProfileController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'photo' => ['nullable', 'image', 'mimes:jpeg,png,webp', 'max:2048'],
+            'photo' => ['nullable', ...\App\Support\ProfilePhoto::RULES],
             'remove_photo' => ['sometimes', 'boolean'],
-        ]);
+        ], \App\Support\ProfilePhoto::messagesFor('photo'));
 
         $oldPhotoPath = $user->profile_photo_path;
         $before = ['name' => $user->name, 'email' => $user->email];
@@ -49,7 +49,7 @@ class SystemAdminProfileController extends Controller
         $user->name = $validated['name'];
 
         if ($request->hasFile('photo')) {
-            $user->profile_photo_path = $request->file('photo')->store('profile-photos', 'public');
+            $user->profile_photo_path = \App\Support\ProfilePhoto::store($request->file('photo'));
         } elseif ($request->boolean('remove_photo')) {
             $user->profile_photo_path = null;
         }

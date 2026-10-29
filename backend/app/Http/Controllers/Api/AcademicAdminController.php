@@ -2292,8 +2292,8 @@ public function uploadProfilePhoto(Request $request): JsonResponse
     }
 
     $request->validate([
-        'photo' => 'required|image|mimes:jpeg,png,webp|max:2048',
-    ]);
+        'photo' => ['required', ...\App\Support\ProfilePhoto::RULES],
+    ], \App\Support\ProfilePhoto::messagesFor('photo'));
 
     $user = $request->user();
 
@@ -2305,7 +2305,7 @@ public function uploadProfilePhoto(Request $request): JsonResponse
 
     $oldPath = $user->profile_photo_path;
 
-    $path = $request->file('photo')->store('profile-photos', 'public');
+    $path = \App\Support\ProfilePhoto::store($request->file('photo'));
 
     $user->profile_photo_path = $path;
     $user->save();

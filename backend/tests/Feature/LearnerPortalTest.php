@@ -215,6 +215,29 @@ class LearnerPortalTest extends TestCase
         ], ['Accept' => 'application/json'])->assertStatus(422);
     }
 
+    public function test_large_profile_photos_are_accepted_and_stored_small(): void
+    {
+        Storage::fake('public');
+
+        // An 8 MB, 3000 x 2000 phone photo (over the old 2 MB limit).
+        $this->actingAs($this->learner)->post('/api/student/profile/photo', [
+            'photo' => UploadedFile::fake()->image('camera.jpg', 3000, 2000)->size(8000),
+        ], ['Accept' => 'application/json'])->assertOk();
+
+        $path = $this->learner->fresh()->profile_photo_path;
+        $this->assertStringEndsWith('.jpg', $path);
+        Storage::disk('public')->assertExists($path);
+        [$width, $height] = getimagesizefromstring(Storage::disk('public')->get($path));
+        $this->assertSame([800, 533], [$width, $height]);
+
+        // Over 25 MB: refused with a clear message.
+        $this->actingAs($this->learner)->post('/api/student/profile/photo', [
+            'photo' => UploadedFile::fake()->image('huge.jpg', 100, 100)->size(26000),
+        ], ['Accept' => 'application/json'])
+            ->assertStatus(422)
+            ->assertJsonPath('errors.photo.0', 'The photo must be 25 MB or smaller.');
+    }
+
     public function test_notifications_list_and_mark_read(): void
     {
         $note = Notification::create(['user_id' => $this->learner->id, 'title' => 'Hi', 'message' => 'x', 'type' => 'announcement', 'is_read' => false]);

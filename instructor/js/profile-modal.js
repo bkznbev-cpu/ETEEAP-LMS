@@ -21,7 +21,7 @@
     const token = sessionStorage.getItem("authToken") || sessionStorage.getItem("token");
     if (!API_ROOT || !token) return;
 
-    const MAX_PHOTO = 2 * 1024 * 1024;
+    const MAX_PHOTO = 25 * 1024 * 1024; // the server shrinks it
     const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
     let profile = null;
     let loading = null;
@@ -438,7 +438,7 @@
             return;
         }
         if (file.size > MAX_PHOTO) {
-            message("lpPhotoMessage", "The image is larger than 2 MB.", "error");
+            message("lpPhotoMessage", "The photo must be 25 MB or smaller.", "error");
             return;
         }
 

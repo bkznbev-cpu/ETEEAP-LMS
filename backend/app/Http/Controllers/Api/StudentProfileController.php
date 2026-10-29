@@ -52,19 +52,19 @@ class StudentProfileController extends Controller
     }
 
     /**
-     * Upload or replace the profile picture (JPG, PNG or WEBP, up to
-     * 2 MB), the same way the Academic Admin's works.
+     * Upload or replace the profile picture (JPG, PNG or WEBP, any size up
+     * to 25 MB; stored shrunk, see App\Support\ProfilePhoto).
      */
     public function uploadPhoto(Request $request): JsonResponse
     {
         $request->validate([
-            'photo' => ['required', 'image', 'mimes:jpeg,png,webp', 'max:2048'],
-        ]);
+            'photo' => ['required', ...\App\Support\ProfilePhoto::RULES],
+        ], \App\Support\ProfilePhoto::messagesFor('photo'));
 
         $learner = $request->user();
         $oldPath = $learner->profile_photo_path;
 
-        $learner->profile_photo_path = $request->file('photo')->store('profile-photos', 'public');
+        $learner->profile_photo_path = \App\Support\ProfilePhoto::store($request->file('photo'));
         $learner->save();
 
         if ($oldPath && str_starts_with($oldPath, 'profile-photos/')) {

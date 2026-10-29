@@ -20,7 +20,7 @@
     if (!Portal) return;
 
     const { api, escape, setUserName } = Portal;
-    const MAX_PHOTO = 2 * 1024 * 1024;
+    const MAX_PHOTO = 25 * 1024 * 1024; // the server shrinks it
     const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
     let profile = null;
     let loading = null;
@@ -151,15 +151,6 @@
                     </form>
                 </section>
 
-                <div class="lp-profile-actions" id="lpViewActions">
-                    <button type="button" class="lp-profile-button primary" data-lp-action="edit">
-                        <i class="fa-solid fa-pen" aria-hidden="true"></i> Edit Profile
-                    </button>
-                    <button type="button" class="lp-profile-button" data-lp-action="password">
-                        <i class="fa-solid fa-lock" aria-hidden="true"></i> Change Password
-                    </button>
-                </div>
-
                 <div class="lp-profile-actions" id="lpEditActions" hidden>
                     <button type="submit" form="lpProfileForm" class="lp-profile-button primary" id="lpSaveProfile">
                         <i class="fa-solid fa-check" aria-hidden="true"></i> Save Changes
@@ -172,9 +163,9 @@
         </section>`;
     document.body.appendChild(overlay);
 
-    // The email is changed in Account & Security (verified with a code),
-    // so "Edit Profile" has nothing left to edit here.
-    overlay.querySelectorAll('[data-lp-action="edit"]').forEach(button => { button.hidden = true; });
+    // There is no "Edit Profile" or big "Change Password" button: the email
+    // is changed in Account & Security (verified with a code) and the
+    // password with "Change" on the Password row.
 
     let emailChangeMounted = false;
 
@@ -298,7 +289,6 @@
 
     function setEditing(editing) {
         $("lpEditNote").hidden = !editing;
-        $("lpViewActions").hidden = editing;
         $("lpEditActions").hidden = !editing;
         compact();
     }
@@ -308,8 +298,6 @@
     function setPasswordOpen(isOpen) {
         $("lpPasswordForm").hidden = !isOpen;
         compact();
-        // Keep the card short: the big buttons hide while the form is open.
-        $("lpViewActions").hidden = isOpen || !$("lpEditActions").hidden;
         overlay.querySelectorAll('[aria-controls="lpPasswordForm"]').forEach(button =>
             button.setAttribute("aria-expanded", String(isOpen)));
         if (!isOpen) $("lpPasswordForm").reset();
@@ -422,7 +410,7 @@
             return;
         }
         if (file.size > MAX_PHOTO) {
-            photoMessage("The image is larger than 2 MB.", "error");
+            photoMessage("The photo must be 25 MB or smaller.", "error");
             return;
         }
 

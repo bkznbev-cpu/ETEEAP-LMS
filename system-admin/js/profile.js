@@ -171,8 +171,8 @@ if (profilePhotoInput && profilePageAvatar) {
             return;
         }
 
-        if (file.size > 2 * 1024 * 1024) {
-            showProfileStatus(profileEditStatus, "Choose an image no larger than 2 MB.", "error");
+        if (file.size > 25 * 1024 * 1024) {
+            showProfileStatus(profileEditStatus, "The photo must be 25 MB or smaller.", "error");
             profilePhotoInput.value = "";
             return;
         }

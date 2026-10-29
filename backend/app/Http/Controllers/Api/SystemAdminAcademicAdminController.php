@@ -52,15 +52,17 @@ class SystemAdminAcademicAdminController extends Controller
             // Leave empty to have the server generate a temporary password.
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'is_active' => ['sometimes', 'boolean'],
-            'profile_photo' => ['nullable', 'image', 'mimes:jpeg,png', 'max:2048'],
-        ]);
+            'profile_photo' => ['nullable', ...\App\Support\ProfilePhoto::RULES],
+        ], \App\Support\ProfilePhoto::messagesFor('profile_photo'));
 
         $generatedPassword = empty($validated['password'])
             ? self::temporaryPassword()
             : null;
         $validated['password'] = $generatedPassword ?? $validated['password'];
 
-        $photoPath = $request->file('profile_photo')?->store('profile-photos', 'public');
+        $photoPath = $request->hasFile('profile_photo')
+            ? \App\Support\ProfilePhoto::store($request->file('profile_photo'))
+            : null;
 
         try {
             $administrator = DB::transaction(function () use (
@@ -182,8 +184,8 @@ class SystemAdminAcademicAdminController extends Controller
             ],
             'is_active' => ['sometimes', 'boolean'],
             'remove_profile_photo' => ['sometimes', 'boolean'],
-            'profile_photo' => ['nullable', 'image', 'mimes:jpeg,png', 'max:2048'],
-        ]);
+            'profile_photo' => ['nullable', ...\App\Support\ProfilePhoto::RULES],
+        ], \App\Support\ProfilePhoto::messagesFor('profile_photo'));
 
         if (
             $administrator->is_active
@@ -194,10 +196,9 @@ class SystemAdminAcademicAdminController extends Controller
             return $this->lastActiveAdministratorResponse();
         }
 
-        $newPhotoPath = $request->file('profile_photo')?->store(
-            'profile-photos',
-            'public'
-        );
+        $newPhotoPath = $request->hasFile('profile_photo')
+            ? \App\Support\ProfilePhoto::store($request->file('profile_photo'))
+            : null;
         $oldPhotoPath = $administrator->profile_photo_path;
 
         try {

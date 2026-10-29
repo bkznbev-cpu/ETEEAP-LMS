@@ -143,8 +143,8 @@ class InstructorProfileController extends Controller
     }
 
     /**
-     * Upload or replace the profile picture (JPG, PNG or WEBP, up to
-     * 2 MB), the same way the learner's works.
+     * Upload or replace the profile picture (JPG, PNG or WEBP, any size up
+     * to 25 MB; stored shrunk, see App\Support\ProfilePhoto).
      */
     public function uploadPhoto(Request $request): JsonResponse
     {
@@ -158,12 +158,12 @@ class InstructorProfileController extends Controller
         }
 
         $request->validate([
-            'photo' => ['required', 'image', 'mimes:jpeg,png,webp', 'max:2048'],
-        ]);
+            'photo' => ['required', ...\App\Support\ProfilePhoto::RULES],
+        ], \App\Support\ProfilePhoto::messagesFor('photo'));
 
         $oldPath = $instructor->profile_photo_path;
 
-        $instructor->profile_photo_path = $request->file('photo')->store('profile-photos', 'public');
+        $instructor->profile_photo_path = \App\Support\ProfilePhoto::store($request->file('photo'));
         $instructor->save();
 
         if ($oldPath && str_starts_with($oldPath, 'profile-photos/')) {

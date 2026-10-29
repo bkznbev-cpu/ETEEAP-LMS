@@ -2550,8 +2550,8 @@ if (form.hidden) {
                 return;
             }
 
-            if (file.size > 2 * 1024 * 1024) {
-                rejectSelectedPhoto("The image must not exceed 2 MB.");
+            if (file.size > 25 * 1024 * 1024) {
+                rejectSelectedPhoto("The photo must be 25 MB or smaller.");
                 return;
             }
 
