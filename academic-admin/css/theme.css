@@ -1199,3 +1199,325 @@
         font-size: 18px;
     }
 }
+
+/* =========================================================
+   PHONE HEADER (600px and narrower): same layout as the
+   Instructor portal. Menu, logo, title with the university name
+   below it, then the bell and a small profile photo on the right.
+   ========================================================= */
+@media (max-width: 600px) {
+    :root {
+        --header-height: 64px;
+    }
+
+    .topbar {
+        height: 64px;
+        min-height: 64px;
+        padding: 0 10px;
+        gap: 8px;
+    }
+
+    .topbar .brand {
+        flex: 1 1 auto;
+        min-width: 0;
+        gap: 7px;
+        margin-right: 0;
+    }
+
+    .topbar .brand-logo {
+        flex: 0 0 auto;
+        width: 38px;
+        height: 38px;
+        border: 1px solid rgba(255, 255, 255, 0.85);
+        border-radius: 50%;
+    }
+
+    .topbar .brand-text {
+        display: block;
+        min-width: 0;
+    }
+
+    .topbar .brand-text h1,
+    .topbar .brand-text p {
+        display: block;
+        margin: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .topbar .brand-text h1 {
+        font-size: 12px;
+        line-height: 1.3;
+        letter-spacing: 0.2px;
+    }
+
+    .topbar .brand-text p {
+        max-width: 155px;
+        margin-top: 3px;
+        font-size: 9px;
+        line-height: 1.25;
+        opacity: 0.9;
+    }
+
+    .topbar-right {
+        flex: 0 0 auto;
+        gap: 3px;
+    }
+
+    /* Bell: no divider line beside it */
+    .topbar-right .icon-button,
+    .topbar-right .notification-button {
+        width: 40px;
+        height: 40px;
+        margin-right: 0;
+    }
+
+    .topbar-right .icon-button::after,
+    .topbar-right .notification-button::after {
+        display: none;
+    }
+
+    .topbar-right .icon-button svg,
+    .topbar-right .notification-button svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .topbar .profile {
+        gap: 0;
+    }
+
+    .topbar .profile-info,
+    .topbar .profile-chevron {
+        display: none;
+    }
+
+    .topbar .profile-avatar {
+        width: 33px;
+        height: 33px;
+        font-size: 12px;
+    }
+}
+
+/* =========================================================
+   PHONES: Learner Accounts buttons in one row
+   Add Learner Account, Import Learners from Excel and Download
+   Credentials sit side by side (icon above the label).
+   ========================================================= */
+@media (max-width: 640px) {
+    .learner-accounts-heading:has(#addLearnerAccountBtn) {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: stretch;
+        gap: 8px;
+        margin-bottom: 18px;
+    }
+
+    .learner-accounts-heading:has(#addLearnerAccountBtn) > div:first-child {
+        grid-column: 1 / -1;
+        margin-bottom: 4px;
+    }
+
+    .learner-accounts-heading > #addLearnerAccountBtn,
+    .learner-accounts-heading > #importLearnersExcelBtn,
+    .learner-accounts-heading > #downloadLearnerCredentialsAgainBtn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        width: 100%;
+        min-width: 0;
+        height: auto;
+        min-height: 56px;
+        margin: 0 !important;
+        padding: 8px 6px;
+        border-radius: 9px;
+        font-size: 11px;
+        line-height: 1.25;
+        text-align: center;
+        white-space: normal;
+    }
+
+    .learner-accounts-heading > #addLearnerAccountBtn svg,
+    .learner-accounts-heading > #importLearnersExcelBtn svg,
+    .learner-accounts-heading > #downloadLearnerCredentialsAgainBtn svg {
+        flex: 0 0 auto;
+        width: 16px;
+        height: 16px;
+    }
+}
+
+/* =========================================================
+   PHONES: Module Library program page side by side
+   Courses list on the left (its own scroll), the modules on the
+   right: breadcrumb, title with Upload Module beside it, search,
+   then each course heading and its module cards.
+   ========================================================= */
+@media (max-width: 700px) {
+    body:has(.program-library-page) {
+        overflow: hidden;
+    }
+
+    .main-content.program-library-main,
+    .main-content:has(.program-library-page) {
+        height: calc(100dvh - var(--header-height)) !important;
+        min-height: 0;
+        overflow: hidden !important;
+    }
+
+    .program-library-page {
+        flex-direction: row;
+        height: 100% !important;
+        overflow: hidden !important;
+    }
+
+    .program-library-page .course-sidebar {
+        width: 30% !important;
+        min-width: 104px !important;
+        max-width: 150px;
+        flex: 0 0 30% !important;
+        height: 100% !important;
+        border-right: 1px solid #d8d8d8;
+        border-bottom: 0;
+    }
+
+    .program-library-page .course-sidebar-header {
+        padding: 14px 10px 8px;
+        font-size: 12px;
+    }
+
+    .program-library-page .course-list-scroll {
+        flex: 1 1 auto;
+        max-height: none;
+    }
+
+    /* "main" in front so these beat the styles the page script adds */
+    main .program-library-page .course-item {
+        min-height: 0;
+        padding: 7px 2px 7px 10px;
+    }
+
+    main .program-library-page .course-select {
+        min-height: 0;
+        padding: 2px 2px 2px 0;
+        font-size: 11.5px;
+        line-height: 1.3;
+        overflow-wrap: break-word;
+        hyphens: auto;
+    }
+
+    main .program-library-page .course-item-code {
+        margin-top: 2px;
+        font-size: 9.5px;
+    }
+
+    main .program-library-page .course-action-button {
+        flex: 0 0 20px;
+        width: 20px;
+        height: 22px;
+    }
+
+    main .program-library-page .course-action-button svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .program-library-page .add-course-button {
+        flex: 0 0 42px;
+        min-height: 42px;
+        padding: 0 10px;
+        font-size: 12px;
+    }
+
+    .program-library-page .program-library-content {
+        width: 0;
+        height: 100%;
+        padding: 14px 10px 28px;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    .program-library-page .program-library-breadcrumb {
+        font-size: 11px;
+    }
+
+    .program-library-page .program-library-heading-row {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .program-library-page .program-library-heading {
+        min-width: 0;
+    }
+
+    .program-library-page .program-library-heading h2 {
+        margin: 0;
+        font-size: 19px;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+    }
+
+    .program-library-page .upload-module-button {
+        flex: 0 0 auto;
+        align-self: center;
+        height: 32px;
+        gap: 4px;
+        padding: 0 9px;
+        border-radius: 7px;
+        font-size: 11.5px;
+        white-space: nowrap;
+    }
+
+    .program-library-page .upload-module-button svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .program-library-page .module-search-wrap {
+        margin-bottom: 14px;
+    }
+
+    .program-library-page .module-search-input {
+        height: 36px;
+        font-size: 13px;
+    }
+
+    .program-library-page .module-course-heading {
+        flex-wrap: wrap;
+        gap: 2px 6px;
+        margin-bottom: 8px;
+    }
+
+    .program-library-page .module-course-title {
+        font-size: 13px;
+    }
+
+    .program-library-page .module-course-code {
+        font-size: 10.5px;
+    }
+
+    .program-library-page .module-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .program-library-page .module-card {
+        gap: 8px;
+        padding: 10px 32px 10px 10px;
+    }
+
+    .program-library-page .module-card-title {
+        font-size: 12.5px;
+    }
+
+    .program-library-page .module-card .module-view-button {
+        height: 26px;
+        font-size: 11px;
+    }
+}

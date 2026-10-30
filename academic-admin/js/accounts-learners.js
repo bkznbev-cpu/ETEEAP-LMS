@@ -1389,9 +1389,9 @@ if (account) {
     );
 }
 
-            // Accounts that were set up are never deleted (deactivate instead).
-            const setUp = Boolean(account?.accountSetUp || learner.accountSetUp);
-            if (!setUp) {
+            // Every account can be deleted, set up or not. The server
+            // still refuses when the learner has submitted work.
+            {
                 actionsCell.appendChild(
                     createActionButton(
                         "Delete",

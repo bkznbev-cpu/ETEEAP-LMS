@@ -1833,3 +1833,103 @@ table.data tbody tr:hover {
     outline-offset: 3px;
     border-radius: 6px;
 }
+
+/* =========================================================
+   PHONE HEADER (600px and narrower): same layout as the
+   Instructor portal. Menu, logo, title with the university name
+   below it, then the bell and a small profile photo on the right.
+   ========================================================= */
+@media (max-width: 600px) {
+    :root {
+        --header-height: 64px;
+    }
+
+    .topbar {
+        height: 64px;
+        min-height: 64px;
+        padding: 0 10px;
+        gap: 8px;
+    }
+
+    .topbar .brand {
+        flex: 1 1 auto;
+        min-width: 0;
+        gap: 7px;
+        margin-right: 0;
+    }
+
+    .topbar .brand-logo {
+        flex: 0 0 auto;
+        width: 38px;
+        height: 38px;
+        border: 1px solid rgba(255, 255, 255, 0.85);
+        border-radius: 50%;
+    }
+
+    .topbar .brand-text {
+        display: block;
+        min-width: 0;
+    }
+
+    .topbar .brand-text h1,
+    .topbar .brand-text p {
+        display: block;
+        margin: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .topbar .brand-text h1 {
+        font-size: 12px;
+        line-height: 1.3;
+        letter-spacing: 0.2px;
+    }
+
+    .topbar .brand-text p {
+        max-width: 155px;
+        margin-top: 3px;
+        font-size: 9px;
+        line-height: 1.25;
+        opacity: 0.9;
+    }
+
+    .topbar-right {
+        flex: 0 0 auto;
+        gap: 3px;
+    }
+
+    /* Bell: no divider line beside it */
+    .topbar-right .icon-button,
+    .topbar-right .notification-button {
+        width: 40px;
+        height: 40px;
+        margin-right: 0;
+    }
+
+    .topbar-right .icon-button::after,
+    .topbar-right .notification-button::after {
+        display: none;
+    }
+
+    .topbar-right .icon-button svg,
+    .topbar-right .notification-button svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .topbar .profile {
+        gap: 0;
+    }
+
+    .topbar .profile-info,
+    .topbar .profile-chevron {
+        display: none;
+    }
+
+    .topbar .profile-avatar {
+        width: 33px;
+        height: 33px;
+        font-size: 12px;
+    }
+}

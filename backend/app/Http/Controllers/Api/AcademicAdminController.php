@@ -441,7 +441,7 @@ $user->save();
                 'contact' => $learner->contact,
                 'password_setup_complete' =>
                     $learner->password_setup_complete,
-                // Set up once (even if reset since): can't be deleted.
+                // Set up once (even if reset since): shown on the accounts page.
                 'account_set_up' => isset($setUpIds[$learner->id]),
                 'is_active' => $learner->is_active,
                 'created_at' => $learner->created_at,
@@ -593,23 +593,6 @@ $learner = User::create([
     }
 
     /**
-     * Accounts that already set their own password are in use, so they
-     * are never deleted, only deactivated. An admin password reset doesn't
-     * undo this: the audit log still shows they set one up before.
-     */
-    private function refuseDeleteAfterSetup(User $user, string $label): ?JsonResponse
-    {
-        if (!isset($this->setUpAccountIds(collect([$user]))[$user->id])) {
-            return null;
-        }
-
-        return response()->json([
-            'success' => false,
-            'message' => "This {$label} has already set up their account, so it cannot be deleted. Deactivate the account instead.",
-        ], 409);
-    }
-
-    /**
      * IDs (as keys) of the given accounts that have set their own password,
      * now or before an admin reset it.
      */
@@ -650,10 +633,6 @@ $learner = User::create([
                 'success' => false,
                 'message' => 'Learner not found.',
             ], 404);
-        }
-
-        if ($response = $this->refuseDeleteAfterSetup($learner, 'learner')) {
-            return $response;
         }
 
         // The database cascades a user delete to their submissions, grades
@@ -703,7 +682,7 @@ $learner = User::create([
                 'created_at',
             ]);
 
-        // Set up once (even if reset since): can't be deleted.
+        // Set up once (even if reset since): shown on the accounts page.
         $setUpIds = $this->setUpAccountIds($instructors);
         $instructors->each(fn (User $instructor) => $instructor->setAttribute(
             'account_set_up',
@@ -868,10 +847,6 @@ $learner = User::create([
                 'success' => false,
                 'message' => 'Instructor not found.',
             ], 404);
-        }
-
-        if ($response = $this->refuseDeleteAfterSetup($instructor, 'instructor')) {
-            return $response;
         }
 
         // Deleting an instructor would erase every grade they gave and leave

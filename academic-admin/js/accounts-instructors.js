@@ -2078,8 +2078,9 @@ let instructorCredentialsExpiryTimer = null;
                     }
 
 
-                    // Accounts that were set up are never deleted (deactivate instead).
-                    if (account.accountSetUp !== true) {
+                    // Every account can be deleted, set up or not. The server
+                    // still refuses when the instructor has classes or grades.
+                    {
 
                         actionsCell.appendChild(
 
