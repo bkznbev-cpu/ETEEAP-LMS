@@ -1076,6 +1076,28 @@
                 grid-column: 1 / -1;
             }
         }
+
+        /* Phones: smaller page description, and the learner and
+           module counts kept side by side on one line. */
+        @media (max-width: 640px) {
+            .page-top .page-description,
+            .page-description {
+                font-size: 10.5px;
+            }
+
+            #classesGrid .sk-class-chips {
+                flex-wrap: nowrap;
+                gap: 4px;
+            }
+
+            #classesGrid .sk-class-chip {
+                flex: 0 1 auto;
+                min-width: 0;
+                padding: 3px 6px;
+                font-size: 10px;
+                white-space: nowrap;
+            }
+        }
     </style>
 </head>
 

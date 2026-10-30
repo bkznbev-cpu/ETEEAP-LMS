@@ -333,6 +333,14 @@
                 font-size: 13.5px;
             }
         }
+
+        /* Phones: "Mark all as read" sits on the right */
+        @media (max-width: 640px) {
+            .controls-row.notif-controls .mark-all-read-btn {
+                margin-left: auto;
+                align-self: flex-end;
+            }
+        }
     </style>
 </head>
 
