@@ -580,37 +580,89 @@
                 height: 16px;
             }
 
+            /* Two program cards per row */
             .program-grid {
-                grid-template-columns: 1fr;
-                gap: 12px;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
             }
 
             .program-card {
                 min-height: 0;
-                padding: 14px 14px 44px;
+                padding: 12px 10px 38px;
+                border-radius: 12px;
+            }
+
+            .program-card-top {
+                gap: 8px;
+                padding-right: 22px;
             }
 
             .program-icon-badge {
-                width: 40px;
-                height: 40px;
-                border-radius: 10px;
+                width: 32px;
+                height: 32px;
+                border-radius: 9px;
             }
 
             .program-icon {
-                width: 20px;
-                height: 20px;
+                width: 16px;
+                height: 16px;
             }
 
             .program-card h3 {
-                font-size: 16.5px;
+                font-size: 14.5px;
             }
 
             .program-card-name {
-                font-size: 12px;
+                margin-top: 6px;
+                font-size: 11px;
+                line-height: 1.35;
+            }
+
+            .program-card-majors {
+                margin-top: 6px;
+                font-size: 10.5px;
             }
 
             .program-card-stats {
-                padding-top: 10px;
+                gap: 4px 10px;
+                padding-top: 8px;
+                font-size: 11px;
+            }
+
+            .program-stat strong {
+                font-size: 13px;
+            }
+
+            .program-stat svg {
+                width: 12px;
+                height: 12px;
+            }
+
+            .program-card-art {
+                height: 30px;
+            }
+
+            .program-card-motif {
+                left: 10px;
+                bottom: 6px;
+                gap: 6px;
+            }
+
+            .program-card-motif svg {
+                width: 14px;
+                height: 14px;
+            }
+
+            .program-delete-btn {
+                top: 6px;
+                right: 6px;
+                width: 28px;
+                height: 28px;
+            }
+
+            .program-delete-btn svg {
+                width: 15px;
+                height: 15px;
             }
 
             .program-modal {
@@ -810,7 +862,7 @@
 
                     <div class="module-library-title">
 
-                        <h2>Module Library/Program</h2>
+                        <h2>Module Library/ Program</h2>
 
                         <p id="librarySummary">
                             200 modules across 7 programs
