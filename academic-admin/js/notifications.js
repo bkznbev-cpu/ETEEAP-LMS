@@ -2925,22 +2925,6 @@
                 </button>
 
 
-                <button
-                    type="button"
-                    class="
-                        notification-preview-action
-                        notification-preview-danger
-                    "
-                    id="previewDeleteButton"
-                >
-
-                    <i
-                        data-lucide="trash-2"
-                    ></i>
-
-                    Delete
-
-                </button>
 
             </div>
 

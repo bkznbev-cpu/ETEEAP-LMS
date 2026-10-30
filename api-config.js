@@ -123,16 +123,25 @@ window.siknayanLogout = async function siknayanLogout(redirectUrl) {
     }
 
     if (token && window.SIKNAYAN_API_ROOT) {
+        // Wait at most 4 seconds for the server, so a slow or unreachable
+        // server never leaves the Logout button stuck.
+        const controller =
+            typeof AbortController === "function" ? new AbortController() : null;
+        const timer = controller ? setTimeout(() => controller.abort(), 4000) : null;
+
         try {
             await fetch(`${window.SIKNAYAN_API_ROOT}/logout`, {
                 method: "POST",
                 headers: {
                     Accept: "application/json",
                     Authorization: `Bearer ${token}`
-                }
+                },
+                signal: controller ? controller.signal : undefined
             });
         } catch (error) {
-            // Offline or server down: still clear local credentials below.
+            // Offline, server down or too slow: still clear local credentials below.
+        } finally {
+            if (timer) clearTimeout(timer);
         }
     }
 
