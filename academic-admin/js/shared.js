@@ -732,11 +732,12 @@ refreshIcons();
         }
     }
 
-    // Listen for the logout button on every page.
-    // The button must have id="academicAdminLogoutBtn".
+    // Listen for the logout button on every page: the one with
+    // id="academicAdminLogoutBtn" or any "Logout" link in the sidebar
+    // (some pages, such as Learner Accounts, have no id on it).
     document.addEventListener("click", function (event) {
         const logoutButton = event.target.closest(
-            "#academicAdminLogoutBtn"
+            "#academicAdminLogoutBtn, .sidebar .nav-item.logout"
         );
 
         if (!logoutButton) return;

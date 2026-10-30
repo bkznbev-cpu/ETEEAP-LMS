@@ -1561,10 +1561,15 @@ if (account) {
         const goingInactive = account.isActive !== false;
 
         const confirmed =
-            window.confirm(
+            await window.SiknayanDialog.confirm(
                 goingInactive
-                    ? `Deactivate the account for ${learnerName}?`
-                    : `Activate the account for ${learnerName}?`
+                    ? `Deactivate the account for ${learnerName}? They will not be able to sign in until it is activated again.`
+                    : `Activate the account for ${learnerName}? They will be able to sign in again.`,
+                {
+                    title: goingInactive ? "Deactivate account" : "Activate account",
+                    confirmText: goingInactive ? "Deactivate" : "Activate",
+                    danger: goingInactive
+                }
             );
 
         if (!confirmed) return;
@@ -1586,6 +1591,12 @@ if (account) {
             account.status = account.isActive ? "active" : "inactive";
             saveAccounts(accounts);
             renderTable();
+
+            alert(
+                account.isActive
+                    ? `The account for ${learnerName} was activated.`
+                    : `The account for ${learnerName} was deactivated.`
+            );
         } catch (error) {
             console.error("Learner account status update failed:", error);
             alert(error.message || "Unable to update the learner account status.");
@@ -1806,7 +1817,7 @@ if (account) {
         closeDeleteAccountModal();
         renderTable();
 
-        window.showAdminToast("Deleted successfully.");
+        alert(`${learner.name || "The learner"} was deleted successfully.`);
     }
 
     /* ---------------- MODAL OUTSIDE CLICK ---------------- */
@@ -2192,9 +2203,13 @@ function setExcelImportStatus(message, isError = false) {
         closeLearnerCredentialDownloadDialogButton?.focus();
     }
     async function saveCredentialFile(blob, suggestedName, mimeType, extension) {
-    const fileName = prompt(
+    const fileName = await window.SiknayanDialog.prompt(
         "Enter a filename for the credentials file:",
-        suggestedName.replace(/\.[^.]+$/, "")
+        {
+            title: "Save credentials",
+            value: suggestedName.replace(/\.[^.]+$/, ""),
+            confirmText: "Save"
+        }
     );
 
     if (fileName === null || !fileName.trim()) return;

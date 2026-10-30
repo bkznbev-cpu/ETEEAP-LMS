@@ -435,8 +435,9 @@
             if (typeof dialog.showModal === "function") {
                 if (!dialog.open) dialog.showModal();
                 cancel.focus();
-            } else if (window.confirm("Are you sure you want to log out?")) {
-                window.siknayanLogout(LOGIN_PAGE);
+            } else {
+                confirmDialog("Are you sure you want to log out?", { title: "Log out", confirmText: "Log out" })
+                    .then(yes => { if (yes) window.siknayanLogout(LOGIN_PAGE); });
             }
         }
 

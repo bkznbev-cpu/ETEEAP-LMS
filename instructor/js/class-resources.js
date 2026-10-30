@@ -276,7 +276,7 @@
         const action = button.dataset.resourceAction;
 
         if (action === "remove") {
-            if (!window.confirm(`Remove "${resource.title}" from this class?`)) return;
+            if (!(await window.SiknayanDialog.confirm(`Remove "${resource.title}" from this class?`, { title: "Remove resource", confirmText: "Remove", danger: true }))) return;
 
             button.disabled = true;
             try {

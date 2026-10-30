@@ -441,8 +441,10 @@
             pendingDeleteAdministrator = null;
             await loadAdministrators();
             setMessage("Academic Admin account deleted.");
+            alert("Academic Admin account deleted successfully.");
         } catch (error) {
             setMessage(error.message || "Unable to delete the account.", "error");
+            alert(error.message || "Unable to delete the account.");
         } finally {
             requestInProgress = false;
             deleteButton.disabled = false;
@@ -526,6 +528,21 @@
 
     async function toggleStatus(administrator) {
         if (requestInProgress) return;
+
+        const deactivating = Boolean(administrator.is_active);
+        const name = administrator.name || "this Academic Admin";
+        const confirmed = await window.SiknayanDialog.confirm(
+            deactivating
+                ? `Deactivate the account for ${name}? They will not be able to sign in until it is activated again.`
+                : `Activate the account for ${name}? They will be able to sign in again.`,
+            {
+                title: deactivating ? "Deactivate account" : "Activate account",
+                confirmText: deactivating ? "Deactivate" : "Activate",
+                danger: deactivating
+            }
+        );
+        if (!confirmed || requestInProgress) return;
+
         requestInProgress = true;
         try {
             await apiRequest(
@@ -537,9 +554,14 @@
                 }
             );
             await loadAdministrators();
-            setMessage(administrator.is_active ? "Academic Admin account deactivated." : "Academic Admin account activated.");
+            const done = deactivating
+                ? `The account for ${name} was deactivated.`
+                : `The account for ${name} was activated.`;
+            setMessage(done);
+            alert(done);
         } catch (error) {
             setMessage(error.message || "Unable to update account status.", "error");
+            alert(error.message || "Unable to update account status.");
         } finally {
             requestInProgress = false;
         }

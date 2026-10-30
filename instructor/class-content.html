@@ -3,6 +3,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- In-page messages and questions instead of the browser's own boxes -->
+    <script src="../shared/dialogs.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Class Content - MPSU ETEEAP LMS</title>
 
@@ -3483,7 +3485,7 @@
         $("announcementList").addEventListener("click", async event => {
             const button = event.target.closest("[data-reply-remove]");
             if (!button) return;
-            if (!window.confirm("Remove this reply? Learners will no longer see it.")) return;
+            if (!(await window.SiknayanDialog.confirm("Remove this reply? Learners will no longer see it.", { title: "Remove reply", confirmText: "Remove", danger: true }))) return;
 
             button.disabled = true;
             try {
@@ -3596,7 +3598,7 @@
 
             if (deleteButton) {
                 const id = deleteButton.dataset.announcementDelete;
-                if (!window.confirm("Delete this announcement? Learners will no longer see it.")) return;
+                if (!(await window.SiknayanDialog.confirm("Delete this announcement? Learners will no longer see it.", { title: "Delete announcement", confirmText: "Delete", danger: true }))) return;
 
                 deleteButton.disabled = true;
                 try {
@@ -4176,10 +4178,10 @@
 
         /* LOGOUT */
         function setupLogout() {
-            $("logoutNav").addEventListener("click", event => {
+            $("logoutNav").addEventListener("click", async event => {
                 event.preventDefault();
 
-                if (!confirm("Are you sure you want to log out?")) return;
+                if (!(await window.SiknayanDialog.confirm("Are you sure you want to log out?", { title: "Log out", confirmText: "Log out" }))) return;
 
                 sessionStorage.removeItem("token");
                 sessionStorage.removeItem("authToken");

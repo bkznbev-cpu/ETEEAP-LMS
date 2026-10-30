@@ -584,12 +584,10 @@ function clearLoginSession() {
 ===================================================== */
 
 if (logoutLink) {
-    logoutLink.addEventListener("click", function (event) {
+    logoutLink.addEventListener("click", async function (event) {
         event.preventDefault();
 
-        const confirmLogout = confirm(
-            "Are you sure you want to logout?"
-        );
+        const confirmLogout = await window.SiknayanDialog.confirm("Are you sure you want to log out?", { title: "Log out", confirmText: "Log out" });
 
         if (!confirmLogout) {
             return;

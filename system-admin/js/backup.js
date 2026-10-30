@@ -187,14 +187,20 @@
 
         const remove = event.target.closest("[data-backup-delete]");
         if (remove) {
-            if (!window.confirm(`Delete the backup ${name}?\n\nOnly do this if you have a copy elsewhere. This can't be undone.`)) return;
+            const confirmed = await window.SiknayanDialog.confirm(
+                `Delete the backup ${name}?\n\nOnly do this if you have a copy elsewhere. This can't be undone.`,
+                { title: "Delete backup", confirmText: "Delete", danger: true }
+            );
+            if (!confirmed) return;
             remove.disabled = true;
             try {
                 await api(`/backups/${encodeURIComponent(name)}`, { method: "DELETE" });
                 message("Backup deleted.", "success");
+                alert(`The backup ${name} was deleted successfully.`);
                 await loadBackups();
             } catch (error) {
                 message(error.message, "error");
+                alert(error.message || "Unable to delete the backup.");
                 remove.disabled = false;
             }
         }

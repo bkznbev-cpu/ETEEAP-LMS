@@ -1620,10 +1620,15 @@ let instructorCredentialsExpiryTimer = null;
 
         const deactivate = account.isActive !== false;
         const instructorName = getInstructorName(account);
-        const confirmed = window.confirm(
+        const confirmed = await window.SiknayanDialog.confirm(
             deactivate
-                ? `Deactivate the account for ${instructorName}?`
-                : `Activate the account for ${instructorName}?`
+                ? `Deactivate the account for ${instructorName}? They will not be able to sign in until it is activated again.`
+                : `Activate the account for ${instructorName}? They will be able to sign in again.`,
+            {
+                title: deactivate ? "Deactivate account" : "Activate account",
+                confirmText: deactivate ? "Deactivate" : "Activate",
+                danger: deactivate
+            }
         );
 
         if (!confirmed) {
@@ -1647,6 +1652,12 @@ let instructorCredentialsExpiryTimer = null;
             account.status = account.isActive ? "active" : "inactive";
             saveAccounts(accounts);
             renderTable();
+
+            alert(
+                account.isActive
+                    ? `The account for ${instructorName} was activated.`
+                    : `The account for ${instructorName} was deactivated.`
+            );
         } catch (error) {
             console.error("Instructor account status update failed:", error);
             alert(error.message || "Unable to update the instructor account status.");
@@ -2676,8 +2687,14 @@ async function confirmDeleteAccount() {
         /*
          * Only synchronize local state
          * after Laravel confirms success.
+         * The delete already worked, so a failed
+         * refresh is not reported as a failed delete.
          */
-        await syncInstructorsFromApi();
+        try {
+            await syncInstructorsFromApi();
+        } catch (syncError) {
+            console.error("Instructor list refresh failed after delete:", syncError);
+        }
 
         /*
          * Keep the local class state
@@ -2726,7 +2743,7 @@ async function confirmDeleteAccount() {
 
         refreshPageIcons();
 
-        window.showAdminToast("Deleted successfully.");
+        alert(`${instructorName} was deleted successfully.`);
 
     } catch (
         error

@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- In-page messages and questions instead of the browser's own boxes -->
+    <script src="../shared/dialogs.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Learner Progress - MPSU ETEEAP LMS</title>
 
@@ -2450,13 +2452,19 @@
             /* Search and the class filter: js/dashboard.js */
 
             /* Logout */
-            $("logoutNav").addEventListener("click", event => {
-                if (!confirm("Are you sure you want to log out?")) {
-                    event.preventDefault();
-                } else {
-                    sessionStorage.removeItem("token");
-                    sessionStorage.removeItem("authToken");
+            $("logoutNav").addEventListener("click", async event => {
+                event.preventDefault();
+
+                if (!(await window.SiknayanDialog.confirm("Are you sure you want to log out?", { title: "Log out", confirmText: "Log out" }))) return;
+
+                if (window.siknayanLogout) {
+                    window.siknayanLogout("../index.html");
+                    return;
                 }
+
+                sessionStorage.removeItem("token");
+                sessionStorage.removeItem("authToken");
+                window.location.href = "../index.html";
             });
 
             /* Image fallbacks */

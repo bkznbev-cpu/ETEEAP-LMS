@@ -58,8 +58,11 @@ DirectoryIndex index.html
         Header set Cache-Control "no-cache"
         Header set Set-Cookie "sk_clean=1; Path=/; SameSite=Lax; Secure"
     </FilesMatch>
+    # Styles and scripts: check for a newer copy on every visit (a quick
+    # "not changed" reply when nothing changed), so phones show a new
+    # deploy straight away instead of up to 10 minutes later.
     <FilesMatch "\.(css|js)$">
-        Header set Cache-Control "public, max-age=600"
+        Header set Cache-Control "no-cache"
     </FilesMatch>
     <FilesMatch "\.(png|jpe?g|gif|webp|svg|ico|woff2?|ttf)$">
         Header set Cache-Control "public, max-age=604800"
