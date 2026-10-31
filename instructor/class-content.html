@@ -1382,6 +1382,30 @@
             font-size: 12px;
         }
 
+        /* Phones: the "Reply to your learners" field comes first,
+           above the list of replies */
+        @media (max-width: 640px) {
+            .ann-replies {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .ann-replies .ann-reply-form {
+                order: -2;
+                margin-top: 0;
+                margin-bottom: 4px;
+            }
+
+            .ann-replies .ann-reply-error {
+                order: -1;
+                margin: 0 0 6px;
+            }
+
+            .ann-replies .ann-replies-title {
+                margin-top: 8px;
+            }
+        }
+
         /* EMPTY STATES */
         .empty-state {
             padding: 35px 20px;

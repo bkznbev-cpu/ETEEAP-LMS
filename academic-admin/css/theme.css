@@ -1874,3 +1874,230 @@
         font-size: 11.5px;
     }
 }
+
+/* =========================================================
+   PHONES: Dashboard panels
+   "View Classes" / "View Accounts" sit on the right of the title.
+   Each active class is a small card: class code and learner count
+   on top, course under it, then the instructor.
+   ========================================================= */
+.class-mobile-extra {
+    display: none;
+}
+
+@media (max-width: 700px) {
+    .dashboard-section-panel .dashboard-panel-header-with-link {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px;
+        text-align: left;
+    }
+
+    .dashboard-section-panel .dashboard-panel-header-with-link > div {
+        flex: 1 1 auto;
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        text-align: left;
+    }
+
+    .dashboard-section-panel .dashboard-panel-header-with-link h3 {
+        font-size: 18px;
+    }
+
+    .dashboard-section-panel .dashboard-panel-header-with-link p {
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    .dashboard-section-panel .dashboard-panel-header-with-link .dashboard-view-link {
+        flex-shrink: 0;
+        align-self: center;
+        margin-left: auto;
+    }
+
+    .dashboard-class-scroll {
+        max-height: 360px;
+    }
+
+    .dashboard-class-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "code learners"
+            "course course"
+            "instructor instructor";
+        align-items: start;
+        gap: 6px 12px;
+        min-height: 0;
+        padding: 12px 16px;
+    }
+
+    .dashboard-class-code {
+        grid-area: code;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .dashboard-class-code strong {
+        font-size: 14px;
+    }
+
+    .dashboard-class-code small {
+        margin: 0;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #e7f5ed;
+        color: #08733d;
+        font-size: 10px;
+        font-weight: 600;
+    }
+
+    .dashboard-class-learners {
+        grid-area: learners;
+        flex-direction: row;
+        align-items: baseline;
+        gap: 4px;
+    }
+
+    .dashboard-class-learners strong {
+        font-size: 15px;
+    }
+
+    .dashboard-class-learners span {
+        font-size: 11px;
+    }
+
+    /* Course name first, course code under it */
+    .dashboard-class-course {
+        grid-area: course;
+    }
+
+    .dashboard-class-course span {
+        order: -1;
+        margin: 0;
+        color: #1d2a23;
+        font-size: 13px;
+        font-weight: 600;
+        white-space: normal;
+    }
+
+    .dashboard-class-course strong {
+        margin-top: 1px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 500;
+    }
+
+    .dashboard-class-instructor {
+        grid-area: instructor;
+    }
+
+    .dashboard-class-instructor span {
+        color: var(--muted);
+        font-size: 11.5px;
+    }
+
+    .dashboard-class-instructor span::before {
+        content: "Instructor: ";
+        font-weight: 600;
+    }
+
+    /* =====================================================
+       Classes table fits the screen: Program shows under the
+       class code and Instructor under the course.
+       ===================================================== */
+    .classes-table-wrapper {
+        overflow-x: hidden;
+    }
+
+    .classes-table {
+        min-width: 0;
+        table-layout: auto;
+    }
+
+    .classes-table th:nth-child(2),
+    .classes-table td:nth-child(2),
+    .classes-table th:nth-child(4),
+    .classes-table td:nth-child(4) {
+        display: none;
+    }
+
+    .classes-table th {
+        padding: 10px 6px;
+        font-size: 9.5px;
+        letter-spacing: 0.02em;
+    }
+
+    .classes-table td {
+        padding: 10px 6px;
+        font-size: 12px;
+        vertical-align: middle;
+    }
+
+    .classes-table th:first-child,
+    .classes-table td:first-child {
+        padding-left: 10px;
+    }
+
+    .classes-table th:last-child,
+    .classes-table td:last-child {
+        padding-right: 10px;
+    }
+
+    .classes-table .class-code {
+        display: block;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+
+    .classes-table .class-mobile-extra {
+        display: block;
+        margin-top: 2px;
+        color: #777;
+        font-size: 10.5px;
+    }
+
+    .classes-table .class-course-name {
+        font-size: 12px;
+        line-height: 1.3;
+    }
+
+    .classes-table td small {
+        font-size: 10.5px;
+    }
+
+    .classes-table .class-mobile-instructor {
+        margin-top: 3px;
+        color: #4b5563;
+    }
+
+    .classes-table td:nth-child(5) {
+        text-align: center;
+    }
+
+    .classes-table .classes-status-badge {
+        min-width: 0;
+        height: 22px;
+        padding: 0 7px;
+        font-size: 10px;
+    }
+
+    .classes-table .class-actions {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .classes-table .class-action-button {
+        width: 28px;
+        height: 28px;
+    }
+
+    .classes-table .class-action-button svg {
+        width: 14px;
+        height: 14px;
+    }
+}

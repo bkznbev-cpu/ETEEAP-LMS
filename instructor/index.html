@@ -1635,6 +1635,63 @@
                 grid-column: 2;
                 height: 8px !important;
             }
+
+            /* Smaller Learner Records cards */
+            .table-wrapper tbody tr {
+                margin-bottom: 8px;
+                padding: 8px 10px 6px;
+                border-radius: 10px;
+            }
+
+            .table-wrapper tbody td:first-child {
+                padding-bottom: 6px;
+            }
+
+            .table-wrapper tbody td:not(:first-child):not([colspan]) {
+                min-height: 26px;
+                padding: 4px 0;
+                font-size: 12px;
+            }
+
+            .table-wrapper tbody td:not(:first-child):not([colspan])::before {
+                min-width: 64px;
+                font-size: 11px;
+            }
+
+            .table-wrapper tbody td.class-cell:not([colspan]),
+            .table-wrapper tbody td.progress-cell:not([colspan]) {
+                grid-template-columns: 64px minmax(0, 1fr);
+            }
+
+            .table-wrapper tbody td.class-cell strong {
+                font-size: 12px;
+            }
+
+            .table-wrapper tbody td.class-cell span {
+                font-size: 10.5px;
+            }
+
+            .table-wrapper tbody td.progress-cell .progress-track {
+                height: 6px !important;
+            }
+
+            .learner-cell {
+                gap: 8px;
+            }
+
+            .learner-photo {
+                width: 30px;
+                height: 30px;
+                font-size: 11px;
+            }
+
+            .learner-name {
+                font-size: 12.5px;
+            }
+
+            .learner-cell .learner-id {
+                font-size: 11px;
+            }
         }
     </style>
 </head>

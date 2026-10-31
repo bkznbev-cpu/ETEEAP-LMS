@@ -342,6 +342,40 @@
                 margin-left: auto;
                 align-self: flex-end;
             }
+
+            /* All, Unread, Submissions and Replies on one line */
+            .filter-tabs {
+                flex-wrap: nowrap;
+                gap: 5px;
+            }
+
+            .filter-tabs .tab-btn {
+                flex: 0 1 auto;
+                min-width: 0;
+                padding: 0.38rem 0.6rem;
+                font-size: 0.74rem;
+                gap: 0.25rem;
+                white-space: nowrap;
+            }
+
+            .filter-tabs .badge-count {
+                padding: 0.05rem 0.35rem;
+                font-size: 0.66rem;
+            }
+
+            /* Slightly smaller notification details */
+            .notif-text {
+                font-size: 0.8rem;
+                line-height: 1.4;
+            }
+
+            .notif-message {
+                font-size: 0.76rem;
+            }
+
+            .notif-time {
+                font-size: 0.68rem;
+            }
         }
     </style>
 </head>

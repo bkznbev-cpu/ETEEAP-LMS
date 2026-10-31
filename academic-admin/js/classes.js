@@ -1802,6 +1802,12 @@ function cloneArray(
                         classItem.classCode
                     )}
                 </strong>
+
+                <small class="class-mobile-extra">
+                    ${escapeHtml(
+                        classItem.program
+                    )}
+                </small>
             </td>
 
             <td>
@@ -1820,6 +1826,13 @@ function cloneArray(
                 <small>
                     ${escapeHtml(
                         classItem.courseCode
+                    )}
+                </small>
+
+                <small class="class-mobile-extra class-mobile-instructor">
+                    ${escapeHtml(
+                        classItem.instructorName ||
+                        "Unassigned"
                     )}
                 </small>
             </td>
