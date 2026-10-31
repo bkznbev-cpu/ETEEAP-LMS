@@ -3038,6 +3038,24 @@
 
                             render();
 
+
+                            // Phones: the details show under the list,
+                            // so scroll down to them.
+                            if (
+                                window.matchMedia(
+                                    "(max-width: 640px)"
+                                ).matches &&
+                                previewContent &&
+                                !previewContent.hidden
+                            ) {
+                                previewContent
+                                    .closest(".notification-preview")
+                                    ?.scrollIntoView({
+                                        behavior: "smooth",
+                                        block: "start"
+                                    });
+                            }
+
                         }
                     );
 

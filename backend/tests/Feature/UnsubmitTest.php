@@ -70,7 +70,8 @@ class UnsubmitTest extends TestCase
         $progress = Progress::where('learner_id', $this->learner->id)->where('module_id', $this->module->id)->first();
         $this->assertSame('not_started', $progress->status);
 
-        $this->assertTrue(Notification::where('user_id', $this->instructor->id)
+        // Unsubmitting does not notify the instructor.
+        $this->assertFalse(Notification::where('user_id', $this->instructor->id)
             ->where('title', 'Submission Withdrawn')->exists());
 
         $this->actingAs($this->learner)->getJson("/api/student/modules/{$this->module->id}")

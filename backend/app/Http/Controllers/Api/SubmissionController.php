@@ -377,22 +377,7 @@ class SubmissionController extends Controller
                     'completed_at' => null,
                 ]);
 
-            $instructor = $module?->course?->instructor;
-
-            if ($instructor) {
-                Notification::create([
-                    'user_id' => $instructor->id,
-                    'title' => 'Submission Withdrawn',
-                    'message' => $learner->name . ' unsubmitted "' . $module->title . '" for ' . $module->course->name . '.',
-                    'type' => 'submission',
-                    'data' => [
-                        'course_id' => $module->course_id,
-                        'learner_id' => $learner->id,
-                        'module_id' => $module->id,
-                    ],
-                    'is_read' => false,
-                ]);
-            }
+            // The instructor is not notified when work is unsubmitted.
 
             return ['status' => 200, 'path' => $path, 'module_id' => $submission->module_id];
         });

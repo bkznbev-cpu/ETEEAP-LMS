@@ -1563,6 +1563,12 @@ function updateLearnerModules(
                         ${escapeHtml(name)}
                     </strong>
 
+                    <small class="learner-mobile-extra">
+                        ${escapeHtml(learner.schoolId || "—")}
+                        &middot;
+                        ${escapeHtml(program)}
+                    </small>
+
                 </td>
 
 
