@@ -2039,6 +2039,17 @@ body {
 }
 
 
+/* Status badge, on the same line as the ID and program. */
+#learnerStatusWrapper {
+
+    display: inline-flex;
+
+    margin-left: 6px;
+
+    text-transform: none;
+}
+
+
 /* =========================================
    PLAN SUMMARY
 ========================================= */
@@ -2981,9 +2992,22 @@ select:focus-visible {
     }
 
 
+    .learner-heading-left {
+
+        width: 100%;
+    }
+
+
     .learner-meta {
 
         flex-wrap: wrap;
+    }
+
+
+    /* Status at the right end of the ID and program line. */
+    #learnerStatusWrapper {
+
+        margin-left: auto;
     }
 
 
