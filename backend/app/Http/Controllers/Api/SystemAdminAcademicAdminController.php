@@ -95,6 +95,9 @@ class SystemAdminAcademicAdminController extends Controller
 
                 AdminNotifier::academicAdminAccountChanged('create', $administrator, $request->user());
 
+                // Same notifications as the other Academic Admins.
+                AdminNotifier::shareAcademicAdminHistory($administrator);
+
                 return $administrator;
             });
         } catch (Throwable $error) {
@@ -256,6 +259,11 @@ class SystemAdminAcademicAdminController extends Controller
                     );
 
                     AdminNotifier::academicAdminAccountChanged($action, $administrator, $request->user());
+
+                    // Catch up on notifications missed while deactivated.
+                    if ($action === 'activate') {
+                        AdminNotifier::shareAcademicAdminHistory($administrator);
+                    }
                 }
 
                 return $administrator;

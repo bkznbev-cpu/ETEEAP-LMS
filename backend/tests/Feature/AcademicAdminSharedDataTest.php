@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\Module;
 use App\Models\Notification;
 use App\Models\User;
+use App\Support\AdminNotifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -143,6 +144,43 @@ class AcademicAdminSharedDataTest extends TestCase
 
         $this->assertSame(1, Notification::where('user_id', $this->adminA->id)->where('type', 'account_locked')->count());
         $this->assertSame(1, Notification::where('user_id', $this->adminB->id)->where('type', 'account_locked')->count());
+    }
+
+    #[Group('FR-NM'), Group('FR-NM-05')]
+    public function test_older_notifications_are_shared_with_every_admin_once(): void
+    {
+        Notification::create([
+            'user_id' => $this->adminA->id, 'title' => 'Activity Graded',
+            'message' => 'Old grade notice', 'type' => 'grade', 'is_read' => false,
+        ]);
+
+        $this->assertSame(1, AdminNotifier::shareAcademicAdminHistory($this->adminB));
+        // Running it again doesn't make duplicates, either way round.
+        $this->assertSame(0, AdminNotifier::shareAcademicAdminHistory($this->adminB));
+        $this->assertSame(0, AdminNotifier::shareAcademicAdminHistory($this->adminA));
+
+        $this->actingAs($this->adminB)->getJson('/api/admin/notifications')->assertOk()
+            ->assertJsonCount(1, 'notifications')
+            ->assertJsonPath('notifications.0.message', 'Old grade notice')
+            ->assertJsonPath('notifications.0.is_read', true);
+    }
+
+    #[Group('FR-NM'), Group('FR-NM-05')]
+    public function test_a_new_admin_gets_the_same_notifications(): void
+    {
+        Notification::create([
+            'user_id' => $this->adminA->id, 'title' => 'Account Locked',
+            'message' => 'Old lock notice', 'type' => 'account_locked', 'is_read' => false,
+        ]);
+        $systemAdmin = User::factory()->create(['role' => 'system_admin', 'school_id' => 'SYS-NEW', 'is_active' => true]);
+
+        $this->actingAs($systemAdmin)->postJson('/api/system-admin/academic-administrators', [
+            'name' => 'Admin C', 'school_id' => 'ADM-C', 'email' => 'admin.c@x.edu', 'password' => 'Temporary-pass-1',
+            'password_confirmation' => 'Temporary-pass-1',
+        ])->assertSuccessful();
+
+        $adminC = User::where('school_id', 'ADM-C')->firstOrFail();
+        $this->assertSame(1, Notification::where('user_id', $adminC->id)->where('message', 'Old lock notice')->count());
     }
 
     #[Group('FR-UM'), Group('FR-UM-04')]

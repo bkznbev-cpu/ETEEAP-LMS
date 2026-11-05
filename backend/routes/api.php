@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\ModuleController;
 use App\Http\Controllers\Api\SubmissionController;
 use App\Http\Controllers\Api\GradeController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\ModuleLibraryController;
 
 use App\Http\Controllers\Api\InstructorController;
 use App\Http\Controllers\Api\InstructorAnnouncementController;
@@ -288,6 +289,9 @@ Route::middleware([
         Route::get('/classes/{id}/modules', [AcademicAdminController::class, 'classModules']);
         Route::post('/classes/{id}/modules', [AcademicAdminController::class, 'storeModule']);
         Route::put('/classes/{id}/modules/sync', [AcademicAdminController::class, 'syncClassModules']);
+        // The whole Module Library, shared by every Academic Admin
+        Route::get('/module-library', [ModuleLibraryController::class, 'show']);
+        Route::put('/module-library', [ModuleLibraryController::class, 'update'])->middleware('throttle:60,1');
         Route::put('/module-library/{libraryKey}/material', [AcademicAdminController::class, 'replaceLibraryMaterial']);
         Route::post('/module-files', [AcademicAdminController::class, 'uploadModuleFile']);
         Route::get('/module-files', [AcademicAdminController::class, 'showModuleFile']);

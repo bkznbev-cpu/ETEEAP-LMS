@@ -19,6 +19,25 @@
         "siknayan_academic_admin_learners";
 
 
+    /* The database holds the real Module Library, shared by every
+       Academic Admin. localStorage is a fast copy the pages read from.
+       REVISION_KEY: the database version this copy matches (missing =
+       this browser has never been synced). PENDING_KEY: a change made
+       here that hasn't reached the database yet. */
+    const REVISION_KEY =
+        STORAGE_KEY + "_revision";
+
+    const PENDING_KEY =
+        STORAGE_KEY + "_pending";
+
+    const RELOAD_GUARD_KEY =
+        STORAGE_KEY + "_reloaded_at";
+
+    let initialSync = null;
+    let pushing = false;
+    let pushAgain = false;
+
+
     /* =====================================================
        PROGRAM SEEDS
        -----------------------------------------------------
@@ -1131,6 +1150,10 @@
             "v3";
 
 
+        const before =
+            readLocalState();
+
+
         localStorage.setItem(
 
             STORAGE_KEY,
@@ -1140,6 +1163,26 @@
             )
 
         );
+
+
+        // "assigned" counts are worked out on each computer from its own
+        // data, so a save that only updates them stays on this computer.
+        if (
+            before &&
+            libraryContent(before) ===
+                libraryContent(state)
+        ) {
+            return;
+        }
+
+
+        // Send the change to the database (shared by every Academic Admin).
+        storageSet(
+            PENDING_KEY,
+            "1"
+        );
+
+        queuePush();
 
     }
 
@@ -1748,6 +1791,371 @@
 
 
     /* =====================================================
+       DATABASE SYNC
+    ===================================================== */
+
+    function storageGet(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function storageSet(key, value) {
+        try {
+            localStorage.setItem(key, value);
+        } catch (error) {
+            // Storage full or blocked: the database still has the change.
+        }
+    }
+
+    function storageRemove(key) {
+        try {
+            localStorage.removeItem(key);
+        } catch (error) {
+            // Nothing to do.
+        }
+    }
+
+    function apiToken() {
+        return (
+            sessionStorage.getItem("authToken") ||
+            window.SIKNAYAN_API_TOKEN ||
+            localStorage.getItem("siknayan_api_token") ||
+            ""
+        );
+    }
+
+    function localRevision() {
+        const value = storageGet(REVISION_KEY);
+
+        if (value === null) {
+            return null;
+        }
+
+        const number = parseInt(value, 10);
+
+        return Number.isFinite(number) ? number : null;
+    }
+
+    function readLocalState() {
+        try {
+            return JSON.parse(storageGet(STORAGE_KEY) || "null");
+        } catch (error) {
+            return null;
+        }
+    }
+
+    // The library without the per-computer "assigned" counts.
+    function libraryContent(state) {
+        return JSON.stringify(
+            state,
+            (key, value) =>
+                key === "assigned"
+                    ? undefined
+                    : value
+        );
+    }
+
+    async function libraryRequest(method, body) {
+        const response = await fetch(
+            `${window.SIKNAYAN_API_ROOT}/admin/module-library`,
+            {
+                method,
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${apiToken()}`
+                },
+                body: body ? JSON.stringify(body) : undefined
+            }
+        );
+
+        const payload = await response.json().catch(() => null);
+
+        return {
+            ok: response.ok,
+            status: response.status,
+            payload
+        };
+    }
+
+    function parseLibrary(text) {
+        try {
+            const library = JSON.parse(text);
+            return library && typeof library === "object" ? library : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    /* Puts the database's library in this browser's copy. Returns true
+       when that changed what the page shows. */
+    function applyServerLibrary(library, revision) {
+        const before = readLocalState();
+
+        storageSet(STORAGE_KEY, JSON.stringify(library));
+        storageSet(REVISION_KEY, String(revision));
+        storageRemove(PENDING_KEY);
+
+        // Tidy it the same way every page does.
+        const after = load();
+
+        return !before || libraryContent(before) !== libraryContent(after);
+    }
+
+    /* Shows the database's library: pages read it when they start, so
+       reload once (not again within a few seconds, to avoid loops). */
+    function refreshPage() {
+        let last = 0;
+
+        try {
+            last = Number(sessionStorage.getItem(RELOAD_GUARD_KEY)) || 0;
+        } catch (error) {
+            last = 0;
+        }
+
+        if (Date.now() - last < 5000) {
+            return;
+        }
+
+        try {
+            sessionStorage.setItem(RELOAD_GUARD_KEY, String(Date.now()));
+        } catch (error) {
+            return;
+        }
+
+        window.location.reload();
+    }
+
+    /* The first time a browser connects, programs, courses and modules
+       it had that the database doesn't are added (nothing is removed). */
+    function mergeLibraries(server, local) {
+        const merged = clone(server);
+
+        if (
+            !merged.programs ||
+            typeof merged.programs !== "object" ||
+            Array.isArray(merged.programs)
+        ) {
+            merged.programs = {};
+        }
+
+        const deleted = new Set(
+            (Array.isArray(merged.deletedPrograms) ? merged.deletedPrograms : [])
+                .map(normalizeCode)
+        );
+
+        Object.entries(local?.programs || {}).forEach(([key, localProgram]) => {
+            const code = normalizeCode(localProgram?.code || key);
+
+            if (!code || deleted.has(code)) {
+                return;
+            }
+
+            const existingKey = Object.keys(merged.programs).find(
+                serverKey =>
+                    normalizeCode(merged.programs[serverKey]?.code || serverKey) === code
+            );
+
+            if (!existingKey) {
+                merged.programs[key] = clone(localProgram);
+                return;
+            }
+
+            const serverProgram = merged.programs[existingKey];
+
+            ["courses", "modules"].forEach(listName => {
+                if (!Array.isArray(localProgram[listName])) {
+                    return;
+                }
+
+                if (!Array.isArray(serverProgram[listName])) {
+                    serverProgram[listName] = [];
+                }
+
+                const ids = new Set(
+                    serverProgram[listName].map(item => item && item.id)
+                );
+
+                localProgram[listName].forEach(item => {
+                    if (item && item.id != null && !ids.has(item.id)) {
+                        serverProgram[listName].push(clone(item));
+                        ids.add(item.id);
+                    }
+                });
+            });
+        });
+
+        return merged;
+    }
+
+    /* Sends this browser's library to the database. If another admin
+       saved first, their version is loaded instead. */
+    async function pushNow() {
+        if (pushing) {
+            pushAgain = true;
+            return;
+        }
+
+        pushing = true;
+
+        try {
+            do {
+                pushAgain = false;
+
+                const state = readLocalState();
+
+                if (!state) {
+                    break;
+                }
+
+                const result = await libraryRequest("PUT", {
+                    library: JSON.stringify(state),
+                    revision: localRevision() ?? 0
+                });
+
+                if (result.ok && result.payload?.success) {
+                    storageSet(REVISION_KEY, String(result.payload.revision));
+
+                    if (!pushAgain) {
+                        storageRemove(PENDING_KEY);
+                    }
+
+                    continue;
+                }
+
+                if (result.status === 409 && result.payload) {
+                    const latest = parseLibrary(result.payload.library);
+
+                    pushAgain = false;
+
+                    if (latest) {
+                        applyServerLibrary(latest, result.payload.revision);
+                    }
+
+                    alert(
+                        (result.payload.message ||
+                            "Another Academic Admin changed the Module Library.") +
+                        " Please make your last change again."
+                    );
+
+                    refreshPage();
+                    break;
+                }
+
+                throw new Error(
+                    result.payload?.message ||
+                    `Request failed (${result.status}).`
+                );
+            } while (pushAgain);
+        } catch (error) {
+            console.error("Module Library: unable to save to the server.", error);
+
+            alert(
+                "Your Module Library change is saved on this computer but could not " +
+                "reach the server. It will be sent again the next time you open an " +
+                "Academic Admin page."
+            );
+        } finally {
+            pushing = false;
+        }
+    }
+
+    function queuePush() {
+        if (!window.SIKNAYAN_API_ROOT || !apiToken()) {
+            return;
+        }
+
+        Promise.resolve(initialSync)
+            .then(pushNow);
+    }
+
+    /* Runs once per page: brings this browser's copy in line with the
+       database. Returns { push, changed }. */
+    async function syncFromServer() {
+        const result = await libraryRequest("GET");
+
+        if (!result.ok || !result.payload?.success) {
+            return { push: false, changed: false };
+        }
+
+        const server = result.payload.library
+            ? parseLibrary(result.payload.library)
+            : null;
+
+        const revision = Number(result.payload.revision) || 0;
+        const local = readLocalState();
+
+        // Nothing in the database yet: this browser's library is the first.
+        if (!server) {
+            if (local) {
+                storageSet(REVISION_KEY, "0");
+                return { push: true, changed: false };
+            }
+
+            return { push: false, changed: false };
+        }
+
+        // This browser's first connection: keep what only it had.
+        if (localRevision() === null) {
+            const merged = local
+                ? mergeLibraries(server, local)
+                : server;
+
+            const added =
+                libraryContent(merged) !== libraryContent(server);
+
+            const changed = applyServerLibrary(merged, revision);
+
+            return { push: added, changed };
+        }
+
+        // A change made here that didn't reach the database last time.
+        if (storageGet(PENDING_KEY) === "1") {
+            if (localRevision() === revision) {
+                return { push: true, changed: false };
+            }
+
+            alert(
+                "Another Academic Admin changed the Module Library before your " +
+                "last change reached the server. The latest version has been loaded."
+            );
+        }
+
+        return {
+            push: false,
+            changed: applyServerLibrary(server, revision)
+        };
+    }
+
+    function startSync() {
+        if (!window.SIKNAYAN_API_ROOT || !apiToken()) {
+            return;
+        }
+
+        initialSync = syncFromServer()
+            .then(async outcome => {
+                if (outcome.push) {
+                    if (outcome.changed) {
+                        storageSet(PENDING_KEY, "1");
+                    }
+
+                    await pushNow();
+                }
+
+                if (outcome.changed) {
+                    refreshPage();
+                }
+            })
+            .catch(error => {
+                console.error("Module Library: unable to load from the server.", error);
+            });
+    }
+
+
+    /* =====================================================
        PUBLIC API
     ===================================================== */
 
@@ -1778,6 +2186,10 @@
         deleteProgram
 
     };
+
+
+    // Bring this browser's copy in line with the database.
+    startSync();
 
 
 })();

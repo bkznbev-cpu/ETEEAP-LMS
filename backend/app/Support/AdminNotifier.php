@@ -11,6 +11,7 @@ use App\Models\User;
  * Academic Admins hear about grading and locked accounts; System
  * Admins hear about Academic Admin accounts. Every active account with the
  * role gets its own copy, so each admin can mark it read independently.
+ * All Academic Admins see the same notifications.
  */
 class AdminNotifier
 {
@@ -117,6 +118,66 @@ class AdminNotifier
         if ($rows !== []) {
             Notification::insert($rows);
         }
+    }
+
+    /**
+     * Academic Admins share one notification history. Gives $admin a copy
+     * of every notification another Academic Admin has that $admin is
+     * missing (for a new or reactivated admin, or older notifications).
+     * Copies start as read, so old history doesn't show as new.
+     */
+    public static function shareAcademicAdminHistory(User $admin): int
+    {
+        $otherAdminIds = User::where('role', 'academic_admin')
+            ->whereKeyNot($admin->id)
+            ->pluck('id');
+
+        if ($otherAdminIds->isEmpty()) {
+            return 0;
+        }
+
+        $key = fn (Notification $n): string => implode("\x1f", [
+            $n->title,
+            $n->message,
+            (string) $n->type,
+            (string) $n->getRawOriginal('created_at'),
+        ]);
+
+        $have = Notification::where('user_id', $admin->id)
+            ->get(['title', 'message', 'type', 'created_at'])
+            ->mapWithKeys(fn (Notification $n) => [$key($n) => true])
+            ->all();
+
+        $rows = [];
+
+        Notification::whereIn('user_id', $otherAdminIds)
+            ->where(fn ($query) => $query->whereNull('type')->orWhere('type', '!=', 'account_setup'))
+            ->orderBy('id')
+            ->each(function (Notification $n) use ($key, $admin, &$have, &$rows) {
+                $k = $key($n);
+
+                if (isset($have[$k])) {
+                    return;
+                }
+
+                $have[$k] = true;
+                $rows[] = [
+                    'user_id' => $admin->id,
+                    'title' => $n->title,
+                    'message' => $n->message,
+                    'type' => $n->type,
+                    'data' => $n->getRawOriginal('data'),
+                    'is_read' => true,
+                    'created_at' => $n->getRawOriginal('created_at'),
+                    'updated_at' => $n->getRawOriginal('updated_at'),
+                ];
+            });
+
+        foreach (array_chunk($rows, 500) as $chunk) {
+            Notification::insert($chunk);
+        }
+
+        return count($rows);
     }
 
     private static function describe(User $user): string

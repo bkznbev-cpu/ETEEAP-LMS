@@ -389,24 +389,6 @@ Laravel reports API.
     }
 
 
-    function escapeCsv(value) {
-
-        const valueText =
-            text(value);
-
-        return /[",\n]/.test(
-            valueText
-        )
-
-            ? `"${valueText.replace(
-                /"/g,
-                '""'
-            )}"`
-
-            : valueText;
-    }
-
-
     function statusKey(value) {
 
         const status =
@@ -4842,16 +4824,21 @@ Laravel reports API.
 
 
     /* =====================================================
-       CSV EXPORT
+       EXCEL (.xls) EXPORT
     ===================================================== */
 
-    function exportCsv() {
+    function exportReport() {
 
         if (
             !lastReportData ||
             !rows.length
         ) {
 
+            return;
+        }
+
+        if (!window.XLSX) {
+            alert("The Excel exporter is still loading. Please try again in a moment.");
             return;
         }
 
@@ -4866,20 +4853,11 @@ Laravel reports API.
                 );
 
 
-        const lines = [];
-
-
-        lines.push(
+        const lines = [
 
             exportColumns
-                .map(
-                    escapeCsv
-                )
-                .join(
-                    ","
-                )
 
-        );
+        ];
 
 
         rows.forEach(
@@ -5106,45 +5084,59 @@ Laravel reports API.
                             }
 
 
-                            // IDs are written as ="23-00001" so Excel keeps
-                            // them as text (it would turn 23-00001 into a
-                            // date or a number).
+                            // IDs stay text, so Excel doesn't turn
+                            // 23-00001 into a date or a number.
                             if (
-                                (key === "student id" || key === "instructor id") &&
-                                text(value) !== ""
+                                key === "student id" ||
+                                key === "instructor id"
                             ) {
-                                return `"=""${text(value).replace(/"/g, '""""')}"""`;
+                                return text(value);
                             }
 
-                            return escapeCsv(
-                                value
-                            );
+                            return value ?? "";
 
                         }
                     );
 
 
                 lines.push(
-                    values.join(
-                        ","
-                    )
+                    values
                 );
 
             }
         );
 
 
+        const worksheet =
+            window.XLSX.utils.aoa_to_sheet(
+                lines
+            );
+
+        const workbook =
+            window.XLSX.utils.book_new();
+
+        window.XLSX.utils.book_append_sheet(
+            workbook,
+            worksheet,
+            "Report"
+        );
+
+        // "biff8" is the classic Excel .xls format.
         const blob =
 
             new Blob(
                 [
-                    lines.join(
-                        "\n"
+                    window.XLSX.write(
+                        workbook,
+                        {
+                            bookType: "biff8",
+                            type: "array"
+                        }
                     )
                 ],
                 {
                     type:
-                        "text/csv;charset=utf-8;"
+                        "application/vnd.ms-excel"
                 }
             );
 
@@ -5166,7 +5158,7 @@ Laravel reports API.
 
 
         link.download =
-            `${currentReport}-report.csv`;
+            `${currentReport}-report.xls`;
 
 
         document.body.appendChild(
@@ -5466,7 +5458,7 @@ Laravel reports API.
 
     el.export.addEventListener(
         "click",
-        exportCsv
+        exportReport
     );
 
 
