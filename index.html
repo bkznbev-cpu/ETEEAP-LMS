@@ -525,6 +525,12 @@
             color: #a00000;
         }
 
+        .message a {
+            color: inherit;
+            font-weight: 700;
+            text-decoration: underline;
+        }
+
         .message.success {
             border: 1px solid #a9d8bc;
             background: #e8f6ee;
@@ -1498,6 +1504,18 @@
             }
         });
 
+        // The hosted site. A copy opened from this computer links here.
+        const LIVE_SITE_URL = "https://mediumblue-dragonfly-613534.hostingersite.com/";
+
+        function isLocalCopy() {
+            const { protocol, hostname } = window.location;
+
+            return protocol === "file:" ||
+                hostname === "localhost" ||
+                hostname === "127.0.0.1" ||
+                hostname === "";
+        }
+
         // Display a message
         function showMessage(message, type) {
             loginMessage.textContent = message;
@@ -1685,9 +1703,21 @@ sessionStorage.setItem(
             } catch (error) {
                 console.error("Login error:", error);
 
-                if (error instanceof TypeError) {
+                if (error instanceof TypeError && isLocalCopy()) {
+                    // A copy of the site on this computer (opened from a
+                    // file or a local address): point to the live site.
                     showMessage(
-                        "Unable to connect to the server. Check that your Laravel backend is running and the API address is correct.",
+                        "This is the copy of the site saved on this computer, and it can't reach a server. ",
+                        "error"
+                    );
+
+                    const liveLink = document.createElement("a");
+                    liveLink.href = LIVE_SITE_URL;
+                    liveLink.textContent = "Open the live site";
+                    loginMessage.appendChild(liveLink);
+                } else if (error instanceof TypeError) {
+                    showMessage(
+                        "Unable to connect to the server. Check your internet connection and try again.",
                         "error"
                     );
                 } else {
