@@ -1513,24 +1513,15 @@ body {
     flex-wrap: wrap;
 }
 
-/* Search + filters sit level with the page title, centered */
+/* Search + filters sit level with the page title, on the left right
+   after it (phones stack them below the title, see 800px). */
 .learners-heading .learner-controls {
 
     flex: 1;
 
-    justify-content: center;
+    justify-content: flex-start;
 
     margin-bottom: 0;
-}
-
-/* Balances the title so the controls stay in the middle */
-.learners-heading::after {
-
-    content: "";
-
-    width: 150px;
-
-    flex-shrink: 1;
 }
 
 .learners-heading h2 {
@@ -2895,10 +2886,6 @@ select:focus-visible {
         justify-content: stretch;
     }
 
-    .learners-heading::after {
-
-        display: none;
-    }
 
 
     .filter-group {
