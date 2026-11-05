@@ -9,12 +9,14 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
- * Each Academic Admin sees and manages only the learners, instructors and
- * classes they created.
+ * All Academic Admins share the same learners, instructors, classes and
+ * modules. owner_admin_id only records who created each one.
  */
-class AcademicAdminDataSeparationTest extends TestCase
+#[Group('integration')]
+class AcademicAdminSharedDataTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -50,44 +52,40 @@ class AcademicAdminDataSeparationTest extends TestCase
         $this->moduleA = Module::create(['course_id' => $this->classA->id, 'title' => 'Module of A']);
     }
 
-    public function test_a_new_admin_starts_with_an_empty_workspace(): void
+    #[Group('NFR-S'), Group('NFR-S-02')]
+    public function test_every_admin_sees_the_same_records(): void
     {
-        $this->actingAs($this->adminB)->getJson('/api/admin/learners')->assertOk()->assertJsonCount(0, 'learners');
-        $this->actingAs($this->adminB)->getJson('/api/admin/instructors')->assertOk()->assertJsonCount(0, 'instructors');
-        $this->actingAs($this->adminB)->getJson('/api/admin/classes')->assertOk()->assertJsonCount(0, 'classes');
+        foreach ([$this->adminA, $this->adminB] as $admin) {
+            $this->actingAs($admin)->getJson('/api/admin/learners')->assertOk()->assertJsonCount(1, 'learners');
+            $this->actingAs($admin)->getJson('/api/admin/instructors')->assertOk()->assertJsonCount(1, 'instructors');
+            $this->actingAs($admin)->getJson('/api/admin/classes')->assertOk()->assertJsonCount(1, 'classes');
+            $this->actingAs($admin)->getJson("/api/admin/classes/{$this->classA->id}/learners")->assertOk();
+            $this->actingAs($admin)->getJson("/api/admin/classes/{$this->classA->id}/modules")->assertOk();
 
-        $this->actingAs($this->adminB)->getJson('/api/admin/dashboard')->assertOk()
-            ->assertJsonPath('statistics.learners', 0)
-            ->assertJsonPath('statistics.instructors', 0)
-            ->assertJsonPath('statistics.classes', 0);
-
-        // The owner still sees everything of theirs.
-        $this->actingAs($this->adminA)->getJson('/api/admin/learners')->assertJsonCount(1, 'learners');
-        $this->actingAs($this->adminA)->getJson('/api/admin/classes')->assertJsonCount(1, 'classes');
+            $this->actingAs($admin)->getJson('/api/admin/dashboard')->assertOk()
+                ->assertJsonPath('statistics.learners', 1)
+                ->assertJsonPath('statistics.instructors', 1)
+                ->assertJsonPath('statistics.classes', 1)
+                ->assertJsonPath('statistics.active_classes', 1);
+        }
     }
 
-    public function test_another_admins_records_cannot_be_changed_or_deleted(): void
+    #[Group('NFR-S'), Group('NFR-S-02')]
+    public function test_any_admin_can_change_records_another_admin_created(): void
     {
         $b = $this->actingAs($this->adminB);
 
-        $b->putJson("/api/admin/learners/{$this->learnerA->id}", ['name' => 'Hijacked'])->assertNotFound();
-        $b->deleteJson("/api/admin/learners/{$this->learnerA->id}")->assertNotFound();
-        $b->putJson("/api/admin/instructors/{$this->instructorA->id}", ['name' => 'Hijacked'])->assertNotFound();
-        $b->deleteJson("/api/admin/instructors/{$this->instructorA->id}")->assertNotFound();
-        $b->putJson("/api/admin/classes/{$this->classA->id}", ['name' => 'Hijacked'])->assertNotFound();
-        $b->deleteJson("/api/admin/classes/{$this->classA->id}")->assertNotFound();
-        $b->getJson("/api/admin/classes/{$this->classA->id}/learners")->assertNotFound();
-        $b->getJson("/api/admin/classes/{$this->classA->id}/modules")->assertNotFound();
-        $b->putJson("/api/admin/classes/{$this->classA->id}/modules/sync", ['modules' => []])->assertNotFound();
-        $b->deleteJson("/api/admin/classes/{$this->classA->id}/learners/{$this->learnerA->id}")->assertNotFound();
+        $b->putJson("/api/admin/learners/{$this->learnerA->id}", ['name' => 'Renamed Learner'])->assertOk();
+        $b->putJson("/api/admin/instructors/{$this->instructorA->id}", ['name' => 'Renamed Instructor'])->assertOk();
+        $b->putJson("/api/admin/classes/{$this->classA->id}", ['name' => 'Renamed Class'])->assertOk();
 
-        $this->assertDatabaseHas('users', ['id' => $this->learnerA->id, 'name' => $this->learnerA->name]);
-        $this->assertDatabaseHas('courses', ['id' => $this->classA->id, 'name' => 'Class of A']);
-        $this->assertDatabaseHas('course_user', ['course_id' => $this->classA->id, 'user_id' => $this->learnerA->id]);
-        $this->assertDatabaseHas('modules', ['id' => $this->moduleA->id, 'deleted_at' => null]);
+        $this->assertDatabaseHas('users', ['id' => $this->learnerA->id, 'name' => 'Renamed Learner']);
+        $this->assertDatabaseHas('users', ['id' => $this->instructorA->id, 'name' => 'Renamed Instructor']);
+        $this->assertDatabaseHas('courses', ['id' => $this->classA->id, 'name' => 'Renamed Class']);
     }
 
-    public function test_cannot_borrow_another_admins_learner_or_instructor(): void
+    #[Group('FR-CM'), Group('FR-CM-02'), Group('FR-CM-03')]
+    public function test_any_admin_can_use_another_admins_learner_or_instructor(): void
     {
         $classB = Course::create([
             'name' => 'Class of B', 'code' => 'B-101', 'is_active' => true,
@@ -96,25 +94,21 @@ class AcademicAdminDataSeparationTest extends TestCase
 
         $this->actingAs($this->adminB)
             ->postJson("/api/admin/classes/{$classB->id}/learners", ['learner_id' => $this->learnerA->id])
-            ->assertStatus(422);
-
-        $this->actingAs($this->adminB)
-            ->postJson('/api/admin/classes', ['name' => 'Another of B', 'code' => 'B-102', 'instructor_id' => $this->instructorA->id])
-            ->assertStatus(422);
+            ->assertSuccessful();
 
         $this->actingAs($this->adminB)
             ->putJson("/api/admin/classes/{$classB->id}", ['instructor_id' => $this->instructorA->id])
-            ->assertStatus(422);
+            ->assertOk();
+
+        $this->assertDatabaseHas('course_user', ['course_id' => $classB->id, 'user_id' => $this->learnerA->id]);
+        $this->assertDatabaseHas('courses', ['id' => $classB->id, 'instructor_id' => $this->instructorA->id]);
     }
 
-    public function test_new_records_belong_to_the_admin_who_creates_them(): void
+    #[Group('FR-UM'), Group('FR-UM-01')]
+    public function test_new_records_remember_who_created_them_and_everyone_sees_them(): void
     {
         $this->actingAs($this->adminB)->postJson('/api/admin/learners', [
             'name' => 'Learner of B', 'school_id' => '24-20001', 'password' => 'temporary-1',
-        ])->assertSuccessful();
-
-        $this->actingAs($this->adminB)->postJson('/api/admin/instructors', [
-            'name' => 'Instructor of B', 'school_id' => 'INS-B', 'email' => 'ins.b@x.edu', 'password' => 'temporary-1',
         ])->assertSuccessful();
 
         $this->actingAs($this->adminB)->postJson('/api/admin/classes', [
@@ -122,13 +116,13 @@ class AcademicAdminDataSeparationTest extends TestCase
         ])->assertSuccessful();
 
         $this->assertDatabaseHas('users', ['school_id' => '24-20001', 'owner_admin_id' => $this->adminB->id]);
-        $this->assertDatabaseHas('users', ['school_id' => 'INS-B', 'owner_admin_id' => $this->adminB->id]);
         $this->assertDatabaseHas('courses', ['code' => 'B-201', 'owner_admin_id' => $this->adminB->id]);
 
-        // And admin A doesn't see them.
-        $this->actingAs($this->adminA)->getJson('/api/admin/learners')->assertJsonCount(1, 'learners');
+        $this->actingAs($this->adminA)->getJson('/api/admin/learners')->assertJsonCount(2, 'learners');
+        $this->actingAs($this->adminA)->getJson('/api/admin/classes')->assertJsonCount(2, 'classes');
     }
 
+    #[Group('FR-UM'), Group('FR-CM'), Group('FR-UM-01'), Group('FR-CM-01')]
     public function test_school_ids_and_class_codes_stay_unique_across_admins(): void
     {
         $this->actingAs($this->adminB)->postJson('/api/admin/learners', [
@@ -140,17 +134,19 @@ class AcademicAdminDataSeparationTest extends TestCase
         ])->assertStatus(422);
     }
 
-    public function test_notifications_about_a_learner_go_only_to_their_admin(): void
+    #[Group('FR-NM'), Group('FR-NM-05')]
+    public function test_notifications_about_a_learner_go_to_every_admin(): void
     {
         for ($i = 0; $i < 5; $i++) {
             $this->postJson('/api/login', ['school_id' => '24-10001', 'password' => 'wrong-' . $i]);
         }
 
         $this->assertSame(1, Notification::where('user_id', $this->adminA->id)->where('type', 'account_locked')->count());
-        $this->assertSame(0, Notification::where('user_id', $this->adminB->id)->count());
+        $this->assertSame(1, Notification::where('user_id', $this->adminB->id)->where('type', 'account_locked')->count());
     }
 
-    public function test_an_admin_who_still_manages_records_cannot_be_deleted(): void
+    #[Group('FR-UM'), Group('FR-UM-04')]
+    public function test_an_admin_who_created_records_cannot_be_deleted(): void
     {
         $systemAdmin = User::factory()->create(['role' => 'system_admin', 'school_id' => 'SYS-SEP', 'is_active' => true]);
 

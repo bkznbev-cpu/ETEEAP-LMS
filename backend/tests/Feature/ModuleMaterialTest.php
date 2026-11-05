@@ -245,11 +245,11 @@ class ModuleMaterialTest extends TestCase
                 'material_name' => 'v2.pdf',
             ])
             ->assertOk()
-            ->assertJsonPath('updated_classes', 2);
+            ->assertJsonPath('updated_classes', 3);
 
-        $this->assertSame(2, Module::where('material_path', $new)->where('material_name', 'v2.pdf')->count());
-        // Another admin's class is not touched; the old file is kept.
-        $this->assertDatabaseHas('modules', ['course_id' => $otherAdminsClass->id, 'material_path' => $old]);
+        // Classes are shared, so another admin's class is updated too.
+        $this->assertSame(3, Module::where('material_path', $new)->where('material_name', 'v2.pdf')->count());
+        // The old file is kept.
         Storage::disk('local')->assertExists($old);
 
         // A display name or a missing file is refused.

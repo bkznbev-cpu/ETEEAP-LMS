@@ -54,10 +54,6 @@ class AcademicAdminController extends Controller
     }
 
     /**
-     * Each Academic Admin manages only the learners, instructors and classes
-     * they created (owner_admin_id). These start every such query.
-     */
-    /**
      * Random temporary password from letters and digits that can't be
      * confused with each other (no 0/O, 1/l/I). The account must replace
      * it at first login.
@@ -79,15 +75,18 @@ class AcademicAdminController extends Controller
         return (int) $request->user()->id;
     }
 
+    /**
+     * All Academic Admins share the same learners, instructors and classes.
+     * owner_admin_id only records who created each one.
+     */
     private function ownedUsers(Request $request, string $role)
     {
-        return User::where('role', $role)
-            ->where('owner_admin_id', $this->adminId($request));
+        return User::where('role', $role);
     }
 
     private function ownedClasses(Request $request)
     {
-        return Course::where('owner_admin_id', $this->adminId($request));
+        return Course::query();
     }
 
     /**
@@ -124,7 +123,6 @@ class AcademicAdminController extends Controller
                 'classes' => $this->ownedClasses($request)->count(),
                 'active_classes' => $this->ownedClasses($request)->where('is_active', true)->count(),
                 'awaiting_grade' => Submission::where('status', 'submitted')
-                    ->whereHas('module.course', fn ($query) => $query->where('owner_admin_id', $this->adminId($request)))
                     ->whereDoesntHave('grade')
                     ->count(),
             ],
@@ -917,10 +915,7 @@ public function storeClass(Request $request): JsonResponse
         'instructor_id' => [
             'nullable',
             'integer',
-            Rule::exists('users', 'id')->where(function ($query) use ($request) {
-                $query->where('role', 'instructor')
-                    ->where('owner_admin_id', $this->adminId($request));
-            }),
+            Rule::exists('users', 'id')->where('role', 'instructor'),
         ],
         'is_active' => ['sometimes', 'boolean'],
     ]);
@@ -988,10 +983,7 @@ public function updateClass(Request $request, int $id): JsonResponse
         'instructor_id' => [
             'nullable',
             'integer',
-            Rule::exists('users', 'id')->where(function ($query) use ($request) {
-                $query->where('role', 'instructor')
-                    ->where('owner_admin_id', $this->adminId($request));
-            }),
+            Rule::exists('users', 'id')->where('role', 'instructor'),
         ],
 
         'is_active' => ['sometimes', 'boolean'],
@@ -1118,10 +1110,7 @@ public function enrollLearner(Request $request, int $id): JsonResponse
         'learner_id' => [
             'required',
             'integer',
-            Rule::exists('users', 'id')->where(function ($query) use ($request) {
-                $query->where('role', 'learner')
-                    ->where('owner_admin_id', $this->adminId($request));
-            }),
+            Rule::exists('users', 'id')->where('role', 'learner'),
         ],
     ]);
 
@@ -1393,7 +1382,7 @@ public function updateModule(Request $request, int $id): JsonResponse
         return $response;
     }
 
-    $module = Module::whereHas('course', fn ($query) => $query->where('owner_admin_id', $this->adminId($request)))
+    $module = Module::whereHas('course')
         ->find($id);
 
     if (!$module) {
@@ -1428,7 +1417,7 @@ public function destroyModule(Request $request, int $id): JsonResponse
         return $response;
     }
 
-    $module = Module::whereHas('course', fn ($query) => $query->where('owner_admin_id', $this->adminId($request)))
+    $module = Module::whereHas('course')
         ->find($id);
 
     if (!$module) {
@@ -1463,14 +1452,14 @@ public function replaceLibraryMaterial(Request $request, string $libraryKey): Js
     ]);
 
     $previous = Module::where('library_key', $libraryKey)
-        ->whereHas('course', fn ($query) => $query->where('owner_admin_id', $this->adminId($request)))
+        ->whereHas('course')
         ->pluck('material_name')
         ->filter()
         ->unique()
         ->values();
 
     $updated = Module::where('library_key', $libraryKey)
-        ->whereHas('course', fn ($query) => $query->where('owner_admin_id', $this->adminId($request)))
+        ->whereHas('course')
         ->update([
             'material_path' => $validated['material_path'],
             'material_name' => $validated['material_name'] ?? null,

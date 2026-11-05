@@ -32,16 +32,14 @@ class AdminNotifier
         string $moduleTitle,
         string $courseName,
         float|int|string $score,
-        float|int|string $maxScore,
-        ?int $ownerAdminId = null
+        float|int|string $maxScore
     ): void {
         self::notifyRole(
             'academic_admin',
             'Activity Graded',
             "{$instructor->name} graded {$learner->name}'s \"{$moduleTitle}\" in {$courseName}: "
                 . self::number($score) . '/' . self::number($maxScore) . '.',
-            self::TYPE_GRADE,
-            $ownerAdminId
+            self::TYPE_GRADE
         );
     }
 
@@ -61,8 +59,7 @@ class AdminNotifier
             $recipientRole,
             'Account Locked',
             self::describe($user) . " was locked for {$seconds} seconds after too many failed login attempts.",
-            self::TYPE_ACCOUNT_LOCKED,
-            $recipientRole === 'academic_admin' ? $user->owner_admin_id : null
+            self::TYPE_ACCOUNT_LOCKED
         );
     }
 
@@ -91,23 +88,17 @@ class AdminNotifier
     }
 
     /**
-     * Notifies every active account with the role, or only $onlyUserId
-     * (the Academic Admin who owns the record) when one is given and active.
+     * Notifies every active account with the role.
      */
     private static function notifyRole(
         string $role,
         string $title,
         string $message,
-        string $type,
-        ?int $onlyUserId = null
+        string $type
     ): void {
         $recipients = User::query()
             ->where('role', $role)
             ->where('is_active', true);
-
-        if ($onlyUserId !== null && (clone $recipients)->whereKey($onlyUserId)->exists()) {
-            $recipients->whereKey($onlyUserId);
-        }
 
         $recipientIds = $recipients->pluck('id');
 
