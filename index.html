@@ -821,8 +821,10 @@
                 padding: 26px 20px 22px;
             }
 
+            /* Shrinks with the screen so it stays on one line. */
             .login-subtitle {
-                font-size: 15px;
+                font-size: clamp(11.5px, calc((100vw - 72px) / 23), 15px);
+                text-wrap: balance;
             }
         }
 
