@@ -510,6 +510,11 @@ try {
                 ? moduleResult.modules
                 : [];
 
+        // Kept so the assigned modules show on any computer, even one
+        // whose Module Library doesn't have them yet.
+        currentClass.apiModules =
+            apiModules;
+
         currentClass.moduleIds =
             apiModules
                 .map(
@@ -2299,37 +2304,77 @@ function formatModuleStatus(
 }
 
 
+/* The class's modules come from the database. The Module Library adds
+   details when this computer has them; otherwise the database's title
+   is shown, so every Academic Admin sees the same assigned modules. */
 function getAssignedClassModules() {
 
-    const availableModules =
-        getModuleLibraryModules();
-
-
-    const assignedIds =
-        new Set(
-
-            (
-                Array.isArray(
-                    currentClass?.moduleIds
-                )
-                    ? currentClass.moduleIds
-                    : []
-            ).map(
-                id => String(id)
+    const libraryById =
+        new Map(
+            getModuleLibraryModules().map(
+                module => [
+                    String(module?.id || ""),
+                    module
+                ]
             )
-
         );
 
 
-    return availableModules.filter(
-        module =>
-            assignedIds.has(
-                String(
-                    module?.id ||
-                    ""
-                )
+    const serverByKey =
+        new Map(
+            (
+                Array.isArray(currentClass?.apiModules)
+                    ? currentClass.apiModules
+                    : []
+            ).map(
+                module => [
+                    String(module?.library_key || "").trim(),
+                    module
+                ]
             )
-    );
+        );
+
+
+    const assignedIds =
+        (
+            Array.isArray(
+                currentClass?.moduleIds
+            )
+                ? currentClass.moduleIds
+                : []
+        ).map(
+            id => String(id)
+        );
+
+
+    return assignedIds
+        .map(id => {
+
+            const fromLibrary =
+                libraryById.get(id);
+
+            if (fromLibrary) {
+                return fromLibrary;
+            }
+
+            const fromServer =
+                serverByKey.get(id);
+
+            if (fromServer) {
+                return {
+                    id,
+                    title:
+                        fromServer.title,
+                    status:
+                        fromServer.is_published === false
+                            ? "inactive"
+                            : "active"
+                };
+            }
+
+            return null;
+        })
+        .filter(Boolean);
 }
 
 
