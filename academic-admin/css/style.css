@@ -7691,10 +7691,9 @@ body:has(.program-library-page) {
 }
 
 
+/* Three columns fit the card at any width: no sideways scrolling. */
 .class-roster-table {
     width: 100%;
-
-    min-width: 700px;
 
     border-collapse: collapse;
 }
@@ -7796,6 +7795,41 @@ body:has(.program-library-page) {
     background: #e7edf9;
 
     color: #36598f;
+}
+
+
+/* Student IDs and statuses stay on one line; long names wrap. */
+.class-roster-table td:first-child,
+.class-roster-table td:last-child {
+    white-space: nowrap;
+}
+
+
+.class-roster-table td:nth-child(2) {
+    overflow-wrap: anywhere;
+}
+
+
+@media (max-width: 700px) {
+
+    .class-roster-table th,
+    .class-roster-table td {
+        padding: 10px 10px;
+    }
+
+
+    .class-roster-table th {
+        font-size: 10px;
+    }
+
+
+    .class-roster-status {
+        min-height: 22px;
+
+        padding: 2px 7px;
+
+        font-size: 10px;
+    }
 }
 
 
