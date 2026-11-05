@@ -79,6 +79,7 @@ class InstructorImportTest extends TestCase
         $this->postJson('/api/login', [
             'school_id' => 'INS-101',
             'password' => $instructors[0]['temporary_password'],
+            'agree_terms' => true,
         ])->assertOk()->assertJsonPath('first_login', true);
     }
 }

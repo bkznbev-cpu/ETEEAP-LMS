@@ -575,6 +575,11 @@
             transition: border-color 0.15s ease, background 0.15s ease;
         }
 
+        /* Shown only on an account's first login. */
+        .terms-agree[hidden] {
+            display: none;
+        }
+
         .terms-agree.missing {
             border-color: #e5a3a3;
             background: #fff4f4;
@@ -1367,8 +1372,8 @@
 
                     </div>
 
-                    <!-- TERMS AGREEMENT (required) -->
-                    <div class="terms-agree" id="termsAgree">
+                    <!-- TERMS AGREEMENT (first login only; shown when the server asks) -->
+                    <div class="terms-agree" id="termsAgree" hidden>
                         <input type="checkbox" id="agreeTerms" name="agree_terms" aria-required="true">
                         <label for="agreeTerms">
                             I have read and agree to the
@@ -1514,8 +1519,8 @@
                 return;
             }
 
-            // The Terms of Service must be accepted before logging in.
-            if (!agreeTerms.checked) {
+            // On a first login the Terms of Service must be accepted.
+            if (!termsAgree.hidden && !agreeTerms.checked) {
                 termsAgree.classList.add("missing");
                 showMessage(
                     "Please agree to the Terms of Service before logging in.",
@@ -1544,12 +1549,25 @@
                         },
                         body: JSON.stringify({
                             school_id: studentId,
-                            password: password
+                            password: password,
+                            agree_terms: agreeTerms.checked
                         })
                     }
                 );
 
                 const data = await response.json();
+
+                // First login: show the Terms checkbox and ask to tick it.
+                if (data.terms_required === true) {
+                    termsAgree.hidden = false;
+                    termsAgree.classList.add("missing");
+                    showMessage(
+                        "First login: please agree to the Terms of Service, then click Login again.",
+                        "error"
+                    );
+                    agreeTerms.focus();
+                    return;
+                }
 
                 if (!response.ok) {
                     throw new Error(

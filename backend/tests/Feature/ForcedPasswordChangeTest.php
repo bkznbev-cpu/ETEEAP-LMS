@@ -27,7 +27,31 @@ class ForcedPasswordChangeTest extends TestCase
         return $this->postJson('/api/login', [
             'school_id' => $schoolId,
             'password' => $password,
+            'agree_terms' => true,
         ])->assertOk()->json('token');
+    }
+
+    public function test_terms_must_be_accepted_on_first_login_only(): void
+    {
+        $this->user('learner', false, '24-00010');
+        $this->user('learner', true, '24-00011');
+
+        // First login without agreeing: refused, no token.
+        $this->postJson('/api/login', ['school_id' => '24-00010', 'password' => 'temporary-pass'])
+            ->assertStatus(422)
+            ->assertJsonPath('terms_required', true)
+            ->assertJsonMissingPath('token');
+
+        // First login after agreeing: allowed.
+        $this->postJson('/api/login', [
+            'school_id' => '24-00010',
+            'password' => 'temporary-pass',
+            'agree_terms' => true,
+        ])->assertOk();
+
+        // Later logins don't ask again.
+        $this->postJson('/api/login', ['school_id' => '24-00011', 'password' => 'temporary-pass'])
+            ->assertOk();
     }
 
     public function test_new_learner_is_blocked_until_password_is_set(): void

@@ -63,7 +63,7 @@ class EmailAfterPasswordSetupTest extends TestCase
     {
         $learner = $this->newAccount('learner', '24-EM001');
 
-        $login = $this->postJson('/api/login', ['school_id' => '24-EM001', 'password' => 'Temp-pass-1'])->assertOk();
+        $login = $this->postJson('/api/login', ['school_id' => '24-EM001', 'password' => 'Temp-pass-1', 'agree_terms' => true])->assertOk();
         $login->assertJsonPath('first_login', true)->assertJsonPath('email_required', false);
 
         $token = $this->withToken($login->json('token'))

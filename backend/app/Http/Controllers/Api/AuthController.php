@@ -36,6 +36,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'school_id' => ['required', 'string'],
             'password' => ['required', 'string'],
+            'agree_terms' => ['sometimes', 'boolean'],
         ]);
 
         $typedId = Str::limit(trim($validated['school_id']), 100, '');
@@ -169,6 +170,16 @@ class AuthController extends Controller
                 'success' => false,
                 'message' => 'This account is deactivated. Please contact your administrator.',
             ], 403);
+        }
+
+        // First login (temporary password): the Terms of Service must be
+        // accepted. Later logins don't ask again.
+        if (!$user->password_setup_complete && !$request->boolean('agree_terms')) {
+            return response()->json([
+                'success' => false,
+                'terms_required' => true,
+                'message' => 'Please agree to the Terms of Service to continue.',
+            ], 422);
         }
 
         // Create an authentication token

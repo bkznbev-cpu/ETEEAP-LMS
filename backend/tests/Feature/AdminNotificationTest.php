@@ -40,6 +40,7 @@ class AdminNotificationTest extends TestCase
         $token = $this->postJson('/api/login', [
             'school_id' => '24-10001',
             'password' => 'the-password',
+            'agree_terms' => true,
         ])->assertOk()->json('token');
 
         $this->withToken($token)

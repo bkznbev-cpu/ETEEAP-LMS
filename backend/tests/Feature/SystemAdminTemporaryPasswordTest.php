@@ -40,7 +40,7 @@ class SystemAdminTemporaryPasswordTest extends TestCase
 
         // The temporary password works, and the account must change it.
         $this->app['auth']->forgetGuards();
-        $this->postJson('/api/login', ['school_id' => 'ADM-T1', 'password' => $temporary])
+        $this->postJson('/api/login', ['school_id' => 'ADM-T1', 'password' => $temporary, 'agree_terms' => true])
             ->assertOk()
             ->assertJsonPath('first_login', true);
     }

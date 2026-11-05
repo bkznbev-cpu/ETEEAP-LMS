@@ -28,7 +28,7 @@ class AuditLogEventsTest extends TestCase
 
     private function login(string $schoolId, string $password = 'right-password-1')
     {
-        return $this->postJson('/api/login', ['school_id' => $schoolId, 'password' => $password]);
+        return $this->postJson('/api/login', ['school_id' => $schoolId, 'password' => $password, 'agree_terms' => true]);
     }
 
     private function entries(string $action)
