@@ -821,10 +821,11 @@
                 padding: 26px 20px 22px;
             }
 
-            /* Shrinks with the screen so it stays on one line. */
+            /* Kept on one line; the script below shrinks the text if it
+               still doesn't fit. */
             .login-subtitle {
                 font-size: clamp(11.5px, calc((100vw - 72px) / 23), 15px);
-                text-wrap: balance;
+                white-space: nowrap;
             }
         }
 
@@ -1437,6 +1438,32 @@
         const loginMessage = document.getElementById("loginMessage");
         const agreeTerms = document.getElementById("agreeTerms");
         const termsAgree = document.getElementById("termsAgree");
+
+        // Phones: shrink the subtitle until it fits on one line, whatever
+        // the screen width or font the phone uses.
+        const loginSubtitle = document.querySelector(".login-subtitle");
+
+        function fitSubtitle() {
+            loginSubtitle.style.fontSize = "";
+
+            if (getComputedStyle(loginSubtitle).whiteSpace !== "nowrap") {
+                return;
+            }
+
+            let size = parseFloat(getComputedStyle(loginSubtitle).fontSize);
+
+            while (loginSubtitle.scrollWidth > loginSubtitle.clientWidth && size > 9) {
+                size -= 0.5;
+                loginSubtitle.style.fontSize = size + "px";
+            }
+        }
+
+        fitSubtitle();
+        window.addEventListener("resize", fitSubtitle);
+
+        if (document.fonts) {
+            document.fonts.ready.then(fitSubtitle);
+        }
 
         // Clear the red outline once the box is ticked.
         agreeTerms.addEventListener("change", function () {
