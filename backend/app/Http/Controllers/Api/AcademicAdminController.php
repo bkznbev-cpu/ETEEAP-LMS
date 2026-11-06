@@ -1198,12 +1198,7 @@ public function uploadModuleFile(Request $request): JsonResponse
         // Module materials: PDF, an image, Word or Excel. PDF and images
         // open in the browser, Word .docx is shown as a page, and the rest
         // are downloaded (instructor/js/file-viewer.js).
-        'file' => [
-            'required',
-            'file',
-            'max:25600',
-            'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx',
-        ],
+        'file' => \App\Support\UploadRules::moduleFile(),
     ], [
         'file.mimes' => 'Upload a PDF, an image (JPG, PNG), a Word file (DOC, DOCX) or an Excel file (XLS, XLSX).',
         'file.max' => 'The file must be 25 MB or smaller.',

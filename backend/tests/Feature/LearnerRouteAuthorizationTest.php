@@ -8,7 +8,9 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class LearnerRouteAuthorizationTest extends TestCase
 {
     use RefreshDatabase;
@@ -48,6 +50,7 @@ class LearnerRouteAuthorizationTest extends TestCase
         return [$instructor, $course, $module];
     }
 
+    #[Group('NFR-S'), Group('NFR-S-02')]
     public function test_other_roles_are_refused_on_every_learner_route(): void
     {
         [$instructor, $course, $module] = $this->fixtures();
@@ -71,6 +74,7 @@ class LearnerRouteAuthorizationTest extends TestCase
         }
     }
 
+    #[Group('NFR-S'), Group('NFR-S-02')]
     public function test_learners_still_reach_their_routes(): void
     {
         [, $course, $module] = $this->fixtures();

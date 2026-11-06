@@ -6,7 +6,9 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class ForcedPasswordChangeTest extends TestCase
 {
     use RefreshDatabase;
@@ -31,6 +33,7 @@ class ForcedPasswordChangeTest extends TestCase
         ])->assertOk()->json('token');
     }
 
+    #[Group('FR-AU'), Group('FR-AU-02')]
     public function test_terms_must_be_accepted_on_first_login_only(): void
     {
         $this->user('learner', false, '24-00010');
@@ -54,6 +57,7 @@ class ForcedPasswordChangeTest extends TestCase
             ->assertOk();
     }
 
+    #[Group('FR-AU'), Group('FR-AU-02')]
     public function test_new_learner_is_blocked_until_password_is_set(): void
     {
         $this->user('learner', false, '24-00001');
@@ -79,6 +83,7 @@ class ForcedPasswordChangeTest extends TestCase
             ->assertOk();
     }
 
+    #[Group('FR-AU'), Group('FR-AU-02')]
     public function test_new_instructor_and_admin_are_blocked_until_password_is_set(): void
     {
         $this->user('instructor', false, 'INS-0001');
@@ -97,6 +102,7 @@ class ForcedPasswordChangeTest extends TestCase
             ->assertJsonPath('code', 'password_setup_required');
     }
 
+    #[Group('FR-AU'), Group('FR-AU-02'), Group('FR-AU-05')]
     public function test_account_on_temporary_password_can_still_log_out(): void
     {
         $this->user('learner', false, '24-00002');
@@ -105,6 +111,7 @@ class ForcedPasswordChangeTest extends TestCase
         $this->withToken($token)->postJson('/api/logout')->assertOk();
     }
 
+    #[Group('FR-UM'), Group('FR-AU'), Group('FR-UM-01'), Group('FR-AU-02')]
     public function test_learner_created_by_admin_must_change_password(): void
     {
         $admin = $this->user('academic_admin', true, 'ADM-0002');
@@ -124,6 +131,7 @@ class ForcedPasswordChangeTest extends TestCase
         ]);
     }
 
+    #[Group('FR-UM'), Group('FR-AU'), Group('FR-UM-01'), Group('FR-AU-02')]
     public function test_instructor_created_by_admin_must_change_password(): void
     {
         $admin = $this->user('academic_admin', true, 'ADM-0003');
@@ -143,6 +151,7 @@ class ForcedPasswordChangeTest extends TestCase
         ]);
     }
 
+    #[Group('FR-UM'), Group('FR-UM-01')]
     public function test_admin_password_reset_forces_a_change_and_logs_the_user_out(): void
     {
         $admin = $this->user('academic_admin', true, 'ADM-0004');
@@ -161,6 +170,7 @@ class ForcedPasswordChangeTest extends TestCase
         $this->assertSame(0, $learner->tokens()->count());
     }
 
+    #[Group('FR-UM'), Group('FR-UM-01')]
     public function test_editing_a_learner_without_a_password_keeps_their_setup(): void
     {
         $admin = $this->user('academic_admin', true, 'ADM-0005');
@@ -179,6 +189,7 @@ class ForcedPasswordChangeTest extends TestCase
         $this->assertSame(1, $learner->tokens()->count());
     }
 
+    #[Group('FR-AU'), Group('FR-AU-04')]
     public function test_learner_can_change_their_own_password(): void
     {
         $this->user('learner', true, '24-00006');
@@ -204,6 +215,7 @@ class ForcedPasswordChangeTest extends TestCase
         $this->login('24-00006', 'learner-new-pass');
     }
 
+    #[Group('FR-AU'), Group('FR-AU-04')]
     public function test_changing_password_logs_out_other_sessions_only(): void
     {
         $this->user('academic_admin', true, 'ADM-0006');

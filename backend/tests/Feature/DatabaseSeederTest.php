@@ -6,11 +6,14 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class DatabaseSeederTest extends TestCase
 {
     use RefreshDatabase;
 
+    #[Group('supporting')]
     public function test_seeder_creates_admin_with_a_temporary_password_not_the_old_default(): void
     {
         $this->seed();
@@ -23,6 +26,7 @@ class DatabaseSeederTest extends TestCase
         $this->assertFalse(Hash::check('admin123', $admin->password));
     }
 
+    #[Group('supporting')]
     public function test_seeding_again_does_not_reset_the_password(): void
     {
         $this->seed();

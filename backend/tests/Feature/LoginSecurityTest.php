@@ -6,7 +6,9 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class LoginSecurityTest extends TestCase
 {
     use RefreshDatabase;
@@ -30,6 +32,7 @@ class LoginSecurityTest extends TestCase
         ]);
     }
 
+    #[Group('NFR-S'), Group('NFR-S-05')]
     public function test_account_is_locked_after_five_failed_attempts(): void
     {
         $this->account();
@@ -51,6 +54,7 @@ class LoginSecurityTest extends TestCase
             ->assertJsonPath('locked', true);
     }
 
+    #[Group('NFR-S'), Group('NFR-S-05')]
     public function test_lockout_lasts_fifteen_minutes(): void
     {
         $this->account();
@@ -66,6 +70,7 @@ class LoginSecurityTest extends TestCase
         $this->attempt('LS-00001', 'correct-password')->assertOk();
     }
 
+    #[Group('NFR-S'), Group('NFR-S-05')]
     public function test_lock_applies_to_the_account_from_any_computer(): void
     {
         $this->account();
@@ -79,6 +84,7 @@ class LoginSecurityTest extends TestCase
             ->assertStatus(429);
     }
 
+    #[Group('NFR-S'), Group('NFR-S-05')]
     public function test_failures_older_than_fifteen_minutes_do_not_count(): void
     {
         $this->account();
@@ -93,6 +99,7 @@ class LoginSecurityTest extends TestCase
         $this->attempt('LS-00001', 'correct-password')->assertOk();
     }
 
+    #[Group('NFR-S'), Group('NFR-S-05')]
     public function test_successful_login_resets_the_failure_count(): void
     {
         $this->account();
@@ -110,6 +117,7 @@ class LoginSecurityTest extends TestCase
         $this->attempt('LS-00001', 'correct-password')->assertOk();
     }
 
+    #[Group('NFR-S'), Group('NFR-S-05')]
     public function test_unknown_school_ids_are_also_limited(): void
     {
         for ($i = 0; $i < 4; $i++) {
@@ -120,6 +128,7 @@ class LoginSecurityTest extends TestCase
         $this->attempt('NO-SUCH-ID', 'whatever')->assertStatus(429);
     }
 
+    #[Group('NFR-S'), Group('NFR-S-05')]
     public function test_one_address_cannot_try_many_accounts(): void
     {
         for ($i = 0; $i < 20; $i++) {
@@ -131,6 +140,7 @@ class LoginSecurityTest extends TestCase
         $this->attempt('LS-00002', 'correct-password')->assertStatus(429);
     }
 
+    #[Group('NFR-S'), Group('NFR-S-04')]
     public function test_login_token_expires_after_eight_hours(): void
     {
         $this->account();
@@ -149,6 +159,7 @@ class LoginSecurityTest extends TestCase
             ->assertUnauthorized();
     }
 
+    #[Group('NFR-S'), Group('NFR-S-04')]
     public function test_token_last_used_time_is_saved_at_most_once_a_minute(): void
     {
         $this->account();
@@ -173,6 +184,7 @@ class LoginSecurityTest extends TestCase
         $this->assertNotSame($first, $lastUsed());
     }
 
+    #[Group('NFR-S'), Group('NFR-S-01')]
     public function test_older_slower_password_hash_is_resaved_on_sign_in(): void
     {
         $user = $this->account();

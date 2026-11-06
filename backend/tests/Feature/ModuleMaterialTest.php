@@ -9,7 +9,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class ModuleMaterialTest extends TestCase
 {
     use RefreshDatabase;
@@ -46,6 +48,7 @@ class ModuleMaterialTest extends TestCase
         return $response->json('file_path');
     }
 
+    #[Group('FR-CM'), Group('FR-CM-04')]
     public function test_sync_keeps_the_stored_path_and_the_display_name(): void
     {
         Storage::fake('local');
@@ -77,6 +80,7 @@ class ModuleMaterialTest extends TestCase
         ]);
     }
 
+    #[Group('FR-ML'), Group('FR-ML-03')]
     public function test_a_display_name_or_missing_file_is_refused_as_a_path(): void
     {
         Storage::fake('local');
@@ -111,6 +115,7 @@ class ModuleMaterialTest extends TestCase
             ->assertJsonValidationErrors(['material_path']);
     }
 
+    #[Group('FR-CM'), Group('FR-CM-05')]
     public function test_enrolled_learner_downloads_the_right_file_under_its_original_name(): void
     {
         Storage::fake('local');
@@ -144,6 +149,7 @@ class ModuleMaterialTest extends TestCase
         $this->assertStringContainsString('Server-Client Activity.pdf', $response->headers->get('content-disposition'));
     }
 
+    #[Group('FR-CM'), Group('NFR-S'), Group('FR-CM-05'), Group('NFR-S-02')]
     public function test_others_cannot_download(): void
     {
         Storage::fake('local');
@@ -176,6 +182,7 @@ class ModuleMaterialTest extends TestCase
         $this->actingAs($enrolled)->get($url)->assertOk();
     }
 
+    #[Group('FR-ML'), Group('FR-ML-03')]
     public function test_only_pdf_images_word_and_excel_can_be_uploaded(): void
     {
         Storage::fake('local');
@@ -196,6 +203,7 @@ class ModuleMaterialTest extends TestCase
         }
     }
 
+    #[Group('FR-CM'), Group('FR-CM-05')]
     public function test_learner_can_view_the_file_in_the_browser(): void
     {
         Storage::fake('local');
@@ -221,6 +229,7 @@ class ModuleMaterialTest extends TestCase
         $this->assertStringStartsWith('attachment', $download->headers->get('content-disposition'));
     }
 
+    #[Group('FR-ML'), Group('FR-CM'), Group('FR-ML-03'), Group('FR-CM-04')]
     public function test_replacing_a_library_file_updates_every_class_using_it(): void
     {
         Storage::fake('local');
@@ -261,6 +270,7 @@ class ModuleMaterialTest extends TestCase
             ->assertStatus(422);
     }
 
+    #[Group('FR-ML'), Group('FR-ML-03')]
     public function test_old_records_holding_only_a_display_name_are_not_offered_or_served(): void
     {
         Storage::fake('local');

@@ -3,9 +3,12 @@
 namespace Tests\Feature;
 
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class LoginValidationTest extends TestCase
 {
+    #[Group('FR-AU'), Group('FR-AU-01')]
     public function test_login_rejects_missing_credentials(): void
     {
         $response = $this->postJson('/api/login', []);
@@ -17,6 +20,7 @@ class LoginValidationTest extends TestCase
         ]);
     }
 
+    #[Group('FR-AU'), Group('FR-AU-01')]
     public function test_demo_failed_assertion(): void
     {
         $response = $this->postJson('/api/login', []);

@@ -11,12 +11,14 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Instructor notifications say what they are about (class, learner,
  * announcement) so clicking them opens the right place; learner photos
  * reach the class page; learner progress is per class.
  */
+#[Group('integration')]
 class InstructorNotificationLinksTest extends TestCase
 {
     use RefreshDatabase;
@@ -50,6 +52,7 @@ class InstructorNotificationLinksTest extends TestCase
         Module::create(['course_id' => $this->math->id, 'title' => 'Geometry', 'is_published' => true, 'module_order' => 2]);
     }
 
+    #[Group('FR-NM'), Group('FR-NM-02')]
     public function test_new_submission_notification_points_to_the_learner_in_the_class(): void
     {
         $this->actingAs($this->learner)->post('/api/student/submissions', [
@@ -65,6 +68,7 @@ class InstructorNotificationLinksTest extends TestCase
             ->assertJsonPath('notifications.0.data.module_id', $this->webModule->id);
     }
 
+    #[Group('FR-NM'), Group('FR-NM-04')]
     public function test_learner_reply_notifies_the_instructor_with_the_announcement(): void
     {
         $announcement = Announcement::create([
@@ -83,6 +87,7 @@ class InstructorNotificationLinksTest extends TestCase
         $this->assertSame($announcement->id, $note->data['announcement_id']);
     }
 
+    #[Group('FR-CM'), Group('FR-CM-07')]
     public function test_class_learners_include_their_profile_photo(): void
     {
         $this->actingAs($this->learner)->post('/api/student/profile/photo', [
@@ -97,6 +102,7 @@ class InstructorNotificationLinksTest extends TestCase
         $this->assertStringContainsString('profile-photos/', $url);
     }
 
+    #[Group('FR-PT'), Group('FR-PT-02')]
     public function test_learner_progress_has_one_row_per_class(): void
     {
         $rows = collect($this->actingAs($this->instructor)->getJson('/api/instructor/dashboard')

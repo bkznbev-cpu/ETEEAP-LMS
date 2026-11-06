@@ -4,9 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class AcademicAdminProfilePhotoAuthorizationTest extends TestCase
 {
+    #[Group('NFR-S'), Group('NFR-S-02')]
     public function test_learner_cannot_upload_an_academic_admin_profile_photo(): void
     {
         $learner = new User();
@@ -26,6 +29,7 @@ class AcademicAdminProfilePhotoAuthorizationTest extends TestCase
             );
     }
 
+    #[Group('NFR-S'), Group('NFR-S-02')]
     public function test_instructor_cannot_upload_an_academic_admin_profile_photo(): void
     {
         $instructor = new User();

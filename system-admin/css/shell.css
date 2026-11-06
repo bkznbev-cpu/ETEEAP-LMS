@@ -1903,40 +1903,68 @@
     background: var(--sa-green-800);
 }
 
-/* Dashboard cards on phones: two square cards per row (icon on top,
+/* Dashboard cards on phones: three small cards per row (icon on top,
    then the label and the number) instead of one wide card each. */
 @media (max-width: 700px) {
     .dashboard-cards {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
     }
 
     .dashboard-card {
-        aspect-ratio: 1 / 1;
+        min-height: 104px;
         display: flex;
         flex-direction: column;
         align-items: flex-start;
         justify-content: space-between;
-        padding: 16px;
+        gap: 6px;
+        padding: 10px;
+        border-left-width: 3px;
+        border-radius: 10px;
+    }
+
+    .dashboard-card .card-icon {
+        width: 30px;
+        height: 30px;
+    }
+
+    .dashboard-card .card-icon svg {
+        width: 15px;
+        height: 15px;
     }
 
     .dashboard-card .card-label {
         display: block;
-        line-height: 1.3;
+        font-size: 9px;
+        line-height: 1.25;
+        letter-spacing: 0;
         overflow-wrap: anywhere;
     }
 
     .dashboard-card .card-value {
-        font-size: 30px;
+        font-size: 20px;
+    }
+
+    .dashboard-card::after {
+        width: 60px;
+        height: 30px;
     }
 }
 
 @media (max-width: 360px) {
+    .dashboard-cards {
+        gap: 6px;
+    }
+
     .dashboard-card {
-        padding: 13px;
+        padding: 8px;
+    }
+
+    .dashboard-card .card-label {
+        font-size: 8px;
     }
 
     .dashboard-card .card-value {
-        font-size: 26px;
+        font-size: 18px;
     }
 }

@@ -10,11 +10,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Changing your own email: current password, a 6-digit code sent to the
  * new address, and the email changes only after the code is entered.
  */
+#[Group('integration')]
 class EmailChangeTest extends TestCase
 {
     use RefreshDatabase;
@@ -72,6 +74,7 @@ class EmailChangeTest extends TestCase
         return $code === '000000' ? '111111' : '000000';
     }
 
+    #[Group('FR-AU'), Group('FR-AU-04')]
     public function test_every_role_can_change_their_email_after_verifying_it(): void
     {
         foreach (['learner', 'instructor', 'academic_admin', 'system_admin'] as $role) {
@@ -102,6 +105,7 @@ class EmailChangeTest extends TestCase
         }
     }
 
+    #[Group('FR-AU'), Group('FR-AU-04')]
     public function test_the_old_address_is_told_about_the_request_and_the_change(): void
     {
         $user = $this->account();
@@ -121,6 +125,7 @@ class EmailChangeTest extends TestCase
         }
     }
 
+    #[Group('FR-AU'), Group('FR-AU-04')]
     public function test_invalid_email_formats_are_refused(): void
     {
         $user = $this->account();
@@ -133,6 +138,7 @@ class EmailChangeTest extends TestCase
         Notification::assertNothingSent();
     }
 
+    #[Group('FR-AU'), Group('FR-AU-04')]
     public function test_an_address_used_by_another_account_is_refused(): void
     {
         $user = $this->account();
@@ -150,6 +156,7 @@ class EmailChangeTest extends TestCase
         Notification::assertNothingSent();
     }
 
+    #[Group('FR-AU'), Group('FR-AU-04')]
     public function test_a_wrong_current_password_is_refused_and_limited(): void
     {
         $user = $this->account();
@@ -167,6 +174,7 @@ class EmailChangeTest extends TestCase
         Notification::assertNothingSent();
     }
 
+    #[Group('FR-AU'), Group('FR-AU-04')]
     public function test_wrong_codes_are_counted_and_cancel_the_request(): void
     {
         $user = $this->account();
@@ -192,6 +200,7 @@ class EmailChangeTest extends TestCase
         $this->assertSame($old, $user->fresh()->email);
     }
 
+    #[Group('FR-AU'), Group('FR-AU-04')]
     public function test_expired_codes_do_not_work(): void
     {
         $user = $this->account();
@@ -210,6 +219,7 @@ class EmailChangeTest extends TestCase
         $this->assertSame(0, EmailChangeRequest::count());
     }
 
+    #[Group('FR-AU'), Group('FR-AU-04')]
     public function test_a_code_works_only_once(): void
     {
         $user = $this->account();
@@ -223,6 +233,7 @@ class EmailChangeTest extends TestCase
             ->assertJsonValidationErrors('code');
     }
 
+    #[Group('FR-AU'), Group('FR-AU-04')]
     public function test_resend_waits_a_minute_and_replaces_the_old_code(): void
     {
         $user = $this->account();
@@ -245,6 +256,7 @@ class EmailChangeTest extends TestCase
         }
     }
 
+    #[Group('FR-AU'), Group('FR-AU-04')]
     public function test_a_pending_change_can_be_cancelled(): void
     {
         $user = $this->account();
@@ -263,6 +275,7 @@ class EmailChangeTest extends TestCase
         $this->assertSame($old, $user->fresh()->email);
     }
 
+    #[Group('FR-AU'), Group('FR-AU-04')]
     public function test_an_address_taken_before_verification_is_not_given_away(): void
     {
         $user = $this->account();
@@ -279,6 +292,7 @@ class EmailChangeTest extends TestCase
         $this->assertNotSame('race@example.com', $user->fresh()->email);
     }
 
+    #[Group('FR-AU'), Group('NFR-S'), Group('FR-AU-04'), Group('NFR-S-02')]
     public function test_people_can_only_change_their_own_email(): void
     {
         $owner = $this->account();
@@ -307,6 +321,7 @@ class EmailChangeTest extends TestCase
         $this->assertNotSame('direct@example.com', $owner->fresh()->email);
     }
 
+    #[Group('FR-AU'), Group('FR-AU-04')]
     public function test_a_mail_failure_does_not_leave_a_pending_change(): void
     {
         $user = $this->account();

@@ -13,10 +13,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Learners can unsubmit their own work until the instructor grades it.
  */
+#[Group('integration')]
 class UnsubmitTest extends TestCase
 {
     use RefreshDatabase;
@@ -55,6 +57,7 @@ class UnsubmitTest extends TestCase
         return Submission::where('learner_id', ($learner ?? $this->learner)->id)->latest('id')->firstOrFail();
     }
 
+    #[Group('FR-SM'), Group('FR-SM-03')]
     public function test_learner_can_unsubmit_ungraded_work_and_submit_again(): void
     {
         $submission = $this->submit();
@@ -82,6 +85,7 @@ class UnsubmitTest extends TestCase
         $this->submit();
     }
 
+    #[Group('FR-SM'), Group('FR-SM-03')]
     public function test_graded_work_cannot_be_unsubmitted(): void
     {
         $submission = $this->submit();
@@ -99,6 +103,7 @@ class UnsubmitTest extends TestCase
         Storage::disk('local')->assertExists($submission->file_path);
     }
 
+    #[Group('FR-SM'), Group('NFR-S'), Group('FR-SM-03'), Group('NFR-S-02')]
     public function test_learner_cannot_unsubmit_someone_elses_work(): void
     {
         $submission = $this->submit($this->otherLearner);
@@ -109,6 +114,7 @@ class UnsubmitTest extends TestCase
         $this->assertDatabaseHas('submissions', ['id' => $submission->id]);
     }
 
+    #[Group('FR-SM'), Group('NFR-S'), Group('FR-SM-03'), Group('NFR-S-02')]
     public function test_instructor_cannot_use_the_learner_unsubmit_route(): void
     {
         $submission = $this->submit();
@@ -119,6 +125,7 @@ class UnsubmitTest extends TestCase
         $this->assertDatabaseHas('submissions', ['id' => $submission->id]);
     }
 
+    #[Group('FR-SM'), Group('FR-GF'), Group('FR-SM-03'), Group('FR-GF-01')]
     public function test_grading_an_unsubmitted_activity_reports_it_is_gone(): void
     {
         $submission = $this->submit();

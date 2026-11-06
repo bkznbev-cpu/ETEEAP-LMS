@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Hash;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class LearnerImportTest extends TestCase
 {
     use RefreshDatabase;
@@ -51,6 +53,7 @@ class LearnerImportTest extends TestCase
         );
     }
 
+    #[Group('FR-UM'), Group('FR-UM-02')]
     public function test_import_accepts_blank_email_and_reports_skipped_email(): void
     {
         $this->actingAs($this->admin());
@@ -80,6 +83,7 @@ class LearnerImportTest extends TestCase
         $this->assertFalse($learner->password_setup_complete);
     }
 
+    #[Group('FR-UM'), Group('FR-UM-02')]
     public function test_import_ignores_the_email_column(): void
     {
         $this->actingAs($this->admin());

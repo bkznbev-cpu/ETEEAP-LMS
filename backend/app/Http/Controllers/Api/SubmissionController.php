@@ -27,13 +27,8 @@ class SubmissionController extends Controller
                 'exists:modules,id'
             ],
 
-            'file' => [
-                'required',
-                'file',
-                // PDF, Word, Excel or a photo of the work.
-                'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp',
-                'max:10240'
-            ],
+            // PDF, Word, Excel or a photo of the work, up to 10 MB.
+            'file' => \App\Support\UploadRules::submissionFile(),
 
             'comment' => [
                 'nullable',

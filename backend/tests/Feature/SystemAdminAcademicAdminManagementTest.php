@@ -7,7 +7,9 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class SystemAdminAcademicAdminManagementTest extends TestCase
 {
     use RefreshDatabase;
@@ -28,6 +30,7 @@ class SystemAdminAcademicAdminManagementTest extends TestCase
         );
     }
 
+    #[Group('FR-UM'), Group('NFR-S'), Group('FR-UM-04'), Group('NFR-S-02')]
     public function test_management_routes_require_a_system_admin(): void
     {
         $this->getJson('/api/system-admin/academic-administrators')
@@ -43,6 +46,7 @@ class SystemAdminAcademicAdminManagementTest extends TestCase
             ->assertForbidden();
     }
 
+    #[Group('FR-UM'), Group('FR-UM-04')]
     public function test_system_admin_lists_only_academic_admin_accounts(): void
     {
         $systemAdmin = $this->systemAdmin();
@@ -72,6 +76,7 @@ class SystemAdminAcademicAdminManagementTest extends TestCase
             ]);
     }
 
+    #[Group('FR-UM'), Group('FR-SA'), Group('FR-UM-04'), Group('FR-SA-03')]
     public function test_system_admin_can_create_an_academic_admin_and_audit_it(): void
     {
         $systemAdmin = $this->systemAdmin();
@@ -110,6 +115,7 @@ class SystemAdminAcademicAdminManagementTest extends TestCase
         ]);
     }
 
+    #[Group('FR-UM'), Group('FR-UM-04')]
     public function test_create_validates_unique_school_id_email_and_password_confirmation(): void
     {
         $systemAdmin = $this->systemAdmin();
@@ -141,6 +147,7 @@ class SystemAdminAcademicAdminManagementTest extends TestCase
             ]);
     }
 
+    #[Group('FR-UM'), Group('FR-SA'), Group('FR-UM-04'), Group('FR-SA-03')]
     public function test_system_admin_can_edit_and_deactivate_with_audit_and_token_revocation(): void
     {
         $systemAdmin = $this->systemAdmin();
@@ -187,6 +194,7 @@ class SystemAdminAcademicAdminManagementTest extends TestCase
         $this->assertSame('AA-UPDATED-01', $audit->new_values['school_id']);
     }
 
+    #[Group('FR-UM'), Group('FR-UM-04')]
     public function test_system_admin_can_reactivate_an_academic_admin(): void
     {
         $systemAdmin = $this->systemAdmin();
@@ -210,6 +218,7 @@ class SystemAdminAcademicAdminManagementTest extends TestCase
         ]);
     }
 
+    #[Group('FR-UM'), Group('FR-SA'), Group('FR-UM-04'), Group('FR-SA-03')]
     public function test_delete_removes_only_the_target_account_and_keeps_audit_record(): void
     {
         $systemAdmin = $this->systemAdmin();
@@ -237,6 +246,7 @@ class SystemAdminAcademicAdminManagementTest extends TestCase
         ]);
     }
 
+    #[Group('FR-UM'), Group('FR-UM-04')]
     public function test_last_active_academic_admin_cannot_be_deactivated_or_deleted(): void
     {
         $systemAdmin = $this->systemAdmin();
@@ -264,6 +274,7 @@ class SystemAdminAcademicAdminManagementTest extends TestCase
         $this->assertDatabaseCount('audit_logs', 0);
     }
 
+    #[Group('FR-UM'), Group('NFR-S'), Group('FR-UM-04'), Group('NFR-S-02')]
     public function test_system_admin_endpoints_cannot_target_a_different_role(): void
     {
         $systemAdmin = $this->systemAdmin();

@@ -9,11 +9,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 use ZipArchive;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * System Admin Data Backup: one zip with the database, the uploaded
  * files and a restore guide; never the .env file.
  */
+#[Group('integration')]
 class SystemAdminBackupTest extends TestCase
 {
     use RefreshDatabase;
@@ -83,6 +85,7 @@ class SystemAdminBackupTest extends TestCase
         return $entries;
     }
 
+    #[Group('FR-SA'), Group('FR-SA-01')]
     public function test_backup_holds_database_files_and_guide_but_not_env(): void
     {
         $response = $this->make()->assertCreated()->assertJsonPath('backup.encrypted', false);
@@ -125,6 +128,7 @@ class SystemAdminBackupTest extends TestCase
         $this->assertSame([], glob($this->root . '/backups/.database-*'));
     }
 
+    #[Group('FR-SA'), Group('FR-SA-01')]
     public function test_password_protected_backup_is_aes_encrypted(): void
     {
         $name = $this->make(['password' => 'Keep-this-safe-123', 'password_confirmation' => 'Keep-this-safe-123'])
@@ -149,6 +153,7 @@ class SystemAdminBackupTest extends TestCase
         $this->make(['password' => 'Long-enough-1', 'password_confirmation' => 'Different-1'])->assertStatus(422);
     }
 
+    #[Group('FR-SA'), Group('FR-SA-01')]
     public function test_download_and_delete(): void
     {
         $name = $this->make()->json('backup.name');
@@ -163,6 +168,7 @@ class SystemAdminBackupTest extends TestCase
         $this->actingAs($this->admin)->deleteJson("/api/system-admin/backups/{$name}")->assertNotFound();
     }
 
+    #[Group('FR-SA'), Group('FR-SA-01')]
     public function test_only_backup_file_names_are_accepted(): void
     {
         file_put_contents($this->root . '/secret.txt', 'x');
@@ -175,6 +181,7 @@ class SystemAdminBackupTest extends TestCase
         $this->assertFileExists($this->root . '/secret.txt');
     }
 
+    #[Group('FR-SA'), Group('NFR-S'), Group('FR-SA-01'), Group('NFR-S-02')]
     public function test_other_roles_cannot_use_backups(): void
     {
         $name = $this->make()->json('backup.name');

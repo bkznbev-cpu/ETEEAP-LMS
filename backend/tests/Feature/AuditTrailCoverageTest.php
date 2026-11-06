@@ -14,10 +14,12 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Every kind of change the audit trail must show, with old -> new values.
  */
+#[Group('integration')]
 class AuditTrailCoverageTest extends TestCase
 {
     use RefreshDatabase;
@@ -44,6 +46,7 @@ class AuditTrailCoverageTest extends TestCase
         return AuditLogEntry::where('action', $action)->where('module', $module)->latest('id')->firstOrFail();
     }
 
+    #[Group('FR-SA'), Group('FR-GF'), Group('FR-SA-03'), Group('FR-GF-04')]
     public function test_instructor_grade_change_shows_old_and_new_grade(): void
     {
         $module = Module::create(['course_id' => $this->class->id, 'title' => 'HTML Basics', 'is_published' => true, 'module_order' => 1]);
@@ -76,6 +79,7 @@ class AuditTrailCoverageTest extends TestCase
         $this->assertSame('instructor', $changed->actor_role);
     }
 
+    #[Group('FR-SA'), Group('FR-UM'), Group('FR-SA-03'), Group('FR-UM-01')]
     public function test_learner_account_lifecycle(): void
     {
         $this->actingAs($this->admin)->postJson('/api/admin/learners', [
@@ -104,6 +108,7 @@ class AuditTrailCoverageTest extends TestCase
         $this->assertStringNotContainsString('New-temp-pass-1', $all);
     }
 
+    #[Group('FR-SA'), Group('FR-CM'), Group('FR-SA-03'), Group('FR-CM-01'), Group('FR-CM-03')]
     public function test_classes_and_enrolment(): void
     {
         $this->actingAs($this->admin)->postJson('/api/admin/classes', ['name' => 'Records Management', 'code' => 'OA-102'])->assertCreated();
@@ -122,6 +127,7 @@ class AuditTrailCoverageTest extends TestCase
         $this->assertSame('Removed Ana Cruz (24-00777) from OA-102', $this->last('unenroll', AuditLogger::CLASSES)->details);
     }
 
+    #[Group('FR-SA'), Group('FR-ML'), Group('FR-SA-03'), Group('FR-ML-03')]
     public function test_module_material_upload_and_replace(): void
     {
         $upload = fn (string $name) => $this->actingAs($this->admin)->post('/api/admin/module-files', [
@@ -148,6 +154,7 @@ class AuditTrailCoverageTest extends TestCase
         $this->assertSame(['material_name' => 'Lesson 1 v2.pdf'], $this->last('delete', AuditLogger::MODULES)->old_values);
     }
 
+    #[Group('FR-SA'), Group('FR-SA-03'), Group('FR-SA-01')]
     public function test_failed_backup_is_logged(): void
     {
         $system = User::factory()->create(['role' => 'system_admin', 'school_id' => 'SYS-AT', 'is_active' => true]);
@@ -166,6 +173,7 @@ class AuditTrailCoverageTest extends TestCase
         $this->assertStringContainsString('test failure', $failed->details);
     }
 
+    #[Group('FR-SA'), Group('FR-SA-03')]
     public function test_real_ip_is_recorded_only_behind_a_trusted_proxy(): void
     {
         $user = User::factory()->create(['role' => 'learner', 'school_id' => '24-00999', 'password' => Hash::make('right-pass-1'), 'is_active' => true]);

@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class InstructorWithoutEmailTest extends TestCase
 {
     use RefreshDatabase;
@@ -23,6 +25,7 @@ class InstructorWithoutEmailTest extends TestCase
         ]);
     }
 
+    #[Group('FR-UM'), Group('FR-UM-01')]
     public function test_an_instructor_can_be_added_without_an_email(): void
     {
         $this->actingAs($this->admin)
@@ -51,6 +54,7 @@ class InstructorWithoutEmailTest extends TestCase
             ->assertSuccessful();
     }
 
+    #[Group('FR-UM'), Group('FR-UM-01')]
     public function test_an_email_sent_by_the_admin_is_ignored(): void
     {
         $this->actingAs($this->admin)
@@ -62,6 +66,7 @@ class InstructorWithoutEmailTest extends TestCase
         $this->assertNull(User::where('school_id', 'INS-703')->value('email'));
     }
 
+    #[Group('FR-UM'), Group('FR-UM-01')]
     public function test_editing_never_changes_the_email(): void
     {
         $instructor = User::factory()->create([
@@ -77,6 +82,7 @@ class InstructorWithoutEmailTest extends TestCase
         }
     }
 
+    #[Group('FR-UM'), Group('FR-UM-01')]
     public function test_a_new_account_can_be_deactivated_and_reset_before_first_login(): void
     {
         $this->actingAs($this->admin)

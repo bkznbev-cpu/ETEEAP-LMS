@@ -6,11 +6,14 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class SystemAdminAuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
+    #[Group('FR-AU'), Group('FR-AU-01')]
     public function test_system_admin_can_log_in_and_verify_the_protected_session(): void
     {
         User::factory()->create([
@@ -36,6 +39,7 @@ class SystemAdminAuthenticationTest extends TestCase
             ->assertJsonPath('success', true);
     }
 
+    #[Group('NFR-S'), Group('NFR-S-02')]
     public function test_system_admin_session_requires_authentication(): void
     {
         $this->postJson('/api/logout')
@@ -48,6 +52,7 @@ class SystemAdminAuthenticationTest extends TestCase
             ->assertUnauthorized();
     }
 
+    #[Group('FR-AU'), Group('FR-AU-05')]
     public function test_logout_revokes_the_current_token_and_protected_endpoints_reject_it(): void
     {
         $systemAdmin = User::factory()->create([
@@ -78,6 +83,7 @@ class SystemAdminAuthenticationTest extends TestCase
             ->assertUnauthorized();
     }
 
+    #[Group('FR-AU'), Group('FR-AU-05')]
     public function test_authenticated_non_system_admin_can_use_shared_logout(): void
     {
         $academicAdmin = User::factory()->create([
@@ -99,6 +105,7 @@ class SystemAdminAuthenticationTest extends TestCase
         ]);
     }
 
+    #[Group('FR-SA'), Group('FR-SA-06')]
     public function test_system_admin_dashboard_returns_real_account_statistics(): void
     {
         $systemAdmin = User::factory()->create([
@@ -152,6 +159,7 @@ class SystemAdminAuthenticationTest extends TestCase
             ->assertJsonPath('statistics.inactive_accounts', 2);
     }
 
+    #[Group('NFR-S'), Group('NFR-S-02')]
     public function test_non_system_admin_roles_cannot_verify_a_system_admin_session(): void
     {
         foreach (

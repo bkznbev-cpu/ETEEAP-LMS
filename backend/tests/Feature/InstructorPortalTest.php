@@ -12,10 +12,12 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Every endpoint the Instructor portal (instructor/*.html) calls.
  */
+#[Group('integration')]
 class InstructorPortalTest extends TestCase
 {
     use RefreshDatabase;
@@ -67,6 +69,7 @@ class InstructorPortalTest extends TestCase
         return Submission::firstOrFail();
     }
 
+    #[Group('FR-CM'), Group('FR-CM-07')]
     public function test_module_material_view_and_download(): void
     {
         Storage::disk('local')->put('module-materials/abc.pdf', '%PDF-1.4 lesson');
@@ -95,6 +98,7 @@ class InstructorPortalTest extends TestCase
         $this->actingAs($this->instructor)->getJson($url)->assertNotFound();
     }
 
+    #[Group('FR-PT'), Group('FR-PT-02')]
     public function test_dashboard_counts_each_learners_ungraded_submissions(): void
     {
         $submission = $this->submit();
@@ -113,12 +117,14 @@ class InstructorPortalTest extends TestCase
             ->assertJsonPath('learners.0.pending_submissions', 0);
     }
 
+    #[Group('FR-PT'), Group('FR-PT-02')]
     public function test_dashboard(): void
     {
         $this->actingAs($this->instructor)->getJson('/api/instructor/dashboard')
             ->assertOk()->assertJsonPath('success', true);
     }
 
+    #[Group('FR-CM'), Group('FR-CM-07')]
     public function test_classes_list_and_detail(): void
     {
         $this->actingAs($this->instructor)->getJson('/api/instructor/classes')
@@ -135,6 +141,7 @@ class InstructorPortalTest extends TestCase
             ->assertNotFound();
     }
 
+    #[Group('FR-CM'), Group('NFR-S'), Group('FR-CM-06'), Group('NFR-S-02')]
     public function test_add_and_edit_a_module(): void
     {
         $created = $this->actingAs($this->instructor)
@@ -151,6 +158,7 @@ class InstructorPortalTest extends TestCase
             ->assertNotFound();
     }
 
+    #[Group('FR-SM'), Group('FR-GF'), Group('FR-SM-02'), Group('FR-GF-01')]
     public function test_submissions_list_file_and_grade(): void
     {
         $submission = $this->submit();
@@ -172,6 +180,7 @@ class InstructorPortalTest extends TestCase
         $this->assertDatabaseHas('grades', ['submission_id' => $submission->id, 'instructor_id' => $this->instructor->id]);
     }
 
+    #[Group('FR-NM'), Group('FR-NM-07')]
     public function test_notifications(): void
     {
         $this->submit(); // creates a "New Submission" notification for the instructor
@@ -186,6 +195,7 @@ class InstructorPortalTest extends TestCase
         $this->actingAs($this->instructor)->postJson('/api/instructor/notifications/read-all')->assertOk();
     }
 
+    #[Group('FR-AU'), Group('FR-AU-04')]
     public function test_profile_and_password(): void
     {
         $this->actingAs($this->instructor)->getJson('/api/instructor/profile')
@@ -204,6 +214,7 @@ class InstructorPortalTest extends TestCase
             ->assertOk();
     }
 
+    #[Group('NFR-S'), Group('NFR-S-02')]
     public function test_other_roles_cannot_use_instructor_endpoints(): void
     {
         foreach ([$this->learner, $this->admin] as $user) {

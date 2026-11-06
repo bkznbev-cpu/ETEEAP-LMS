@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Hash;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class InstructorImportTest extends TestCase
 {
     use RefreshDatabase;
@@ -37,6 +39,7 @@ class InstructorImportTest extends TestCase
         );
     }
 
+    #[Group('FR-UM'), Group('FR-UM-02')]
     public function test_imported_instructors_get_an_8_character_temporary_password(): void
     {
         $admin = User::factory()->create([

@@ -10,7 +10,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class LessonResourceTest extends TestCase
 {
     use RefreshDatabase;
@@ -44,6 +46,7 @@ class LessonResourceTest extends TestCase
         return "/api/instructor/classes/{$this->class->id}/resources{$suffix}";
     }
 
+    #[Group('FR-CM'), Group('FR-CM-06')]
     public function test_instructor_adds_a_link_for_a_module(): void
     {
         $module = Module::create(['course_id' => $this->class->id, 'title' => 'HTML Basics', 'is_published' => true]);
@@ -65,6 +68,7 @@ class LessonResourceTest extends TestCase
             ->assertJsonCount(1, 'resources');
     }
 
+    #[Group('FR-CM'), Group('FR-CM-06')]
     public function test_links_must_be_web_addresses(): void
     {
         $this->actingAs($this->instructor)
@@ -73,6 +77,7 @@ class LessonResourceTest extends TestCase
             ->assertJsonValidationErrors('url');
     }
 
+    #[Group('FR-CM'), Group('NFR-S'), Group('FR-CM-06'), Group('FR-CM-08'), Group('NFR-S-02')]
     public function test_instructor_uploads_a_powerpoint_and_learner_can_open_it(): void
     {
         $file = UploadedFile::fake()->create('lesson-1.pptx', 200, 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
@@ -100,6 +105,7 @@ class LessonResourceTest extends TestCase
         $this->assertDatabaseMissing('lesson_resources', ['id' => $id]);
     }
 
+    #[Group('FR-CM'), Group('NFR-S'), Group('FR-CM-06'), Group('NFR-S-02')]
     public function test_other_instructors_cannot_manage_the_class_resources(): void
     {
         $resource = LessonResource::create([
@@ -114,6 +120,7 @@ class LessonResourceTest extends TestCase
         $this->assertDatabaseHas('lesson_resources', ['id' => $resource->id]);
     }
 
+    #[Group('FR-CM'), Group('FR-CM-06')]
     public function test_disallowed_file_types_are_rejected(): void
     {
         $this->actingAs($this->instructor)

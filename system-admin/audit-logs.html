@@ -132,14 +132,52 @@
             }
         }
 
-        @media (max-width: 640px) {
+        /* Phones: three small filters per row; Search and the buttons
+           use the full width below them. */
+        @media (max-width: 700px) {
             .audit-filter-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 10px 8px;
+                padding: 16px 14px 18px;
+            }
+
+            .audit-filter-grid .audit-filter-field {
+                gap: 5px;
+            }
+
+            .audit-filter-grid .audit-filter-field label {
+                font-size: 11px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .audit-filter-grid .audit-filter-field input,
+            .audit-filter-grid .audit-filter-field select {
+                height: 36px;
+                padding: 0 6px;
+                font-size: 12px;
+            }
+
+            .audit-filter-grid .audit-search-wrapper input {
+                padding-left: 32px;
             }
 
             .audit-filter-grid .audit-search-field,
             .audit-filter-grid .audit-filter-actions {
-                grid-column: auto;
+                grid-column: 1 / -1;
+            }
+
+            .audit-filter-grid .audit-filter-actions {
+                flex-direction: row;
+                gap: 8px;
+            }
+
+            .audit-filter-grid .audit-filter-actions .secondary-button,
+            .audit-filter-grid .audit-filter-actions .primary-button {
+                flex: 1;
+                width: auto;
+                justify-content: center;
             }
         }
     </style>

@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class PasswordResetTest extends TestCase
 {
     use RefreshDatabase;
@@ -59,6 +61,7 @@ class PasswordResetTest extends TestCase
         return str_pad((string) (((int) $code + 1) % 100000), 5, '0', STR_PAD_LEFT);
     }
 
+    #[Group('FR-AU'), Group('NFR-S'), Group('FR-AU-03'), Group('NFR-S-01')]
     public function test_a_five_digit_code_is_emailed_and_stored_hashed(): void
     {
         $this->requestCode('Ana@Example.com')->assertOk()->assertJsonPath('success', true);
@@ -78,6 +81,7 @@ class PasswordResetTest extends TestCase
         $this->assertDatabaseMissing('audit_logs', ['module' => 'Academic Admin Accounts']);
     }
 
+    #[Group('FR-AU'), Group('FR-AU-03')]
     public function test_an_email_not_used_during_account_setup_fails(): void
     {
         $this->requestCode('nobody@example.com')
@@ -98,6 +102,7 @@ class PasswordResetTest extends TestCase
         $this->requestCode('24-RS001')->assertStatus(422)->assertJsonValidationErrors('email');
     }
 
+    #[Group('FR-AU'), Group('FR-AU-03')]
     public function test_the_school_id_must_belong_to_the_same_account_as_the_email(): void
     {
         $other = User::factory()->create([
@@ -120,6 +125,7 @@ class PasswordResetTest extends TestCase
         Notification::assertNotSentTo($other, ResetPasswordCode::class);
     }
 
+    #[Group('FR-AU'), Group('FR-AU-03')]
     public function test_a_deactivated_account_is_refused(): void
     {
         $inactive = User::factory()->create([
@@ -135,6 +141,7 @@ class PasswordResetTest extends TestCase
         Notification::assertNotSentTo($inactive, ResetPasswordCode::class);
     }
 
+    #[Group('FR-AU'), Group('FR-AU-03')]
     public function test_verify_then_reset_signs_out_everywhere_and_code_works_once(): void
     {
         $this->learner->createToken('old-device');
@@ -158,6 +165,7 @@ class PasswordResetTest extends TestCase
         $this->reset($code, 'another-pass-1')->assertStatus(422);
     }
 
+    #[Group('FR-AU'), Group('FR-AU-03')]
     public function test_wrong_codes_are_counted_and_the_code_is_cancelled_after_five(): void
     {
         $this->requestCode('ana@example.com');
@@ -177,6 +185,7 @@ class PasswordResetTest extends TestCase
         $this->assertTrue(Hash::check('old-password', $this->learner->fresh()->password));
     }
 
+    #[Group('FR-AU'), Group('FR-AU-03')]
     public function test_expired_code_and_bad_input_are_refused(): void
     {
         $this->requestCode('ana@example.com');
@@ -192,6 +201,7 @@ class PasswordResetTest extends TestCase
         $this->assertTrue(Hash::check('old-password', $this->learner->fresh()->password));
     }
 
+    #[Group('FR-AU'), Group('FR-AU-03')]
     public function test_a_new_code_needs_a_minute_and_replaces_the_old_one(): void
     {
         $this->requestCode('ana@example.com');
@@ -215,6 +225,7 @@ class PasswordResetTest extends TestCase
         $this->postJson('/api/password/verify-code', ['email' => 'ana@example.com', 'code' => $codes[1]])->assertOk();
     }
 
+    #[Group('FR-AU'), Group('NFR-S'), Group('FR-AU-03'), Group('NFR-S-03')]
     public function test_system_admin_needs_fifteen_characters(): void
     {
         $admin = User::factory()->create(['role' => 'system_admin', 'school_id' => 'SYS-RS', 'email' => 'sys@example.com', 'is_active' => true]);
@@ -225,6 +236,7 @@ class PasswordResetTest extends TestCase
         $this->reset($code, 'a long enough passphrase', 'sys@example.com')->assertOk();
     }
 
+    #[Group('FR-AU'), Group('FR-AU-03')]
     public function test_requests_are_rate_limited(): void
     {
         for ($i = 0; $i < 5; $i++) {
@@ -232,6 +244,7 @@ class PasswordResetTest extends TestCase
         }
         $this->requestCode('nobody@example.com')->assertStatus(429);
     }
+    #[Group('FR-AU'), Group('FR-AU-03')]
     public function test_two_accounts_sharing_an_email_reset_only_the_one_asked_for(): void
     {
         $instructor = User::factory()->create([

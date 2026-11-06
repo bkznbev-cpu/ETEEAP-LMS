@@ -6,11 +6,14 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class CreateSystemAdminCommandTest extends TestCase
 {
     use RefreshDatabase;
 
+    #[Group('supporting')]
     public function test_creates_a_system_admin_who_can_log_in(): void
     {
         $this->artisan('siknayan:system-admin', ['school_id' => 'SYS-0001', '--name' => 'Demo Admin'])
@@ -34,6 +37,7 @@ class CreateSystemAdminCommandTest extends TestCase
             ->assertJsonPath('first_login', false);
     }
 
+    #[Group('NFR-S'), Group('NFR-S-03')]
     public function test_rejects_mismatched_or_short_passwords(): void
     {
         $this->artisan('siknayan:system-admin', ['school_id' => 'SYS-0002'])
@@ -49,6 +53,7 @@ class CreateSystemAdminCommandTest extends TestCase
         $this->assertDatabaseMissing('users', ['school_id' => 'SYS-0002']);
     }
 
+    #[Group('supporting')]
     public function test_will_not_overwrite_an_existing_account(): void
     {
         User::factory()->create(['school_id' => 'ADM-0009', 'role' => 'academic_admin']);
@@ -59,6 +64,7 @@ class CreateSystemAdminCommandTest extends TestCase
         $this->assertDatabaseHas('users', ['school_id' => 'ADM-0009', 'role' => 'academic_admin']);
     }
 
+    #[Group('supporting')]
     public function test_reset_changes_the_password_and_ends_sessions(): void
     {
         $admin = User::factory()->create([

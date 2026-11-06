@@ -10,12 +10,14 @@ use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * New accounts: set a new password, then add an email. Until the email
  * is added, the account can only add it or log out, and every sign-in
  * says the email is still needed.
  */
+#[Group('integration')]
 class EmailAfterPasswordSetupTest extends TestCase
 {
     use RefreshDatabase;
@@ -59,6 +61,7 @@ class EmailAfterPasswordSetupTest extends TestCase
         ]);
     }
 
+    #[Group('FR-AU'), Group('FR-AU-02')]
     public function test_learner_sets_password_then_must_add_email(): void
     {
         $learner = $this->newAccount('learner', '24-EM001');
@@ -111,6 +114,7 @@ class EmailAfterPasswordSetupTest extends TestCase
         $this->assertSame('ana.cruz@example.com', $entry->new_values['email']);
     }
 
+    #[Group('FR-AU'), Group('FR-AU-02')]
     public function test_instructor_and_academic_admin_must_add_email_too(): void
     {
         foreach (['instructor' => '/api/instructor/dashboard', 'academic_admin' => '/api/admin/profile'] as $role => $page) {
@@ -124,6 +128,7 @@ class EmailAfterPasswordSetupTest extends TestCase
         }
     }
 
+    #[Group('FR-AU'), Group('FR-AU-02')]
     public function test_email_must_be_valid_and_not_used_by_another_account(): void
     {
         // Already used by the most accounts allowed (2).
@@ -141,6 +146,7 @@ class EmailAfterPasswordSetupTest extends TestCase
         $this->assertNull($learner->fresh()->email);
     }
 
+    #[Group('FR-AU'), Group('FR-AU-02'), Group('FR-AU-05')]
     public function test_logout_still_works_without_an_email(): void
     {
         $learner = $this->newAccount('learner', '24-EM003');
@@ -150,6 +156,7 @@ class EmailAfterPasswordSetupTest extends TestCase
         $this->withToken($token)->postJson('/api/logout')->assertOk();
     }
 
+    #[Group('FR-AU'), Group('FR-AU-02')]
     public function test_email_typed_by_an_admin_must_be_confirmed_by_the_owner(): void
     {
         $learner = User::factory()->create([
@@ -171,6 +178,7 @@ class EmailAfterPasswordSetupTest extends TestCase
         $this->actingAs($learner->fresh())->getJson('/api/student/courses')->assertOk();
     }
 
+    #[Group('FR-AU'), Group('FR-AU-02')]
     public function test_resend_waits_a_minute(): void
     {
         $learner = $this->newAccount('learner', '24-EM006');
@@ -183,6 +191,7 @@ class EmailAfterPasswordSetupTest extends TestCase
         $this->actingAs($learner)->postJson('/api/account/email/resend')->assertOk();
     }
 
+    #[Group('FR-AU'), Group('FR-AU-02')]
     public function test_accounts_with_an_email_are_not_affected(): void
     {
         $learner = User::factory()->create(['role' => 'learner', 'school_id' => '24-EM004', 'email' => 'ok@example.com', 'password_setup_complete' => true, 'is_active' => true]);

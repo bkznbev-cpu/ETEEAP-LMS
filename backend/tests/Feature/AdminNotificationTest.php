@@ -10,7 +10,9 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class AdminNotificationTest extends TestCase
 {
     use RefreshDatabase;
@@ -31,6 +33,7 @@ class AdminNotificationTest extends TestCase
         return Notification::where('user_id', $user->id)->orderBy('id')->get();
     }
 
+    #[Group('FR-NM'), Group('FR-NM-05')]
     public function test_admins_are_not_notified_when_a_learner_finishes_password_setup(): void
     {
         $adminA = $this->user('academic_admin', 'ADM-N1');
@@ -54,6 +57,7 @@ class AdminNotificationTest extends TestCase
         $this->assertCount(0, $this->notificationsFor($systemAdmin));
     }
 
+    #[Group('FR-NM'), Group('FR-NM-07')]
     public function test_old_account_setup_notifications_are_hidden_from_admins(): void
     {
         $admin = $this->user('academic_admin', 'ADM-N9');
@@ -70,6 +74,7 @@ class AdminNotificationTest extends TestCase
             ->assertJsonPath('notifications.0.type', 'account_locked');
     }
 
+    #[Group('FR-NM'), Group('FR-NM-05')]
     public function test_academic_admins_are_told_when_work_is_graded_once(): void
     {
         $admin = $this->user('academic_admin', 'ADM-N4');
@@ -111,6 +116,7 @@ class AdminNotificationTest extends TestCase
         );
     }
 
+    #[Group('FR-NM'), Group('FR-NM-05'), Group('FR-NM-06')]
     public function test_lockout_notifies_the_right_admins_once(): void
     {
         $academicAdmin = $this->user('academic_admin', 'ADM-N5');
@@ -149,6 +155,7 @@ class AdminNotificationTest extends TestCase
         $this->assertCount(1, $this->notificationsFor($systemAdmin));
     }
 
+    #[Group('FR-NM'), Group('FR-NM-06')]
     public function test_system_admins_are_told_about_academic_admin_account_changes(): void
     {
         $systemAdmin = $this->user('system_admin', 'SYS-N3', ['name' => 'Root Admin']);
@@ -190,6 +197,7 @@ class AdminNotificationTest extends TestCase
         );
     }
 
+    #[Group('FR-NM'), Group('FR-NM-07')]
     public function test_system_admin_can_read_and_manage_their_own_notifications(): void
     {
         $systemAdmin = $this->user('system_admin', 'SYS-N5');
@@ -219,6 +227,7 @@ class AdminNotificationTest extends TestCase
         $this->assertNull($mine->fresh());
     }
 
+    #[Group('FR-NM'), Group('NFR-S'), Group('FR-NM-07'), Group('NFR-S-02')]
     public function test_academic_admin_can_mark_all_read_and_learners_cannot_use_admin_endpoints(): void
     {
         $admin = $this->user('academic_admin', 'ADM-N9');

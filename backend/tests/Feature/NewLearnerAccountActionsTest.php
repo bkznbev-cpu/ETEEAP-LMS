@@ -5,11 +5,14 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class NewLearnerAccountActionsTest extends TestCase
 {
     use RefreshDatabase;
 
+    #[Group('FR-UM'), Group('FR-UM-01')]
     public function test_a_new_learner_can_be_deactivated_and_reset_before_first_login(): void
     {
         $admin = User::factory()->create([

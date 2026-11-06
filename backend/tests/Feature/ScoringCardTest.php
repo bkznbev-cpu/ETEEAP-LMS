@@ -11,11 +11,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Grading a compiled submission with a scoring card: one row per
  * activity (title, score, over); the grade holds the totals.
  */
+#[Group('integration')]
 class ScoringCardTest extends TestCase
 {
     use RefreshDatabase;
@@ -56,6 +58,7 @@ class ScoringCardTest extends TestCase
             ->postJson("/api/instructor/submissions/{$this->submission->id}/grade", $body);
     }
 
+    #[Group('FR-GF'), Group('FR-GF-01')]
     public function test_scoring_card_saves_rows_and_totals(): void
     {
         $this->grade([
@@ -88,6 +91,7 @@ class ScoringCardTest extends TestCase
             ->assertOk()->assertJsonFragment(['title' => 'Quiz']);
     }
 
+    #[Group('FR-GF'), Group('FR-GF-04')]
     public function test_scores_already_given_cannot_be_changed(): void
     {
         $a = ['title' => 'A', 'score' => 5, 'max_score' => 10];
@@ -117,6 +121,7 @@ class ScoringCardTest extends TestCase
         $this->assertSame(3, GradeItem::count());
     }
 
+    #[Group('FR-GF'), Group('FR-GF-01'), Group('FR-GF-04')]
     public function test_a_single_score_is_locked_and_can_gain_activities(): void
     {
         $this->grade(['score' => 45, 'max_score' => 50])->assertOk();
@@ -133,6 +138,7 @@ class ScoringCardTest extends TestCase
         $this->grade(['items' => [['title' => 'Module activity', 'score' => 30, 'max_score' => 50]]])->assertStatus(422);
     }
 
+    #[Group('FR-GF'), Group('FR-GF-01')]
     public function test_invalid_rows_are_refused(): void
     {
         $this->grade(['items' => []])->assertStatus(422);
@@ -152,6 +158,7 @@ class ScoringCardTest extends TestCase
             ->postJson("/api/instructor/submissions/{$this->submission->id}/grade/confirm-edit", ['password' => $password]);
     }
 
+    #[Group('FR-GF'), Group('FR-GF-04')]
     public function test_saved_scores_can_be_changed_after_password_confirmation(): void
     {
         $a = ['title' => 'A', 'score' => 5, 'max_score' => 10];
@@ -190,6 +197,7 @@ class ScoringCardTest extends TestCase
         $this->assertSame('9.00', (string) $this->submission->fresh()->grade->score);
     }
 
+    #[Group('FR-GF'), Group('NFR-S'), Group('FR-GF-04'), Group('NFR-S-02')]
     public function test_confirming_a_score_change_is_limited_to_the_class_instructor(): void
     {
         $this->grade(['items' => [['title' => 'A', 'score' => 5, 'max_score' => 10]]])->assertOk();
@@ -205,6 +213,7 @@ class ScoringCardTest extends TestCase
         $this->confirmEdit('password')->assertStatus(429);
     }
 
+    #[Group('FR-GF'), Group('NFR-S'), Group('FR-GF-01'), Group('NFR-S-02')]
     public function test_other_instructors_cannot_grade(): void
     {
         $other = User::factory()->create(['role' => 'instructor', 'school_id' => 'INS-SC2', 'is_active' => true]);

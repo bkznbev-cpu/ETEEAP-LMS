@@ -10,7 +10,9 @@ use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class AcademicAdminSafeDeleteTest extends TestCase
 {
     use RefreshDatabase;
@@ -56,6 +58,7 @@ class AcademicAdminSafeDeleteTest extends TestCase
         return [$course, $module];
     }
 
+    #[Group('FR-UM'), Group('FR-UM-01')]
     public function test_learner_with_a_submission_cannot_be_deleted(): void
     {
         $learner = $this->user('learner');
@@ -75,6 +78,7 @@ class AcademicAdminSafeDeleteTest extends TestCase
         $this->assertDatabaseHas('submissions', ['learner_id' => $learner->id]);
     }
 
+    #[Group('FR-UM'), Group('FR-UM-01')]
     public function test_learner_with_progress_cannot_be_deleted(): void
     {
         $learner = $this->user('learner');
@@ -93,6 +97,7 @@ class AcademicAdminSafeDeleteTest extends TestCase
         $this->assertDatabaseHas('users', ['id' => $learner->id]);
     }
 
+    #[Group('FR-UM'), Group('FR-UM-01')]
     public function test_learner_without_records_can_be_deleted(): void
     {
         $learner = $this->user('learner', setUp: false);
@@ -110,6 +115,7 @@ class AcademicAdminSafeDeleteTest extends TestCase
         ]);
     }
 
+    #[Group('FR-UM'), Group('FR-UM-01')]
     public function test_instructor_who_graded_work_cannot_be_deleted(): void
     {
         $instructor = $this->user('instructor');
@@ -136,6 +142,7 @@ class AcademicAdminSafeDeleteTest extends TestCase
         $this->assertDatabaseHas('grades', ['submission_id' => $submission->id]);
     }
 
+    #[Group('FR-UM'), Group('FR-UM-01')]
     public function test_instructor_assigned_to_a_class_cannot_be_deleted(): void
     {
         $instructor = $this->user('instructor');
@@ -151,6 +158,7 @@ class AcademicAdminSafeDeleteTest extends TestCase
         ]);
     }
 
+    #[Group('FR-UM'), Group('FR-UM-01')]
     public function test_instructor_without_records_can_be_deleted(): void
     {
         $instructor = $this->user('instructor', setUp: false);
@@ -162,6 +170,7 @@ class AcademicAdminSafeDeleteTest extends TestCase
         $this->assertDatabaseMissing('users', ['id' => $instructor->id]);
     }
 
+    #[Group('FR-UM'), Group('FR-UM-01')]
     public function test_set_up_accounts_without_records_can_be_deleted(): void
     {
         foreach (['learner' => 'learners', 'instructor' => 'instructors'] as $role => $path) {
@@ -178,6 +187,7 @@ class AcademicAdminSafeDeleteTest extends TestCase
         }
     }
 
+    #[Group('FR-UM'), Group('FR-UM-01')]
     public function test_set_up_learner_with_submissions_still_cannot_be_deleted(): void
     {
         $learner = $this->user('learner');
@@ -195,6 +205,7 @@ class AcademicAdminSafeDeleteTest extends TestCase
         $this->assertDatabaseHas('users', ['id' => $learner->id]);
     }
 
+    #[Group('FR-UM'), Group('FR-UM-01')]
     public function test_deactivated_learner_with_submissions_still_cannot_be_deleted(): void
     {
         $learner = $this->user('learner');
@@ -213,6 +224,7 @@ class AcademicAdminSafeDeleteTest extends TestCase
         $this->assertDatabaseHas('submissions', ['learner_id' => $learner->id]);
     }
 
+    #[Group('FR-UM'), Group('FR-UM-01')]
     public function test_account_lists_say_which_accounts_were_set_up(): void
     {
         $setUpLearner = $this->user('learner');
@@ -231,6 +243,7 @@ class AcademicAdminSafeDeleteTest extends TestCase
         $this->assertFalse($instructors[$newInstructor->id]['account_set_up']);
     }
 
+    #[Group('FR-CM'), Group('FR-CM-01')]
     public function test_class_with_submissions_cannot_be_deleted(): void
     {
         $learner = $this->user('learner');
@@ -249,6 +262,7 @@ class AcademicAdminSafeDeleteTest extends TestCase
         $this->assertDatabaseHas('submissions', ['module_id' => $module->id]);
     }
 
+    #[Group('FR-CM'), Group('FR-CM-01')]
     public function test_class_with_submissions_on_a_removed_module_cannot_be_deleted(): void
     {
         $learner = $this->user('learner');
@@ -267,6 +281,7 @@ class AcademicAdminSafeDeleteTest extends TestCase
         $this->assertDatabaseHas('submissions', ['module_id' => $module->id]);
     }
 
+    #[Group('FR-CM'), Group('FR-CM-01')]
     public function test_class_without_learner_records_can_be_deleted(): void
     {
         [$course] = $this->classWithModule();

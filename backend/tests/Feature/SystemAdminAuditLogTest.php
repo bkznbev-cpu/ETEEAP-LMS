@@ -8,11 +8,13 @@ use App\Support\AuditLogger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Audit Logs page API: System Admin only, read only, filtered and paged
  * by the server, CSV export (which is logged itself).
  */
+#[Group('integration')]
 class SystemAdminAuditLogTest extends TestCase
 {
     use RefreshDatabase;
@@ -42,6 +44,7 @@ class SystemAdminAuditLogTest extends TestCase
         return $entry;
     }
 
+    #[Group('FR-SA'), Group('FR-SA-04')]
     public function test_system_admin_sees_entries_newest_first_with_all_fields(): void
     {
         $systemAdmin = $this->user('system_admin', 'SYS-AL-01');
@@ -88,6 +91,7 @@ class SystemAdminAuditLogTest extends TestCase
         $this->assertNotNull($response->json('logs.0.created_at_manila'));
     }
 
+    #[Group('FR-SA'), Group('FR-SA-04')]
     public function test_filters_and_pagination(): void
     {
         $admin = $this->user('system_admin', 'SYS-AL-02');
@@ -129,6 +133,7 @@ class SystemAdminAuditLogTest extends TestCase
         $this->actingAs($admin)->getJson('/api/system-admin/audit-logs?from=2026-10-22&to=2026-10-20')->assertStatus(422);
     }
 
+    #[Group('FR-SA'), Group('FR-SA-05')]
     public function test_export_is_csv_spreadsheet_safe_and_logged(): void
     {
         $admin = $this->user('system_admin', 'SYS-AL-03');
@@ -150,6 +155,7 @@ class SystemAdminAuditLogTest extends TestCase
         $this->assertSame(1, $export->new_values['rows']);
     }
 
+    #[Group('FR-SA'), Group('FR-SA-03')]
     public function test_there_is_no_way_to_change_or_delete_entries(): void
     {
         $admin = $this->user('system_admin', 'SYS-AL-04');
@@ -165,6 +171,7 @@ class SystemAdminAuditLogTest extends TestCase
         $this->assertSame('keep me', $entry->fresh()->details);
     }
 
+    #[Group('FR-SA'), Group('NFR-S'), Group('FR-SA-04'), Group('FR-SA-05'), Group('NFR-S-02')]
     public function test_other_roles_cannot_read_or_export_audit_logs(): void
     {
         foreach (['academic_admin', 'instructor', 'learner'] as $index => $role) {
@@ -174,6 +181,7 @@ class SystemAdminAuditLogTest extends TestCase
         }
     }
 
+    #[Group('NFR-S'), Group('NFR-S-02')]
     public function test_audit_logs_require_login(): void
     {
         $this->getJson('/api/system-admin/audit-logs')->assertUnauthorized();

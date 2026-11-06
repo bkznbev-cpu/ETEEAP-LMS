@@ -9,16 +9,19 @@ use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * The Learners list sends each learner's modules (from their classes)
  * with where the learner is, so Learner Details can list them and the
  * "Modules Assigned" count matches the list.
  */
+#[Group('integration')]
 class AdminLearnerModulesTest extends TestCase
 {
     use RefreshDatabase;
 
+    #[Group('FR-PT'), Group('FR-PT-05')]
     public function test_each_learner_comes_with_their_modules_and_state(): void
     {
         $admin = User::factory()->create(['role' => 'academic_admin', 'school_id' => 'ADM-LM', 'is_active' => true]);

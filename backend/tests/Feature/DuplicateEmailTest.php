@@ -6,11 +6,13 @@ use App\Models\User;
 use App\Rules\UniqueEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * An email address can belong to only one account. Capital letters and
  * spaces don't make it a different address.
  */
+#[Group('integration')]
 class DuplicateEmailTest extends TestCase
 {
     use RefreshDatabase;
@@ -29,6 +31,7 @@ class DuplicateEmailTest extends TestCase
         ]);
     }
 
+    #[Group('FR-AU'), Group('FR-AU-02')]
     public function test_setup_email_step_refuses_an_existing_email_in_any_case(): void
     {
         foreach (['learner', 'instructor', 'academic_admin'] as $i => $role) {
@@ -46,6 +49,7 @@ class DuplicateEmailTest extends TestCase
         }
     }
 
+    #[Group('FR-UM'), Group('FR-UM-01')]
     public function test_academic_admin_cannot_set_learner_or_instructor_emails(): void
     {
         $this->actingAs($this->admin)->postJson('/api/admin/learners', [
@@ -68,6 +72,7 @@ class DuplicateEmailTest extends TestCase
         $this->assertSame('mine@example.com', $learner->fresh()->email);
     }
 
+    #[Group('FR-AU'), Group('FR-AU-02'), Group('FR-AU-04')]
     public function test_an_email_can_be_shared_by_two_accounts_but_not_three(): void
     {
         $systemAdmin = User::factory()->create(['role' => 'system_admin', 'school_id' => 'SYS-DUP', 'is_active' => true]);

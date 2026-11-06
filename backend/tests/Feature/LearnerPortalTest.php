@@ -10,10 +10,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Every endpoint the learner pages (student/*.html) call.
  */
+#[Group('integration')]
 class LearnerPortalTest extends TestCase
 {
     use RefreshDatabase;
@@ -59,6 +61,7 @@ class LearnerPortalTest extends TestCase
         ], ['Accept' => 'application/json']);
     }
 
+    #[Group('FR-SM'), Group('FR-SM-01')]
     public function test_learner_can_submit_pdf_word_excel_or_a_photo(): void
     {
         $modules = [];
@@ -78,6 +81,7 @@ class LearnerPortalTest extends TestCase
         }
     }
 
+    #[Group('FR-CM'), Group('FR-CM-05')]
     public function test_class_list_shows_counts_and_only_the_instructor_name(): void
     {
         $this->submit()->assertCreated();
@@ -94,6 +98,7 @@ class LearnerPortalTest extends TestCase
         $this->assertStringNotContainsString('reyes@x.edu', $response->getContent());
     }
 
+    #[Group('FR-CM'), Group('FR-CM-05'), Group('FR-CM-01')]
     public function test_inactive_classes_are_hidden(): void
     {
         $this->class->update(['is_active' => false]);
@@ -103,6 +108,7 @@ class LearnerPortalTest extends TestCase
         $this->actingAs($this->learner)->getJson("/api/student/modules/{$this->module->id}")->assertNotFound();
     }
 
+    #[Group('FR-CM'), Group('FR-PT'), Group('FR-GF'), Group('FR-CM-05'), Group('FR-PT-01'), Group('FR-GF-03')]
     public function test_class_page_shows_published_modules_with_my_status_and_grade(): void
     {
         $submissionId = $this->submit()->json('submission.id');
@@ -127,6 +133,7 @@ class LearnerPortalTest extends TestCase
         $this->actingAs($this->learner)->getJson('/api/student/grades')->assertOk()->assertJsonCount(1, 'grades');
     }
 
+    #[Group('FR-CM'), Group('FR-SM'), Group('NFR-S'), Group('FR-CM-05'), Group('FR-SM-01'), Group('NFR-S-02')]
     public function test_drafts_and_other_classes_cannot_be_opened_or_submitted(): void
     {
         $this->actingAs($this->learner)->getJson("/api/student/modules/{$this->draft->id}")->assertNotFound();
@@ -139,6 +146,7 @@ class LearnerPortalTest extends TestCase
         ], ['Accept' => 'application/json'])->assertForbidden();
     }
 
+    #[Group('FR-SM'), Group('FR-SM-01')]
     public function test_submitting_twice_is_refused_and_the_path_stays_private(): void
     {
         $first = $this->submit()->assertCreated();
@@ -148,6 +156,7 @@ class LearnerPortalTest extends TestCase
         $this->assertDatabaseHas('notifications', ['user_id' => $this->instructor->id, 'type' => 'submission']);
     }
 
+    #[Group('FR-SM'), Group('NFR-S'), Group('FR-SM-01'), Group('NFR-S-02')]
     public function test_learner_opens_only_their_own_submitted_file(): void
     {
         $id = $this->submit()->json('submission.id');
@@ -164,6 +173,7 @@ class LearnerPortalTest extends TestCase
         $this->actingAs($this->instructor)->getJson("/api/student/submissions/{$id}/file")->assertForbidden();
     }
 
+    #[Group('supporting')]
     public function test_profile_show_and_update(): void
     {
         $this->actingAs($this->learner)->getJson('/api/student/profile')
@@ -192,6 +202,7 @@ class LearnerPortalTest extends TestCase
             ->assertStatus(422)->assertJsonValidationErrors('contact');
     }
 
+    #[Group('supporting')]
     public function test_profile_photo_upload_replaces_the_old_one(): void
     {
         Storage::fake('public');
@@ -215,6 +226,7 @@ class LearnerPortalTest extends TestCase
         ], ['Accept' => 'application/json'])->assertStatus(422);
     }
 
+    #[Group('supporting')]
     public function test_large_profile_photos_are_accepted_and_stored_small(): void
     {
         Storage::fake('public');
@@ -238,6 +250,7 @@ class LearnerPortalTest extends TestCase
             ->assertJsonPath('errors.photo.0', 'The photo must be 25 MB or smaller.');
     }
 
+    #[Group('FR-NM'), Group('FR-NM-07')]
     public function test_notifications_list_and_mark_read(): void
     {
         $note = Notification::create(['user_id' => $this->learner->id, 'title' => 'Hi', 'message' => 'x', 'type' => 'announcement', 'is_read' => false]);
@@ -249,6 +262,7 @@ class LearnerPortalTest extends TestCase
         $this->actingAs($this->learner)->postJson('/api/student/notifications/read-all')->assertOk();
     }
 
+    #[Group('NFR-S'), Group('NFR-S-02')]
     public function test_other_roles_cannot_use_learner_endpoints(): void
     {
         foreach (['/api/student/courses', '/api/student/profile', '/api/student/grades', '/api/student/notifications'] as $url) {

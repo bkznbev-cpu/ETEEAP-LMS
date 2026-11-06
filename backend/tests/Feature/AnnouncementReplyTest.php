@@ -8,7 +8,9 @@ use App\Models\Course;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class AnnouncementReplyTest extends TestCase
 {
     use RefreshDatabase;
@@ -48,6 +50,7 @@ class AnnouncementReplyTest extends TestCase
         return $this->actingAs($learner)->postJson("/api/student/announcements/{$this->announcement->id}/replies", ['message' => $message]);
     }
 
+    #[Group('FR-CA'), Group('FR-NM'), Group('FR-CA-02'), Group('FR-NM-04')]
     public function test_learner_replies_and_the_instructor_is_notified(): void
     {
         $this->learnerReply($this->learner)
@@ -59,6 +62,7 @@ class AnnouncementReplyTest extends TestCase
         $this->assertDatabaseHas('notifications', ['user_id' => $this->instructor->id, 'type' => 'announcement_reply']);
     }
 
+    #[Group('FR-CA'), Group('FR-CA-02'), Group('FR-CA-03')]
     public function test_classmates_see_replies_on_the_class_page(): void
     {
         $this->learnerReply($this->learner);
@@ -79,6 +83,7 @@ class AnnouncementReplyTest extends TestCase
             ->assertJsonPath('announcements.0.replies.1.is_mine', true);
     }
 
+    #[Group('FR-CA'), Group('NFR-S'), Group('FR-CA-02'), Group('NFR-S-02')]
     public function test_only_enrolled_learners_in_active_classes_can_reply(): void
     {
         $this->learnerReply($this->outsider)->assertNotFound();
@@ -90,6 +95,7 @@ class AnnouncementReplyTest extends TestCase
         $this->assertSame(0, AnnouncementReply::count());
     }
 
+    #[Group('FR-CA'), Group('FR-CA-02')]
     public function test_empty_or_too_long_replies_are_refused(): void
     {
         $this->learnerReply($this->learner, '   ')->assertStatus(422)->assertJsonValidationErrors('message');
@@ -97,6 +103,7 @@ class AnnouncementReplyTest extends TestCase
         $this->assertSame(0, AnnouncementReply::count());
     }
 
+    #[Group('FR-CA'), Group('NFR-S'), Group('FR-CA-02'), Group('FR-CA-03'), Group('NFR-S-02')]
     public function test_learners_delete_only_their_own_replies_and_instructors_moderate_their_class(): void
     {
         $mine = $this->learnerReply($this->learner)->json('reply.id');
@@ -111,6 +118,7 @@ class AnnouncementReplyTest extends TestCase
         $this->assertSame(0, AnnouncementReply::count());
     }
 
+    #[Group('FR-CA'), Group('FR-CA-01')]
     public function test_replies_are_removed_with_the_announcement(): void
     {
         $this->learnerReply($this->learner);

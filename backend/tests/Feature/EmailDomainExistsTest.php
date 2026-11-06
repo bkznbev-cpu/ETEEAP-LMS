@@ -6,11 +6,13 @@ use App\Models\User;
 use App\Rules\EmailDomainExists;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Email addresses whose domain doesn't exist are refused. These tests look
  * domains up on the internet, so they are skipped when offline.
  */
+#[Group('integration')]
 class EmailDomainExistsTest extends TestCase
 {
     use RefreshDatabase;
@@ -26,6 +28,7 @@ class EmailDomainExistsTest extends TestCase
         config(['siknayan.check_email_domains' => true]);
     }
 
+    #[Group('FR-AU'), Group('FR-AU-02'), Group('FR-AU-04')]
     public function test_real_and_fake_domains(): void
     {
         $this->assertTrue(EmailDomainExists::check('juan@gmail.com'));
@@ -35,6 +38,7 @@ class EmailDomainExistsTest extends TestCase
         $this->assertFalse(EmailDomainExists::check('juan@localhost'));
     }
 
+    #[Group('FR-AU'), Group('FR-AU-02')]
     public function test_setup_email_step_refuses_a_fake_domain(): void
     {
         $learner = User::factory()->create([
@@ -50,6 +54,7 @@ class EmailDomainExistsTest extends TestCase
             ->assertOk();
     }
 
+    #[Group('FR-AU'), Group('FR-AU-04')]
     public function test_change_email_refuses_a_fake_domain(): void
     {
         $learner = User::factory()->create([

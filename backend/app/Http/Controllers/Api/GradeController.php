@@ -9,6 +9,7 @@ use App\Models\Notification;
 use App\Models\Progress;
 use App\Models\Submission;
 use App\Support\AdminNotifier;
+use App\Support\ScoreCalculator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -230,31 +231,20 @@ class GradeController extends Controller
                 'items.*.max_score.gt' => 'The total of an activity must be greater than zero.',
             ]);
 
-            $items = collect($validated['items'])->values()->map(fn ($item, $index) => [
-                'title' => trim($item['title']),
-                'score' => round((float) $item['score'], 2),
-                'max_score' => round((float) $item['max_score'], 2),
-                'position' => $index,
-            ]);
+            $items = collect(ScoreCalculator::normalizeItems($validated['items']));
 
             foreach ($items as $item) {
-                if ($item['title'] === '') {
+                if ($error = ScoreCalculator::itemError($item)) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Every activity needs a title.',
-                    ], 422);
-                }
-
-                if ($item['score'] > $item['max_score']) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => "The score of \"{$item['title']}\" cannot be greater than {$item['max_score']}.",
+                        'message' => $error,
                     ], 422);
                 }
             }
 
-            $validated['score'] = round($items->sum('score'), 2);
-            $validated['max_score'] = round($items->sum('max_score'), 2);
+            $totals = ScoreCalculator::totals($items);
+            $validated['score'] = $totals['score'];
+            $validated['max_score'] = $totals['max_score'];
         } else {
             $validated = $request->validate([
                 'score' => [

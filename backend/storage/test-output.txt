@@ -1,0 +1,459 @@
+
+   PASS  Tests\Unit\AuditLoggerTest
+  ✓ label returns known and fallback action labels                                                               0.01s  
+  ✓ changes reports modified and added fields but omits removed fields
+  ✓ changes preserves false and null values                                                                      0.01s  
+  ✓ target maps supported models to audit metadata                                                               0.07s  
+  ✓ target uses model id when user or course identifiers are empty
+  ✓ target metadata can be supplied without a model or override model defaults                                   0.01s  
+
+   PASS  Tests\Unit\ExampleTest
+  ✓ that true is true                                                                                            0.03s  
+
+   PASS  Tests\Unit\PasswordPolicyTest
+  ✓ password with 8 characters is valid for learners instructors and academic admins                             0.60s  
+  ✓ password shorter than 8 characters is invalid                                                                0.07s  
+  ✓ system administrator password shorter than 15 characters is invalid                                          0.06s  
+  ✓ system administrator password with 15 characters is valid                                                    0.04s  
+  ✓ unknown role uses the 8 character minimum                                                                    0.05s  
+
+   PASS  Tests\Unit\ScoreCalculatorTest
+  ✓ normalize items trims titles rounds scores and numbers rows from zero                                        0.01s  
+  ✓ totals adds scores and rounds to two decimals
+  ✓ totals of zero scores and of no rows are zero
+  ✓ item error rejects a blank title
+  ✓ item error rejects a score above the maximum but allows a perfect score
+  ✓ rounding happens before the score is compared to the maximum                                                 0.01s  
+
+   PASS  Tests\Unit\UploadRulesTest
+  ✓ allowed submission file types are accepted                                                                   0.09s  
+  ✓ other submission file types are rejected                                                                     0.08s  
+  ✓ submission file of 10 mb is accepted                                                                         0.05s  
+  ✓ submission file over 10 mb is rejected                                                                       0.06s  
+  ✓ allowed module file types are accepted                                                                       0.07s  
+  ✓ other module file types are rejected                                                                         0.07s  
+  ✓ module file of 25 mb is accepted                                                                             0.05s  
+  ✓ module file over 25 mb is rejected                                                                           0.06s  
+  ✓ a file is required                                                                                           0.06s  
+
+
+
+
+
+
+
+
+
+   PASS  Tests\Feature\AcademicAdminAccountManagementTest
+  ✓ academic admin can deactivate and reactivate a learner                                                       0.82s  
+  ✓ academic admin can change a learner school id and name                                                       0.11s  
+  ✓ academic admin can change an instructor id                                                                   0.07s  
+  ✓ academic admin can deactivate an instructor                                                                  0.09s  
+  ✓ deactivated accounts cannot log in                                                                           0.12s  
+  ✓ inactive user cannot use an existing sanctum token                                                           0.21s  
+  ✓ token issued after deactivation cannot access protected routes                                               0.20s  
+  ✓ active user can log in and use the issued sanctum token                                                      0.16s  
+  ✓ academic admin can complete first login password setup                                                       0.11s  
+  ✓ dashboard reports submitted submissions awaiting a grade                                                     0.09s  
+  ✓ academic admin reports records from the database                                                             0.10s  
+  ✓ academic admin deleting a class persists to the database                                                     0.09s  
+  ✓ non admin cannot complete academic admin password setup                                                      0.07s  
+  ✓ non admin cannot change account status                                                                       0.08s  
+
+   PASS  Tests\Feature\AcademicAdminDataSeparationTest
+  ✓ a new admin starts with an empty workspace                                                                   0.17s  
+  ✓ another admins records cannot be changed or deleted                                                          0.15s  
+  ✓ cannot borrow another admins learner or instructor                                                           0.16s  
+  ✓ new records belong to the admin who creates them                                                             0.22s  
+  ✓ school ids and class codes stay unique across admins                                                         0.11s  
+  ✓ notifications about a learner go only to their admin                                                         0.15s  
+  ✓ an admin who still manages records cannot be deleted                                                         0.08s  
+
+   PASS  Tests\Feature\AcademicAdminProfilePhotoAuthorizationTest
+  ✓ learner cannot upload an academic admin profile photo                                                        0.07s  
+  ✓ instructor cannot upload an academic admin profile photo                                                     0.06s  
+
+   PASS  Tests\Feature\AcademicAdminSafeDeleteTest
+  ✓ learner with a submission cannot be deleted                                                                  0.08s  
+  ✓ learner with progress cannot be deleted                                                                      0.07s  
+  ✓ learner without records can be deleted                                                                       0.09s  
+  ✓ instructor who graded work cannot be deleted                                                                 0.10s  
+  ✓ instructor assigned to a class cannot be deleted                                                             0.07s  
+  ✓ instructor without records can be deleted                                                                    0.06s  
+  ✓ set up accounts without records can be deleted                                                               0.10s  
+  ✓ set up learner with submissions still cannot be deleted                                                      0.08s  
+  ✓ deactivated learner with submissions still cannot be deleted                                                 0.08s  
+  ✓ account lists say which accounts were set up                                                                 0.10s  
+  ✓ class with submissions cannot be deleted                                                                     0.06s  
+  ✓ class with submissions on a removed module cannot be deleted                                                 0.07s  
+  ✓ class without learner records can be deleted                                                                 0.07s  
+
+   PASS  Tests\Feature\AdminLearnerModulesTest
+  ✓ each learner comes with their modules and state                                                              0.10s  
+
+   PASS  Tests\Feature\AdminNotificationTest
+  ✓ admins are not notified when a learner finishes password setup                                               0.11s  
+  ✓ old account setup notifications are hidden from admins                                                       0.06s  
+  ✓ academic admins are told when work is graded once                                                            0.41s  
+  ✓ lockout notifies the right admins once                                                                       0.78s  
+  ✓ system admins are told about academic admin account changes                                                  0.12s  
+  ✓ system admin can read and manage their own notifications                                                     0.10s  
+  ✓ academic admin can mark all read and learners cannot use admin endpoints                                     0.07s  
+
+   PASS  Tests\Feature\AnnouncementReplyTest
+  ✓ learner replies and the instructor is notified                                                               0.09s  
+  ✓ classmates see replies on the class page                                                                     0.14s  
+  ✓ only enrolled learners in active classes can reply                                                           0.22s  
+  ✓ empty or too long replies are refused                                                                        0.13s  
+  ✓ learners delete only their own replies and instructors moderate their class                                  0.12s  
+  ✓ replies are removed with the announcement                                                                    0.09s  
+
+   PASS  Tests\Feature\AuditLogEventsTest
+  ✓ successful sign in and sign out are recorded with role and ip                                                0.11s  
+  ✓ five wrong passwords lock the account and are logged without passwords                                       0.23s  
+  ✓ deactivated account sign in is recorded as refused                                                           0.07s  
+  ✓ password setup and change are recorded                                                                       0.10s  
+  ✓ system admin profile changes are recorded with old and new                                                   0.14s  
+  ✓ entries cannot be changed or deleted                                                                         0.07s  
+
+   PASS  Tests\Feature\AuditTrailCoverageTest
+  ✓ instructor grade change shows old and new grade                                                              0.66s  
+  ✓ learner account lifecycle                                                                                    0.15s  
+  ✓ classes and enrolment                                                                                        0.16s  
+  ✓ module material upload and replace                                                                           0.37s  
+  ✓ failed backup is logged                                                                                      0.28s  
+  ✓ real ip is recorded only behind a trusted proxy                                                              0.13s  
+
+   WARN  Tests\Feature\AuthenticationTest
+  ✓ login fails with wrong password                                                                              0.09s  
+  ✓ user can log in with valid school id and password                                                            0.09s  
+  ✓ password change fails with wrong current password                                                            0.07s  
+  ✓ passwords are stored hashed                                                                                  0.11s  
+  … new password without an uppercase letter or number is rejected → DISCREPANCY NFR-S-03: the server accepts a… 0.18s  
+  … system administrator cannot change own password to fewer than 15 characters → DISCREPANCY NFR-S-03: a Syste… 0.12s  
+  … session expires after 30 minutes of inactivity → DISCREPANCY NFR-S-04: after 31 minutes without activity th… 0.12s  
+
+   WARN  Tests\Feature\ClassManagementTest
+  ✓ academic administrator can create class with program and instructor                                          0.21s  
+  ✓ duplicate class code is rejected                                                                             0.35s  
+  ✓ academic administrator can edit class and set status                                                         0.17s  
+  ✓ academic administrator can add and remove learners                                                           0.21s  
+  ✓ academic administrator can assign library modules to class                                                   0.12s  
+  … module from another course cannot be assigned → DISCREPANCY FR-CM-04: the server accepts any Module for any… 0.13s  
+  ✓ instructor sees only assigned classes                                                                        0.14s  
+  ✓ instructor and learner cannot manage classes                                                                 0.15s  
+
+   PASS  Tests\Feature\CreateSystemAdminCommandTest
+  ✓ creates a system admin who can log in                                                                        0.14s  
+  ✓ rejects mismatched or short passwords                                                                        0.08s  
+  ✓ will not overwrite an existing account                                                                       0.07s  
+  ✓ reset changes the password and ends sessions                                                                 0.11s  
+
+   PASS  Tests\Feature\DatabaseSeederTest
+  ✓ seeder creates admin with a temporary password not the old default                                           0.14s  
+  ✓ seeding again does not reset the password                                                                    0.12s  
+
+   PASS  Tests\Feature\DuplicateEmailTest
+  ✓ setup email step refuses an existing email in any case                                                       0.26s  
+  ✓ academic admin cannot set learner or instructor emails                                                       0.19s  
+  ✓ an email can be shared by two accounts but not three                                                         0.16s  
+
+   PASS  Tests\Feature\EmailAfterPasswordSetupTest
+  ✓ learner sets password then must add email                                                                    0.34s  
+  ✓ instructor and academic admin must add email too                                                             0.17s  
+  ✓ email must be valid and not used by another account                                                          0.10s  
+  ✓ logout still works without an email                                                                          0.10s  
+  ✓ email typed by an admin must be confirmed by the owner                                                       0.14s  
+  ✓ resend waits a minute                                                                                        0.13s  
+  ✓ accounts with an email are not affected                                                                      0.13s  
+
+   PASS  Tests\Feature\EmailChangeTest
+  ✓ every role can change their email after verifying it                                                         0.29s  
+  ✓ the old address is told about the request and the change                                                     0.12s  
+  ✓ invalid email formats are refused                                                                            0.11s  
+  ✓ an address used by another account is refused                                                                0.09s  
+  ✓ a wrong current password is refused and limited                                                              0.15s  
+  ✓ wrong codes are counted and cancel the request                                                               0.14s  
+  ✓ expired codes do not work                                                                                    0.09s  
+  ✓ a code works only once                                                                                       0.10s  
+  ✓ resend waits a minute and replaces the old code                                                              0.13s  
+  ✓ a pending change can be cancelled                                                                            0.14s  
+  ✓ an address taken before verification is not given away                                                       0.10s  
+  ✓ people can only change their own email                                                                       0.09s  
+  ✓ a mail failure does not leave a pending change                                                               0.08s  
+
+   PASS  Tests\Feature\EmailDomainExistsTest
+  ✓ real and fake domains                                                                                        0.09s  
+  ✓ setup email step refuses a fake domain                                                                       0.13s  
+  ✓ change email refuses a fake domain                                                                           0.06s  
+
+   PASS  Tests\Feature\ExampleTest
+  ✓ the application returns a successful response                                                                0.10s  
+
+   PASS  Tests\Feature\ForcedPasswordChangeTest
+  ✓ new learner is blocked until password is set                                                                 0.09s  
+  ✓ new instructor and admin are blocked until password is set                                                   0.08s  
+  ✓ account on temporary password can still log out                                                              0.08s  
+  ✓ learner created by admin must change password                                                                0.07s  
+  ✓ instructor created by admin must change password                                                             0.15s  
+  ✓ admin password reset forces a change and logs the user out                                                   0.13s  
+  ✓ editing a learner without a password keeps their setup                                                       0.13s  
+  ✓ learner can change their own password                                                                        0.10s  
+  ✓ changing password logs out other sessions only                                                               0.11s  
+
+   PASS  Tests\Feature\GradeEmailTest
+  ✓ the learner is emailed when an activity is graded                                                            0.16s  
+  ✓ a feedback only change is not emailed again                                                                  0.10s  
+  ✓ a changed score is emailed                                                                                   0.12s  
+  ✓ learners without an email are not emailed                                                                    0.11s  
+
+   PASS  Tests\Feature\GradingTest
+  ✓ instructor can grade with a score over a maximum and save feedback                                           0.30s  
+  ✓ score above maximum is rejected                                                                              0.30s  
+  ✓ learner can view own grade and feedback                                                                      0.41s  
+  ✓ learner cannot view another learners grade                                                                   0.77s  
+
+   PASS  Tests\Feature\ImportMultipleSheetsTest
+  ✓ without a choice only the active sheet is imported as before                                                 0.61s  
+  ✓ chosen sheets are imported together                                                                          0.20s  
+  ✓ a chosen sheet without the required columns is named in the error                                            0.15s  
+  ✓ an unknown sheet name is refused                                                                             0.13s  
+  ✓ row errors say which sheet and duplicates are caught across sheets                                           0.13s  
+
+   PASS  Tests\Feature\InstructorAnnouncementTest
+  ✓ instructor posts and enrolled learners are notified                                                          0.33s  
+  ✓ learners with an email get the announcement by email                                                         0.13s  
+  ✓ announcement is posted even if the email fails                                                               0.10s  
+  ✓ no email when no learner has an address                                                                      0.14s  
+  ✓ title and message are required                                                                               0.08s  
+  ✓ edit and delete                                                                                              0.20s  
+  ✓ other instructors and learners cannot manage it                                                              0.45s  
+  ✓ enrolled learner sees announcements on the class                                                             0.22s  
+
+   PASS  Tests\Feature\InstructorImportTest
+  ✓ imported instructors get an 8 character temporary password                                                   0.17s  
+
+   PASS  Tests\Feature\InstructorNotificationLinksTest
+  ✓ new submission notification points to the learner in the class                                               0.13s  
+  ✓ learner reply notifies the instructor with the announcement                                                  0.13s  
+  ✓ class learners include their profile photo                                                                   0.12s  
+  ✓ learner progress has one row per class                                                                       0.09s  
+
+   PASS  Tests\Feature\InstructorPortalTest
+  ✓ module material view and download                                                                            0.12s  
+  ✓ dashboard counts each learners ungraded submissions                                                          0.45s  
+  ✓ dashboard                                                                                                    0.12s  
+  ✓ classes list and detail                                                                                      0.13s  
+  ✓ add and edit a module                                                                                        0.12s  
+  ✓ submissions list file and grade                                                                              0.32s  
+  ✓ notifications                                                                                                0.32s  
+  ✓ profile and password                                                                                         0.49s  
+  ✓ other roles cannot use instructor endpoints                                                                  0.20s  
+
+   PASS  Tests\Feature\InstructorWithoutEmailTest
+  ✓ an instructor can be added without an email                                                                  0.12s  
+  ✓ an email sent by the admin is ignored                                                                        0.12s  
+  ✓ editing never changes the email                                                                              0.10s  
+  ✓ a new account can be deactivated and reset before first login                                                0.14s  
+
+   PASS  Tests\Feature\LearnerImportTest
+  ✓ import accepts blank email and reports skipped email                                                         0.22s  
+  ✓ import ignores the email column                                                                              0.23s  
+
+   PASS  Tests\Feature\LearnerPortalTest
+  ✓ learner can submit pdf word excel or a photo                                                                 0.57s  
+  ✓ class list shows counts and only the instructor name                                                         0.28s  
+  ✓ inactive classes are hidden                                                                                  0.15s  
+  ✓ class page shows published modules with my status and grade                                                  1.13s  
+  ✓ drafts and other classes cannot be opened or submitted                                                       0.16s  
+  ✓ submitting twice is refused and the path stays private                                                       0.16s  
+  ✓ learner opens only their own submitted file                                                                  0.18s  
+  ✓ profile show and update                                                                                      0.25s  
+  ✓ profile photo upload replaces the old one                                                                    0.57s  
+  ✓ large profile photos are accepted and stored small                                                           1.49s  
+  ✓ notifications list and mark read                                                                             0.16s  
+  ✓ other roles cannot use learner endpoints                                                                     0.12s  
+
+   PASS  Tests\Feature\LearnerRouteAuthorizationTest
+  ✓ other roles are refused on every learner route                                                               0.30s  
+  ✓ learners still reach their routes                                                                            0.19s  
+
+   PASS  Tests\Feature\LessonResourceTest
+  ✓ instructor adds a link for a module                                                                          0.17s  
+  ✓ links must be web addresses                                                                                  0.10s  
+  ✓ instructor uploads a powerpoint and learner can open it                                                      0.42s  
+  ✓ other instructors cannot manage the class resources                                                          0.28s  
+  ✓ disallowed file types are rejected                                                                           0.20s  
+
+   PASS  Tests\Feature\LoginSecurityTest
+  ✓ account is locked after five failed attempts                                                                 0.28s  
+  ✓ lockout lasts fifteen minutes                                                                                0.20s  
+  ✓ lock applies to the account from any computer                                                                0.15s  
+  ✓ failures older than fifteen minutes do not count                                                             0.15s  
+  ✓ successful login resets the failure count                                                                    0.17s  
+  ✓ unknown school ids are also limited                                                                          0.65s  
+  ✓ one address cannot try many accounts                                                                         2.24s  
+  ✓ login token expires after eight hours                                                                        0.09s  
+  ✓ token last used time is saved at most once a minute                                                          0.09s  
+  ✓ older slower password hash is resaved on sign in                                                             0.55s  
+
+   PASS  Tests\Feature\LoginValidationTest
+  ✓ login rejects missing credentials                                                                            0.07s  
+  ✓ demo failed assertion                                                                                        0.05s  
+
+   PASS  Tests\Feature\ModuleLibraryTest
+  ✓ academic administrator can upload module file                                                                0.11s  
+  ✓ module upload rejects file over 25 mb                                                                        0.12s  
+  ✓ instructor and learner cannot upload module library files                                                    0.13s  
+
+   PASS  Tests\Feature\ModuleMaterialTest
+  ✓ sync keeps the stored path and the display name                                                              0.15s  
+  ✓ a display name or missing file is refused as a path                                                          0.20s  
+  ✓ enrolled learner downloads the right file under its original name                                            0.23s  
+  ✓ others cannot download                                                                                       0.25s  
+  ✓ only pdf images word and excel can be uploaded                                                               0.62s  
+  ✓ learner can view the file in the browser                                                                     0.16s  
+  ✓ replacing a library file updates every class using it                                                        0.15s  
+  ✓ old records holding only a display name are not offered or served                                            0.12s  
+
+   PASS  Tests\Feature\NewLearnerAccountActionsTest
+  ✓ a new learner can be deactivated and reset before first login                                                0.17s  
+
+   WARN  Tests\Feature\NotificationTest
+  … learner is notified when added to class → DISCREPANCY FR-NM-01: adding a Learner to a Class creates no noti… 0.08s  
+  … learner is notified when module is assigned to their class → DISCREPANCY FR-NM-01: assigning a Module to a…  0.08s  
+  ✓ instructor is notified when learner submits                                                                  0.10s  
+  ✓ learner is notified in the app when grade is posted                                                          0.20s  
+  … academic administrator is notified when saved score is changed → DISCREPANCY FR-NM-05: the Academic Adminis… 0.42s  
+  ✓ user can view own notification history only                                                                  0.12s  
+
+   PASS  Tests\Feature\PasswordResetTest
+  ✓ a five digit code is emailed and stored hashed                                                               0.13s  
+  ✓ an email not used during account setup fails                                                                 0.08s  
+  ✓ the school id must belong to the same account as the email                                                   0.08s  
+  ✓ a deactivated account is refused                                                                             0.12s  
+  ✓ verify then reset signs out everywhere and code works once                                                   0.18s  
+  ✓ wrong codes are counted and the code is cancelled after five                                                 0.24s  
+  ✓ expired code and bad input are refused                                                                       0.13s  
+  ✓ a new code needs a minute and replaces the old one                                                           0.14s  
+  ✓ system admin needs fifteen characters                                                                        0.14s  
+  ✓ requests are rate limited                                                                                    0.13s  
+  ✓ two accounts sharing an email reset only the one asked for                                                   0.11s  
+
+   PASS  Tests\Feature\ProgressAndReportsTest
+  ✓ learner sees correct status for graded waiting and not submitted modules                                     0.37s  
+  ✓ instructor sees completion for learners in their classes only                                                0.22s  
+  ✓ work queue data shows learners without class ungraded work and empty classes                                 0.22s  
+  ✓ learner list shows program modules progress and status                                                       0.24s  
+  ✓ dashboard counts are correct                                                                                 0.14s  
+  ✓ reports endpoint returns class and learner data                                                              0.09s  
+  ✓ non administrators cannot access reports or dashboard                                                        0.13s  
+
+   PASS  Tests\Feature\RoleAccessTest
+  ✓ unauthenticated requests are refused with data set "learner"                                                 0.11s  
+  ✓ unauthenticated requests are refused with data set "instructor"                                              0.07s  
+  ✓ unauthenticated requests are refused with data set "academic admin"                                          0.15s  
+  ✓ unauthenticated requests are refused with data set "system admin"                                            0.10s  
+  ✓ each role reaches only its own portal with data set "learner on learner portal"                              0.08s  
+  ✓ each role reaches only its own portal with data set "learner on instructor portal"                           0.08s  
+  ✓ each role reaches only its own portal with data set "learner on academic admin portal"                       0.10s  
+  ✓ each role reaches only its own portal with data set "learner on system admin portal"                         0.09s  
+  ✓ each role reaches only its own portal with data set "instructor on learner portal"                           0.11s  
+  ✓ each role reaches only its own portal with data set "instructor on instructor portal"                        0.08s  
+  ✓ each role reaches only its own portal with data set "instructor on academic admin portal"                    0.12s  
+  ✓ each role reaches only its own portal with data set "instructor on system admin portal"                      0.08s  
+  ✓ each role reaches only its own portal with data set "academic admin on learner portal"                       0.16s  
+  ✓ each role reaches only its own portal with data set "academic admin on instructor portal"                    0.13s  
+  ✓ each role reaches only its own portal with data set "academic admin on academic admin portal"                0.13s  
+  ✓ each role reaches only its own portal with data set "academic admin on system admin portal"                  0.11s  
+  ✓ each role reaches only its own portal with data set "system admin on learner portal"                         0.13s  
+  ✓ each role reaches only its own portal with data set "system admin on instructor portal"                      0.11s  
+  ✓ each role reaches only its own portal with data set "system admin on academic admin portal"                  0.13s  
+  ✓ each role reaches only its own portal with data set "system admin on system admin portal"                    0.09s  
+
+   PASS  Tests\Feature\ScoringCardTest
+  ✓ scoring card saves rows and totals                                                                           0.65s  
+  ✓ scores already given cannot be changed                                                                       0.84s  
+  ✓ a single score is locked and can gain activities                                                             0.96s  
+  ✓ invalid rows are refused                                                                                     0.21s  
+  ✓ saved scores can be changed after password confirmation                                                      0.58s  
+  ✓ confirming a score change is limited to the class instructor                                                 0.77s  
+  ✓ other instructors cannot grade                                                                               0.16s  
+
+   PASS  Tests\Feature\SubmissionTest
+  ✓ submission rejects file over 10 mb                                                                           0.23s  
+  ✓ submission rejects unsupported file type                                                                     0.20s  
+  ✓ learner cannot submit to a module outside their classes                                                      0.22s  
+  ✓ instructor can view and download submissions in their class                                                  0.25s  
+  ✓ instructor cannot download submissions from another class                                                    0.26s  
+  ✓ submission date and time are recorded                                                                        0.20s  
+
+   PASS  Tests\Feature\SystemAdminAcademicAdminManagementTest
+  ✓ management routes require a system admin                                                                     0.22s  
+  ✓ system admin lists only academic admin accounts                                                              0.11s  
+  ✓ system admin can create an academic admin and audit it                                                       0.10s  
+  ✓ create validates unique school id email and password confirmation                                            0.14s  
+  ✓ system admin can edit and deactivate with audit and token revocation                                         0.11s  
+  ✓ system admin can reactivate an academic admin                                                                0.09s  
+  ✓ delete removes only the target account and keeps audit record                                                0.15s  
+  ✓ last active academic admin cannot be deactivated or deleted                                                  0.10s  
+  ✓ system admin endpoints cannot target a different role                                                        0.10s  
+
+   PASS  Tests\Feature\SystemAdminAuditLogTest
+  ✓ system admin sees entries newest first with all fields                                                       0.14s  
+  ✓ filters and pagination                                                                                       0.46s  
+  ✓ export is csv spreadsheet safe and logged                                                                    0.14s  
+  ✓ there is no way to change or delete entries                                                                  0.20s  
+  ✓ other roles cannot read or export audit logs                                                                 0.16s  
+  ✓ audit logs require login                                                                                     0.09s  
+
+   PASS  Tests\Feature\SystemAdminAuthenticationTest
+  ✓ system admin can log in and verify the protected session                                                     0.12s  
+  ✓ system admin session requires authentication                                                                 0.10s  
+  ✓ logout revokes the current token and protected endpoints reject it                                           0.09s  
+  ✓ authenticated non system admin can use shared logout                                                         0.11s  
+  ✓ system admin dashboard returns real account statistics                                                       0.08s  
+  ✓ non system admin roles cannot verify a system admin session                                                  0.13s  
+
+   PASS  Tests\Feature\SystemAdminBackupTest
+  ✓ backup holds database files and guide but not env                                                            0.24s  
+  ✓ password protected backup is aes encrypted                                                                   0.26s  
+  ✓ download and delete                                                                                          0.24s  
+  ✓ only backup file names are accepted                                                                          0.21s  
+  ✓ other roles cannot use backups                                                                               0.27s  
+
+   PASS  Tests\Feature\SystemAdminProfileTest
+  ✓ system admin can view their profile                                                                          0.19s  
+  ✓ profile changes are saved                                                                                    0.08s  
+  ✓ photo upload replaces and removes the old file                                                               0.45s  
+  ✓ invalid input is rejected                                                                                    0.10s  
+  ✓ only system admins can use it                                                                                0.11s  
+
+   PASS  Tests\Feature\SystemAdminRestoreTest
+  ✓ restore puts back the database and files after a safety backup                                               0.49s  
+  ✓ restore needs the admin password and typing restore                                                          0.26s  
+  ✓ password protected backups need their backup password                                                        0.57s  
+  ✓ a failed restore puts the previous database back                                                             0.54s  
+  ✓ only expected paths are taken from a zip                                                                     0.37s  
+  ✓ uploads must be siknayan backups                                                                             0.13s  
+  ✓ other roles cannot restore or upload                                                                         0.20s  
+
+   PASS  Tests\Feature\SystemAdminTemporaryPasswordTest
+  ✓ creating without email or password generates a temporary password                                            0.13s  
+  ✓ a typed password is still accepted and not echoed back                                                       0.09s  
+  ✓ reset gives a new temporary password and ends sessions                                                       0.10s  
+  ✓ reset only works on academic admins and only for system admins                                               0.07s  
+
+   PASS  Tests\Feature\TrustedProxyIpTest
+  ✓ real visitor ip is logged behind a trusted proxy                                                             0.14s  
+
+   PASS  Tests\Feature\UnsubmitTest
+  ✓ learner can unsubmit ungraded work and submit again                                                          0.22s  
+  ✓ graded work cannot be unsubmitted                                                                            0.15s  
+  ✓ learner cannot unsubmit someone elses work                                                                   0.13s  
+  ✓ instructor cannot use the learner unsubmit route                                                             0.23s  
+  ✓ grading an unsubmitted activity reports it is gone                                                           0.19s  
+
+  Tests:    7 incomplete, 328 passed (1937 assertions)
+  Duration: 64.30s
+

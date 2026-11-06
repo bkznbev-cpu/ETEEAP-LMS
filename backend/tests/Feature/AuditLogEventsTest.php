@@ -7,10 +7,12 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Sign-in, sign-out, lockout and own-account events in audit_logs.
  */
+#[Group('integration')]
 class AuditLogEventsTest extends TestCase
 {
     use RefreshDatabase;
@@ -36,6 +38,7 @@ class AuditLogEventsTest extends TestCase
         return AuditLogEntry::where('action', $action)->orderBy('id')->get();
     }
 
+    #[Group('FR-SA'), Group('FR-SA-03')]
     public function test_successful_sign_in_and_sign_out_are_recorded_with_role_and_ip(): void
     {
         $learner = $this->user('learner', '24-A0001');
@@ -55,6 +58,7 @@ class AuditLogEventsTest extends TestCase
         $this->assertSame($learner->id, $this->entries('sign_out')->sole()->actor_id);
     }
 
+    #[Group('FR-SA'), Group('NFR-S'), Group('FR-SA-03'), Group('NFR-S-05')]
     public function test_five_wrong_passwords_lock_the_account_and_are_logged_without_passwords(): void
     {
         $this->user('academic_admin', 'ADM-A1');
@@ -93,6 +97,7 @@ class AuditLogEventsTest extends TestCase
         $this->assertStringNotContainsString('right-password-1', $everything);
     }
 
+    #[Group('FR-SA'), Group('FR-SA-03')]
     public function test_deactivated_account_sign_in_is_recorded_as_refused(): void
     {
         $this->user('instructor', 'INS-A1', ['is_active' => false]);
@@ -104,6 +109,7 @@ class AuditLogEventsTest extends TestCase
         $this->assertStringContainsString('deactivated', $blocked->details);
     }
 
+    #[Group('FR-SA'), Group('FR-SA-03')]
     public function test_password_setup_and_change_are_recorded(): void
     {
         $this->user('learner', '24-A0002', ['password_setup_complete' => false]);
@@ -129,6 +135,7 @@ class AuditLogEventsTest extends TestCase
         $this->assertStringNotContainsString('learner-newer-pass', AuditLogEntry::all()->toJson());
     }
 
+    #[Group('FR-SA'), Group('FR-SA-03')]
     public function test_system_admin_profile_changes_are_recorded_with_old_and_new(): void
     {
         $admin = $this->user('system_admin', 'SYS-A1', ['name' => 'Old Name', 'email' => 'old@x.edu']);
@@ -147,6 +154,7 @@ class AuditLogEventsTest extends TestCase
         $this->assertSame(['name' => 'New Name'], $entry->new_values);
     }
 
+    #[Group('FR-SA'), Group('FR-SA-03')]
     public function test_entries_cannot_be_changed_or_deleted(): void
     {
         $this->user('learner', '24-A0009');

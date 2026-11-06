@@ -6,7 +6,9 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class SystemAdminTemporaryPasswordTest extends TestCase
 {
     use RefreshDatabase;
@@ -20,6 +22,7 @@ class SystemAdminTemporaryPasswordTest extends TestCase
         ]);
     }
 
+    #[Group('FR-UM'), Group('FR-UM-04')]
     public function test_creating_without_email_or_password_generates_a_temporary_password(): void
     {
         $systemAdmin = $this->systemAdmin();
@@ -45,6 +48,7 @@ class SystemAdminTemporaryPasswordTest extends TestCase
             ->assertJsonPath('first_login', true);
     }
 
+    #[Group('FR-UM'), Group('FR-UM-04')]
     public function test_a_typed_password_is_still_accepted_and_not_echoed_back(): void
     {
         $systemAdmin = $this->systemAdmin();
@@ -62,6 +66,7 @@ class SystemAdminTemporaryPasswordTest extends TestCase
         $this->assertTrue(Hash::check('typed-by-admin', User::where('school_id', 'ADM-T2')->value('password')));
     }
 
+    #[Group('FR-UM'), Group('FR-UM-04')]
     public function test_reset_gives_a_new_temporary_password_and_ends_sessions(): void
     {
         $systemAdmin = $this->systemAdmin();
@@ -98,6 +103,7 @@ class SystemAdminTemporaryPasswordTest extends TestCase
         );
     }
 
+    #[Group('FR-UM'), Group('NFR-S'), Group('FR-UM-04'), Group('NFR-S-02')]
     public function test_reset_only_works_on_academic_admins_and_only_for_system_admins(): void
     {
         $systemAdmin = $this->systemAdmin();

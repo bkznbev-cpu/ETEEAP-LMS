@@ -10,7 +10,9 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class GradeEmailTest extends TestCase
 {
     use RefreshDatabase;
@@ -63,6 +65,7 @@ class GradeEmailTest extends TestCase
             ->count();
     }
 
+    #[Group('FR-NM'), Group('FR-NM-03')]
     public function test_the_learner_is_emailed_when_an_activity_is_graded(): void
     {
         $this->grade([['Quiz 1', 85, 100]], 'Good work.');
@@ -78,6 +81,7 @@ class GradeEmailTest extends TestCase
         });
     }
 
+    #[Group('FR-NM'), Group('FR-GF'), Group('FR-NM-03'), Group('FR-GF-02')]
     public function test_a_feedback_only_change_is_not_emailed_again(): void
     {
         $this->grade([['Quiz 1', 70, 100]]);
@@ -87,6 +91,7 @@ class GradeEmailTest extends TestCase
         $this->assertSame(0, $this->sent(false));
     }
 
+    #[Group('FR-NM'), Group('FR-GF'), Group('FR-NM-03'), Group('FR-GF-04')]
     public function test_a_changed_score_is_emailed(): void
     {
         $this->grade([['Quiz 1', 70, 100]]);
@@ -96,6 +101,7 @@ class GradeEmailTest extends TestCase
         Mail::assertSent(ActivityGraded::class, fn (ActivityGraded $mail) => !$mail->isNewGrade && str_contains($mail->render(), '110 / 150'));
     }
 
+    #[Group('FR-NM'), Group('FR-NM-03')]
     public function test_learners_without_an_email_are_not_emailed(): void
     {
         $this->learner->update(['email' => null]);

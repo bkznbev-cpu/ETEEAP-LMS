@@ -4469,3 +4469,89 @@ select:focus-visible {
 .administrators-table td:nth-child(5) {
     width: 35%;
 }
+
+/* School ID, email and status shown under the name on phones only. */
+.admin-mobile-meta {
+    display: none;
+}
+
+/* Academic Administrators on phones: smaller page title, and the table
+   fits the screen. School ID, Email and Status move under the name and
+   the action buttons show only their icons. */
+@media (max-width: 700px) {
+    .administrators-page-header h2 {
+        font-size: 24px;
+    }
+
+    .administrators-page-header p {
+        font-size: 13px;
+    }
+
+    .administrators-table {
+        min-width: 0;
+        table-layout: auto;
+    }
+
+    .administrators-table th:nth-child(2),
+    .administrators-table td:nth-child(2),
+    .administrators-table th:nth-child(3),
+    .administrators-table td:nth-child(3),
+    .administrators-table th:nth-child(4),
+    .administrators-table td:nth-child(4) {
+        display: none;
+    }
+
+    .administrators-table th:nth-child(1),
+    .administrators-table td:nth-child(1) {
+        width: auto;
+    }
+
+    .administrators-table th:nth-child(5),
+    .administrators-table td:nth-child(5) {
+        width: 1%;
+    }
+
+    .administrators-table th,
+    .administrators-table td {
+        padding: 12px;
+    }
+
+    .administrators-table td:nth-child(1) {
+        overflow-wrap: anywhere;
+    }
+
+    .admin-name {
+        display: block;
+        font-weight: 600;
+    }
+
+    .admin-mobile-meta {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 3px;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12px;
+    }
+
+    .admin-mobile-meta .status-badge {
+        margin-top: 3px;
+    }
+
+    .administrators-table .action-buttons {
+        display: grid;
+        grid-template-columns: repeat(2, 34px);
+        gap: 6px;
+    }
+
+    .administrators-table .table-action {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+    }
+
+    .administrators-table .table-action span {
+        display: none;
+    }
+}

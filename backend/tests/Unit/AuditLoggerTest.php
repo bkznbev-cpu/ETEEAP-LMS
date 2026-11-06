@@ -9,15 +9,19 @@ use App\Models\Submission;
 use App\Models\User;
 use App\Support\AuditLogger;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('unit')]
 class AuditLoggerTest extends TestCase
 {
+    #[Group('FR-SA'), Group('FR-SA-03')]
     public function test_label_returns_known_and_fallback_action_labels(): void
     {
         $this->assertSame('Sign-in', AuditLogger::label('sign_in'));
         $this->assertSame('Custom action', AuditLogger::label('custom_action'));
     }
 
+    #[Group('FR-SA'), Group('FR-SA-03')]
     public function test_changes_reports_modified_and_added_fields_but_omits_removed_fields(): void
     {
         $changes = AuditLogger::changes(
@@ -31,6 +35,7 @@ class AuditLoggerTest extends TestCase
         );
     }
 
+    #[Group('FR-SA'), Group('FR-SA-03')]
     public function test_changes_preserves_false_and_null_values(): void
     {
         $changes = AuditLogger::changes(
@@ -44,6 +49,7 @@ class AuditLoggerTest extends TestCase
         );
     }
 
+    #[Group('FR-SA'), Group('FR-SA-03')]
     public function test_target_maps_supported_models_to_audit_metadata(): void
     {
         $user = new User(['school_id' => 'SYS-001', 'name' => 'System Admin']);
@@ -68,6 +74,7 @@ class AuditLoggerTest extends TestCase
         $this->assertSame(['submission', '#30', 'homework.pdf'], AuditLogger::target(['target' => $submission]));
     }
 
+    #[Group('FR-SA'), Group('FR-SA-03')]
     public function test_target_uses_model_id_when_user_or_course_identifiers_are_empty(): void
     {
         $user = new User(['name' => 'Unassigned User']);
@@ -80,6 +87,7 @@ class AuditLoggerTest extends TestCase
         $this->assertSame(['class', '#8', 'Uncoded Class'], AuditLogger::target(['target' => $course]));
     }
 
+    #[Group('FR-SA'), Group('FR-SA-03')]
     public function test_target_metadata_can_be_supplied_without_a_model_or_override_model_defaults(): void
     {
         $course = new Course(['code' => 'IT 101', 'name' => 'Intro to IT']);

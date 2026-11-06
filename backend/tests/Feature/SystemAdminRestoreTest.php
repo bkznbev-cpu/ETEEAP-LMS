@@ -11,12 +11,14 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 use ZipArchive;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Restore from the Data Backup page: own password + typing RESTORE,
  * a safety backup first, the database and files put back, and the old
  * data put back again if the restore fails.
  */
+#[Group('integration')]
 class SystemAdminRestoreTest extends TestCase
 {
     use RefreshDatabase;
@@ -104,6 +106,7 @@ class SystemAdminRestoreTest extends TestCase
         );
     }
 
+    #[Group('FR-SA'), Group('NFR-R'), Group('FR-SA-02'), Group('NFR-R-01')]
     public function test_restore_puts_back_the_database_and_files_after_a_safety_backup(): void
     {
         $name = $this->makeBackup();
@@ -142,6 +145,7 @@ class SystemAdminRestoreTest extends TestCase
         $this->assertStringContainsString($safety, $log->details);
     }
 
+    #[Group('FR-SA'), Group('NFR-U'), Group('FR-SA-02'), Group('NFR-U-02')]
     public function test_restore_needs_the_admin_password_and_typing_restore(): void
     {
         $name = $this->makeBackup();
@@ -161,6 +165,7 @@ class SystemAdminRestoreTest extends TestCase
         $this->assertSame([], self::$imported);
     }
 
+    #[Group('FR-SA'), Group('FR-SA-01'), Group('FR-SA-02')]
     public function test_password_protected_backups_need_their_backup_password(): void
     {
         $name = $this->makeBackup(['password' => 'zip-secret-1', 'password_confirmation' => 'zip-secret-1']);
@@ -175,6 +180,7 @@ class SystemAdminRestoreTest extends TestCase
         $this->assertCount(1, self::$imported);
     }
 
+    #[Group('FR-SA'), Group('NFR-R'), Group('FR-SA-02'), Group('NFR-R-01')]
     public function test_a_failed_restore_puts_the_previous_database_back(): void
     {
         $name = $this->makeBackup();
@@ -207,6 +213,7 @@ class SystemAdminRestoreTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'backup_restore_failed']);
     }
 
+    #[Group('FR-SA'), Group('FR-SA-02')]
     public function test_only_expected_paths_are_taken_from_a_zip(): void
     {
         // A crafted zip uploaded as a backup, trying to write outside the folders.
@@ -235,6 +242,7 @@ class SystemAdminRestoreTest extends TestCase
         $this->assertFileDoesNotExist($this->private . '/backend/.env');
     }
 
+    #[Group('FR-SA'), Group('FR-SA-02')]
     public function test_uploads_must_be_siknayan_backups(): void
     {
         $other = $this->root . '/other.zip';
@@ -257,6 +265,7 @@ class SystemAdminRestoreTest extends TestCase
         $this->actingAs($this->admin)->getJson('/api/system-admin/backups')->assertOk()->assertJsonCount(0, 'backups');
     }
 
+    #[Group('FR-SA'), Group('NFR-S'), Group('FR-SA-02'), Group('NFR-S-02')]
     public function test_other_roles_cannot_restore_or_upload(): void
     {
         $name = $this->makeBackup();

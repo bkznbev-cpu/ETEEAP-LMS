@@ -149,7 +149,14 @@
 
         tableBody.innerHTML = filtered.map(item => `
             <tr>
-                <td>${escapeHtml(item.name)}</td>
+                <td>
+                    <span class="admin-name">${escapeHtml(item.name)}</span>
+                    <span class="admin-mobile-meta">
+                        <span>${escapeHtml(item.school_id)}</span>
+                        <span>${escapeHtml(item.email || "—")}</span>
+                        <span class="status-badge ${item.is_active ? "active" : "inactive"}">${item.is_active ? "Active" : "Inactive"}</span>
+                    </span>
+                </td>
                 <td>${escapeHtml(item.school_id)}</td>
                 <td>${escapeHtml(item.email || "—")}</td>
                 <td>
@@ -159,13 +166,13 @@
                 </td>
                 <td>
                     <div class="action-buttons">
-                        <button type="button" class="table-action" data-action="view" data-id="${item.id}" aria-label="View ${escapeHtml(item.name)}">
+                        <button type="button" class="table-action" data-action="view" data-id="${item.id}" aria-label="View ${escapeHtml(item.name)}" title="View">
                             <i data-lucide="eye"></i><span>View</span>
                         </button>
-                        <button type="button" class="table-action" data-action="edit" data-id="${item.id}" aria-label="Edit ${escapeHtml(item.name)}">
+                        <button type="button" class="table-action" data-action="edit" data-id="${item.id}" aria-label="Edit ${escapeHtml(item.name)}" title="Edit">
                             <i data-lucide="pencil"></i><span>Edit</span>
                         </button>
-                        <button type="button" class="table-action" data-action="toggle" data-id="${item.id}" aria-label="${item.is_active ? "Deactivate" : "Activate"} ${escapeHtml(item.name)}">
+                        <button type="button" class="table-action" data-action="toggle" data-id="${item.id}" aria-label="${item.is_active ? "Deactivate" : "Activate"} ${escapeHtml(item.name)}" title="${item.is_active ? "Deactivate" : "Activate"}">
                             <i data-lucide="${item.is_active ? "user-round-x" : "user-round-check"}"></i>
                             <span>${item.is_active ? "Deactivate" : "Activate"}</span>
                         </button>

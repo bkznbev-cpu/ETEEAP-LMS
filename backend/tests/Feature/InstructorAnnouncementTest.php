@@ -10,7 +10,9 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class InstructorAnnouncementTest extends TestCase
 {
     use RefreshDatabase;
@@ -44,6 +46,7 @@ class InstructorAnnouncementTest extends TestCase
             ->postJson("/api/instructor/classes/{$this->class->id}/announcements", $data);
     }
 
+    #[Group('FR-CA'), Group('FR-NM'), Group('FR-CA-01'), Group('FR-NM-04')]
     public function test_instructor_posts_and_enrolled_learners_are_notified(): void
     {
         $this->postAnnouncement()->assertCreated()
@@ -58,6 +61,7 @@ class InstructorAnnouncementTest extends TestCase
             ->assertOk()->assertJsonCount(1, 'announcements');
     }
 
+    #[Group('FR-NM'), Group('FR-NM-04')]
     public function test_learners_with_an_email_get_the_announcement_by_email(): void
     {
         Mail::fake();
@@ -83,6 +87,7 @@ class InstructorAnnouncementTest extends TestCase
         });
     }
 
+    #[Group('FR-CA'), Group('FR-CA-01')]
     public function test_announcement_is_posted_even_if_the_email_fails(): void
     {
         $this->learner->update(['email' => 'ana@example.com']);
@@ -92,6 +97,7 @@ class InstructorAnnouncementTest extends TestCase
         $this->assertSame(1, Announcement::count());
     }
 
+    #[Group('FR-NM'), Group('FR-NM-04')]
     public function test_no_email_when_no_learner_has_an_address(): void
     {
         Mail::fake();
@@ -101,12 +107,14 @@ class InstructorAnnouncementTest extends TestCase
         Mail::assertNothingSent();
     }
 
+    #[Group('FR-CA'), Group('FR-CA-01')]
     public function test_title_and_message_are_required(): void
     {
         $this->postAnnouncement(['title' => '', 'message' => ''])
             ->assertStatus(422)->assertJsonValidationErrors(['title', 'message']);
     }
 
+    #[Group('FR-CA'), Group('FR-CA-01')]
     public function test_edit_and_delete(): void
     {
         $id = $this->postAnnouncement()->json('announcement.id');
@@ -119,6 +127,7 @@ class InstructorAnnouncementTest extends TestCase
         $this->assertSame(0, Announcement::count());
     }
 
+    #[Group('FR-CA'), Group('NFR-S'), Group('FR-CA-01'), Group('NFR-S-02')]
     public function test_other_instructors_and_learners_cannot_manage_it(): void
     {
         $id = $this->postAnnouncement()->json('announcement.id');
@@ -134,6 +143,7 @@ class InstructorAnnouncementTest extends TestCase
         $this->assertSame(1, Announcement::count());
     }
 
+    #[Group('FR-CA'), Group('FR-CA-02')]
     public function test_enrolled_learner_sees_announcements_on_the_class(): void
     {
         $this->postAnnouncement();

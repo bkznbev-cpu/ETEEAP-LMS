@@ -8,7 +8,9 @@ use Illuminate\Http\UploadedFile;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class ImportMultipleSheetsTest extends TestCase
 {
     use RefreshDatabase;
@@ -61,6 +63,7 @@ class ImportMultipleSheetsTest extends TestCase
         ], 1); // "Section B" was the active sheet when saved
     }
 
+    #[Group('FR-UM'), Group('FR-UM-02')]
     public function test_without_a_choice_only_the_active_sheet_is_imported_as_before(): void
     {
         $this->actingAs($this->admin)
@@ -72,6 +75,7 @@ class ImportMultipleSheetsTest extends TestCase
         $this->assertDatabaseMissing('users', ['school_id' => '24-30001']);
     }
 
+    #[Group('FR-UM'), Group('FR-UM-02')]
     public function test_chosen_sheets_are_imported_together(): void
     {
         $this->actingAs($this->admin)
@@ -87,6 +91,7 @@ class ImportMultipleSheetsTest extends TestCase
         }
     }
 
+    #[Group('FR-UM'), Group('FR-UM-02')]
     public function test_a_chosen_sheet_without_the_required_columns_is_named_in_the_error(): void
     {
         $this->actingAs($this->admin)
@@ -101,6 +106,7 @@ class ImportMultipleSheetsTest extends TestCase
         $this->assertDatabaseMissing('users', ['school_id' => '24-30001']);
     }
 
+    #[Group('FR-UM'), Group('FR-UM-02')]
     public function test_an_unknown_sheet_name_is_refused(): void
     {
         $this->actingAs($this->admin)
@@ -112,6 +118,7 @@ class ImportMultipleSheetsTest extends TestCase
             ->assertJsonPath('message', 'The workbook has no sheet named "Section Z".');
     }
 
+    #[Group('FR-UM'), Group('FR-UM-02')]
     public function test_row_errors_say_which_sheet_and_duplicates_are_caught_across_sheets(): void
     {
         $header = ['Instructor Name', 'School ID', 'Email', 'Program', 'Contact'];

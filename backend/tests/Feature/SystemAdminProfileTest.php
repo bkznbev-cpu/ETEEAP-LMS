@@ -7,7 +7,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class SystemAdminProfileTest extends TestCase
 {
     use RefreshDatabase;
@@ -23,6 +25,7 @@ class SystemAdminProfileTest extends TestCase
         ], $extra));
     }
 
+    #[Group('supporting')]
     public function test_system_admin_can_view_their_profile(): void
     {
         $admin = $this->systemAdmin();
@@ -36,6 +39,7 @@ class SystemAdminProfileTest extends TestCase
             ->assertJsonPath('profile.profile_photo_url', null);
     }
 
+    #[Group('supporting')]
     public function test_profile_changes_are_saved(): void
     {
         $admin = $this->systemAdmin();
@@ -64,6 +68,7 @@ class SystemAdminProfileTest extends TestCase
         $this->assertNotSame('new@example.com', $admin->fresh()->email);
     }
 
+    #[Group('supporting')]
     public function test_photo_upload_replaces_and_removes_the_old_file(): void
     {
         Storage::fake('public');
@@ -100,6 +105,7 @@ class SystemAdminProfileTest extends TestCase
         $this->assertNull($admin->fresh()->profile_photo_path);
     }
 
+    #[Group('supporting')]
     public function test_invalid_input_is_rejected(): void
     {
         $admin = $this->systemAdmin();
@@ -124,6 +130,7 @@ class SystemAdminProfileTest extends TestCase
             ->assertJsonValidationErrors(['photo']);
     }
 
+    #[Group('NFR-S'), Group('NFR-S-02')]
     public function test_only_system_admins_can_use_it(): void
     {
         foreach (['academic_admin', 'instructor', 'learner'] as $index => $role) {
