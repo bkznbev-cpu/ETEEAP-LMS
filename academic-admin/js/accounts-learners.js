@@ -2168,10 +2168,17 @@ function setExcelImportStatus(message, isError = false) {
     learnerExcelImportStatus.append(icon, text);
     learnerExcelImportStatus.setAttribute("role", "status");
 
+    // Errors stay until the next import so the admin can read every row.
+    if (isError) {
+        learnerExcelImportStatus.setAttribute("role", "alert");
+        learnerExcelImportStatus.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+    }
+
     learnerExcelImportStatusTimer = setTimeout(() => {
         learnerExcelImportStatus.classList.remove("show");
         learnerExcelImportStatus.replaceChildren();
-    }, isError ? 10000 : 5000);
+    }, 5000);
 }
     function getCredentialRows() {
         return latestImportedLearners.map(learner => ({
@@ -2792,7 +2799,7 @@ await saveCredentialFile(
 
     if (Array.isArray(payload?.errors)) {
         details = payload.errors.map(error =>
-            `Row ${error.row ?? "?"}: ${error.message ?? "Invalid data."}`
+            `${error.sheet ? `Sheet "${error.sheet}", row` : "Row"} ${error.row ?? "?"}: ${error.message ?? "Invalid data."}`
         ).join("\n");
     } else if (payload?.errors && typeof payload.errors === "object") {
         details = Object.entries(payload.errors)

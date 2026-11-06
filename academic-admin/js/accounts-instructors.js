@@ -95,14 +95,14 @@ async function instructorApiRequest(path, options = {}) {
         const validationErrors = Array.isArray(payload?.errors)
             ? payload.errors.map(item =>
                 `${item.sheet ? `Sheet "${item.sheet}", row` : "Row"} ${item.row ?? "?"}: ${item.message || "Invalid data."}`
-            ).join(" ")
+            ).join("\n")
             : payload?.errors
-                ? Object.values(payload.errors).flat().join(" ")
+                ? Object.values(payload.errors).flat().join("\n")
                 : "";
 
+        // Headline first (e.g. "This file has already been imported"), then each row.
         throw new Error(
-            validationErrors ||
-            payload?.message ||
+            [payload?.message, validationErrors].filter(Boolean).join("\n\n") ||
             `API request failed (${response.status}).`
         );
     }

@@ -10645,11 +10645,19 @@ body:has(.dashboard-page) .main-content.dashboard-page {
     font-size: 14px;
     line-height: 1.5;
     overflow-wrap: anywhere;
+    white-space: pre-line;
+    max-height: 260px;
+    overflow-y: auto;
     transition: opacity 0.3s ease;
 }
 
+#learnerExcelImportStatus .import-status-icon {
+    margin-right: 6px;
+}
+
 /* Success container */
-#learnerExcelImportStatus.success-message {
+#learnerExcelImportStatus.success-message,
+#learnerExcelImportStatus.show.success {
     display: block;
     color: #166534 !important;
     background-color: #f0fdf4;
@@ -10657,7 +10665,8 @@ body:has(.dashboard-page) .main-content.dashboard-page {
 }
 
 /* Error container */
-#learnerExcelImportStatus.error-message {
+#learnerExcelImportStatus.error-message,
+#learnerExcelImportStatus.show.error {
     display: block;
     color: #b42318 !important;
     background-color: #fef2f2;

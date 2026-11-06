@@ -1727,6 +1727,28 @@ public function syncClassModules(Request $request, int $id): JsonResponse
      * Required columns: Student Name, School ID.
      * Optional columns: Email, Program, Contact.
      */
+    /**
+     * Headline for a rejected import. When every row's School ID is
+     * already in the system, the file was most likely imported before.
+     */
+    private function importErrorSummary(array $prepared, array $existingIds, array $errors): string
+    {
+        $duplicates = count(array_filter(
+            $prepared,
+            fn ($row) => in_array(strtolower($row['school_id']), $existingIds, true)
+        ));
+
+        if ($duplicates > 0 && $duplicates === count($errors) && $duplicates === count($prepared)) {
+            return 'This file has already been imported. Every School ID in it already exists, so no accounts were created.';
+        }
+
+        if ($duplicates > 0) {
+            return "No accounts were created. {$duplicates} School ID(s) already exist in the system. Fix the spreadsheet errors and try again.";
+        }
+
+        return 'No accounts were created. Fix the spreadsheet errors and try again.';
+    }
+
     public function importLearners(Request $request): JsonResponse
     {
         if ($response = $this->checkAdmin($request)) {
@@ -1872,7 +1894,7 @@ public function syncClassModules(Request $request, int $id): JsonResponse
                     $errors[] = [
                         'row' => $learner['row'],
                         'school_id' => $learner['school_id'],
-                        'message' => 'School ID already exists in the system.',
+                        'message' => "School ID {$learner['school_id']} already exists in the system.",
                     ];
                 }
             }
@@ -1880,7 +1902,7 @@ public function syncClassModules(Request $request, int $id): JsonResponse
             if ($errors) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No accounts were created. Fix the spreadsheet errors and try again.',
+                    'message' => $this->importErrorSummary($prepared, $existingIds, $errors),
                     'errors' => $this->withSheetNames($errors),
                 ], 422);
             }
@@ -2170,7 +2192,7 @@ public function importInstructors(Request $request): JsonResponse
                 $errors[] = [
                     'row' => $instructor['row'],
                     'school_id' => $instructor['school_id'],
-                    'message' => 'School ID already exists in the system.',
+                    'message' => "School ID {$instructor['school_id']} already exists in the system.",
                 ];
             }
         }
@@ -2178,7 +2200,7 @@ public function importInstructors(Request $request): JsonResponse
         if ($errors) {
             return response()->json([
                 'success' => false,
-                'message' => 'No accounts were created. Fix the spreadsheet errors and try again.',
+                'message' => $this->importErrorSummary($prepared, $existingIds, $errors),
                 'errors' => $this->withSheetNames($errors),
             ], 422);
         }
