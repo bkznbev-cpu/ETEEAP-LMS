@@ -79,6 +79,17 @@
         };
     }
 
+    // "5 minutes", "3 hours", "2 days" since the given time.
+    function age(value) {
+        const minutes = Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 60000));
+        if (!Number.isFinite(minutes)) return "unknown time";
+        if (minutes < 60) return minutes <= 1 ? "1 minute" : `${minutes} minutes`;
+        const hours = Math.round(minutes / 60);
+        if (hours < 24) return hours === 1 ? "1 hour" : `${hours} hours`;
+        const days = Math.round(hours / 24);
+        return days === 1 ? "1 day" : `${days} days`;
+    }
+
     function message(text, type = "") {
         const box = $("backupMessage");
         box.textContent = text || "";
@@ -109,11 +120,11 @@
             backupsByName = Object.fromEntries(backups.map(item => [item.name, item]));
 
             if (!backups.length) {
-                rows.innerHTML = '<tr><td colspan="6" class="backup-empty">No backups yet. Use "Run backup now" to make the first one.</td></tr>';
+                rows.innerHTML = '<tr><td colspan="6" class="backup-empty">No backups yet. Click <strong>Run backup now</strong> above. Each backup will appear here with its own <strong>Restore</strong> button.</td></tr>';
                 return;
             }
 
-            rows.innerHTML = backups.map(item => {
+            rows.innerHTML = backups.map((item, index) => {
                 const date = when(item.created_at);
                 const counts = item.counts || {};
                 const files = item.files || {};
@@ -123,15 +134,25 @@
                     files.count !== undefined ? `${files.count} files` : ""
                 ].filter(Boolean).join(" · ") || "—";
 
+                // Labels: newest backup, and safety backups (restoring one
+                // undoes the restore it was made for).
+                const tags = [
+                    index === 0 ? '<span class="backup-tag latest">Latest</span>' : "",
+                    item.safety_for
+                        ? `<span class="backup-tag safety" title="Made automatically before restoring ${escapeHtml(item.safety_for)}. Restore this to undo that restore.">Safety backup</span>`
+                        : "",
+                    item.uploaded ? '<span class="backup-uploaded">Uploaded</span>' : ""
+                ].join("");
+
                 return `
                     <tr data-backup-name="${escapeHtml(item.name)}">
-                        <td><strong>${escapeHtml(date.day)}</strong><small>${escapeHtml(date.time)}</small></td>
-                        <td>${escapeHtml(size(item.size))}</td>
-                        <td>${escapeHtml(contents)}${item.uploaded ? '<span class="backup-uploaded">Uploaded</span>' : ""}<small>${escapeHtml(item.name)}</small></td>
-                        <td>${item.encrypted
+                        <td data-label="Date"><strong>${escapeHtml(date.day)}</strong><small>${escapeHtml(date.time)} · ${escapeHtml(age(item.created_at))} ago</small>${tags ? `<div class="backup-tags">${tags}</div>` : ""}</td>
+                        <td data-label="Size">${escapeHtml(size(item.size))}</td>
+                        <td data-label="Contents">${escapeHtml(contents)}${item.safety_for ? `<small class="backup-safety-note">Undoes the restore of ${escapeHtml(item.safety_for)}</small>` : ""}<small>${escapeHtml(item.name)}</small></td>
+                        <td data-label="Password">${item.encrypted
                             ? '<span class="backup-lock yes"><i data-lucide="lock"></i> Protected</span>'
                             : '<span class="backup-lock no">None</span>'}</td>
-                        <td>${escapeHtml(item.created_by || "—")}</td>
+                        <td data-label="Made by">${escapeHtml(item.created_by || "—")}</td>
                         <td>
                             <div class="backup-row-actions">
                                 <button type="button" class="restore-button" data-backup-restore>
@@ -310,11 +331,25 @@
         $("restoreWhich").textContent =
             `Backup made ${date.day}${date.time ? ` at ${date.time}` : ""}` +
             (item.created_by ? ` by ${item.created_by}` : "") + ` (${item.name}).`;
+
+        // What will be lost, in plain words.
+        $("restoreWarning").innerHTML =
+            `This backup is <strong>${escapeHtml(age(item.created_at))} old</strong>. ` +
+            `Everything added or changed after <strong>${escapeHtml(date.day)}${date.time ? `, ${escapeHtml(date.time)}` : ""}</strong> ` +
+            "(accounts, classes, submissions, grades and uploaded files) will be lost.";
+
+        const undo = $("restoreUndo");
+        undo.hidden = !item.safety_for;
+        undo.textContent = item.safety_for
+            ? `This is a safety backup. Restoring it undoes the restore of ${item.safety_for}.`
+            : "";
+
         $("restoreZipField").hidden = !item.encrypted;
         $("restoreZipPassword").value = "";
         $("restorePassword").value = "";
         $("restoreConfirm").value = "";
         restoreMessage("");
+        updateRestoreButton();
 
         if (typeof dialog.showModal === "function") dialog.showModal();
         else dialog.setAttribute("open", "");
@@ -332,13 +367,33 @@
 
     $("restoreCancel").addEventListener("click", closeRestore);
 
+    // The Restore button turns on once every box is filled in and
+    // RESTORE is typed (any letters are shown and sent in capitals).
+    function updateRestoreButton() {
+        const ready = Boolean(restoring)
+            && (!restoring.encrypted || $("restoreZipPassword").value !== "")
+            && $("restorePassword").value !== ""
+            && $("restoreConfirm").value.trim().toUpperCase() === "RESTORE";
+        $("restoreSubmit").disabled = !ready;
+    }
+
+    $("restoreConfirm").addEventListener("input", event => {
+        const input = event.target;
+        const caret = input.selectionStart;
+        input.value = input.value.toUpperCase();
+        try { input.setSelectionRange(caret, caret); } catch (error) { /* ignore */ }
+        updateRestoreButton();
+    });
+    $("restorePassword").addEventListener("input", updateRestoreButton);
+    $("restoreZipPassword").addEventListener("input", updateRestoreButton);
+
     $("restoreForm").addEventListener("submit", async event => {
         event.preventDefault();
         if (!restoring) return;
 
         const zipPassword = $("restoreZipPassword").value;
         const password = $("restorePassword").value;
-        const confirm = $("restoreConfirm").value.trim();
+        const confirm = $("restoreConfirm").value.trim().toUpperCase();
 
         if (restoring.encrypted && !zipPassword) {
             restoreMessage("Enter the backup password.", "error");
@@ -381,10 +436,10 @@
             }, 4000);
         } catch (error) {
             restoreMessage(error.message, "error");
-            submit.disabled = false;
             $("restoreCancel").disabled = false;
             submit.querySelector("span").textContent = "Restore backup";
             $("restorePassword").value = "";
+            updateRestoreButton();
         }
     });
 

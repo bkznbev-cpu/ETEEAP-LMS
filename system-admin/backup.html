@@ -443,6 +443,227 @@
             gap: 10px;
             margin-top: 16px;
         }
+
+        /* Phones: smaller description under "Saved backups". */
+        @media (max-width: 700px) {
+            .backup-panel[aria-labelledby="savedBackupsTitle"] .backup-panel-head p {
+                font-size: 12px;
+                line-height: 1.5;
+            }
+
+            .backup-panel[aria-labelledby="savedBackupsTitle"] .backup-panel-head code {
+                font-size: 11px;
+            }
+        }
+
+        /* ---------- Easier restore ---------- */
+        .backup-restore-tip {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin: 0 0 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: #fcfaf3;
+            border: 1px solid #ebe7da;
+            color: #3d4a43;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .backup-restore-tip svg {
+            width: 16px;
+            height: 16px;
+            margin-top: 2px;
+            flex-shrink: 0;
+            color: #6b4e00;
+        }
+
+        .backup-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 5px;
+        }
+
+        .backup-tag {
+            display: inline-block;
+            padding: 1px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .backup-tag.latest {
+            background: #e3f3ea;
+            color: #08683c;
+        }
+
+        .backup-tag.safety {
+            background: #fff4e5;
+            color: #8a5a00;
+            cursor: help;
+        }
+
+        .backup-table td small.backup-safety-note {
+            color: #8a5a00;
+            font-weight: 600;
+        }
+
+        /* Restore window: the warning, and numbered steps. */
+        .restore-dialog .restore-warning {
+            margin: 0 0 10px;
+            padding: 10px 12px;
+            border-left: 4px solid #c0392b;
+            border-radius: 6px;
+            background: #fdecec;
+            color: #6e1414;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .restore-dialog .restore-undo {
+            margin: 0 0 10px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            background: #fff4e5;
+            color: #6b4e00;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        #restoreForm {
+            counter-reset: restore-step;
+        }
+
+        .restore-field:not([hidden]) label::before {
+            counter-increment: restore-step;
+            content: counter(restore-step);
+            display: inline-grid;
+            place-items: center;
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            border-radius: 50%;
+            background: #8c1a1f;
+            color: #ffffff;
+            font-size: 11px;
+        }
+
+        #restoreConfirm {
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #restoreConfirm::placeholder {
+            color: #b7bfba;
+        }
+
+        #restoreSubmit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Phones: each backup is a card, so Restore is visible without
+           scrolling sideways. */
+        @media (max-width: 700px) {
+            .backup-table {
+                min-width: 0;
+            }
+
+            .backup-table thead {
+                display: none;
+            }
+
+            .backup-table,
+            .backup-table tbody,
+            .backup-table td {
+                display: block;
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            /* Date, Contents and the buttons use the full width; Size,
+               Password and Made by sit side by side. */
+            .backup-table tr {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                column-gap: 10px;
+                margin-bottom: 12px;
+                padding: 12px 14px;
+                border: 1px solid #ebe7da;
+                border-radius: 10px;
+                background: #ffffff;
+            }
+
+            .backup-table td {
+                padding: 4px 0;
+                border: 0;
+                overflow-wrap: anywhere;
+            }
+
+            .backup-table td[data-label]::before {
+                content: attr(data-label);
+                display: block;
+                color: #7a857f;
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 0.4px;
+                text-transform: uppercase;
+            }
+
+            .backup-table td[data-label="Date"]::before {
+                display: none;
+            }
+
+            .backup-table td[data-label="Date"],
+            .backup-table td[data-label="Contents"],
+            .backup-table td:last-child {
+                grid-column: 1 / -1;
+            }
+
+            .backup-table td[data-label="Size"] { order: 1; }
+            .backup-table td[data-label="Password"] { order: 2; }
+            .backup-table td[data-label="Made by"] { order: 3; }
+            .backup-table td[data-label="Contents"] { order: 4; }
+            .backup-table td:last-child { order: 5; }
+
+            .backup-table tr:has(.backup-empty) {
+                display: block;
+                padding: 0;
+                border: 0;
+            }
+
+            .backup-table td.backup-empty {
+                border: 0;
+            }
+
+            .backup-row-actions {
+                flex-wrap: wrap;
+                justify-content: stretch;
+                margin-top: 8px;
+                white-space: normal;
+            }
+
+            .backup-row-actions button {
+                flex: 1 1 auto;
+                justify-content: center;
+            }
+
+            .backup-row-actions .restore-button {
+                flex-basis: 100%;
+            }
+
+            .restore-actions {
+                flex-direction: column-reverse;
+            }
+
+            .restore-actions button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
     </style>
     <!-- Header and sidebar: same as the Academic Admin portal -->
     <link rel="stylesheet" href="css/shell.css">
@@ -790,6 +1011,7 @@
                 <div class="backup-panel-head">
                     <div>
                         <h3 id="savedBackupsTitle">Saved backups</h3>
+                        <p class="backup-restore-tip"><i data-lucide="rotate-ccw"></i><span>To go back to an earlier point, click <strong>Restore</strong> on that backup. A <strong>Safety backup</strong> is made first, so a restore can be undone.</span></p>
                         <p>Kept on the server in <code>backend/storage/app/backups</code>. Download each one and keep it somewhere else (a USB drive, another computer or cloud storage): a backup that stays only on the server is lost if the server is lost.</p>
                     </div>
                     <div>
@@ -913,33 +1135,34 @@
         <form id="restoreForm" novalidate>
             <h3 id="restoreDialogTitle"><i data-lucide="triangle-alert"></i> Restore this backup?</h3>
             <p class="restore-which" id="restoreWhich"></p>
+            <p class="restore-warning" id="restoreWarning"></p>
+            <p class="restore-undo" id="restoreUndo" hidden></p>
             <ul>
-                <li>All current data and uploaded files are <strong>replaced</strong> with the backup's.</li>
-                <li>A safety backup of the current data is made first, so this can be undone.</li>
-                <li>Everyone is signed out, including you.</li>
+                <li>A <strong>Safety backup</strong> of the current data is made first. To undo, restore that one.</li>
+                <li>Everyone is signed out, including you. Sign in again when it is done.</li>
             </ul>
 
             <div class="restore-field" id="restoreZipField" hidden>
-                <label for="restoreZipPassword">Backup password</label>
+                <label for="restoreZipPassword">Enter the backup password</label>
                 <input type="password" id="restoreZipPassword" maxlength="100" autocomplete="off">
                 <small>The password typed when this backup was made.</small>
             </div>
 
             <div class="restore-field">
-                <label for="restorePassword">Your password</label>
+                <label for="restorePassword">Enter your own password</label>
                 <input type="password" id="restorePassword" maxlength="255" autocomplete="current-password">
             </div>
 
             <div class="restore-field">
                 <label for="restoreConfirm">Type RESTORE to confirm</label>
-                <input type="text" id="restoreConfirm" maxlength="20" autocomplete="off" spellcheck="false">
+                <input type="text" id="restoreConfirm" maxlength="20" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="RESTORE">
             </div>
 
             <p class="backup-message" id="restoreMessage" role="alert" aria-live="assertive"></p>
 
             <div class="restore-actions">
                 <button type="button" class="secondary-button" id="restoreCancel">Cancel</button>
-                <button type="submit" class="danger-button" id="restoreSubmit">
+                <button type="submit" class="danger-button" id="restoreSubmit" disabled>
                     <i data-lucide="rotate-ccw"></i>
                     <span>Restore backup</span>
                 </button>

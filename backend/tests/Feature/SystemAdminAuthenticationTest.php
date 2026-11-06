@@ -159,6 +159,38 @@ class SystemAdminAuthenticationTest extends TestCase
             ->assertJsonPath('statistics.inactive_accounts', 2);
     }
 
+    #[Group('FR-SA'), Group('FR-SA-04')]
+    public function test_dashboard_lists_the_five_newest_audit_log_entries(): void
+    {
+        $systemAdmin = User::factory()->create([
+            'school_id' => 'SYS-RECENT-01',
+            'role' => 'system_admin',
+            'is_active' => true,
+        ]);
+
+        foreach (range(1, 7) as $i) {
+            (new \App\Models\AuditLogEntry())->forceFill([
+                'actor_name' => "Actor {$i}",
+                'actor_role' => 'academic_admin',
+                'action' => 'sign_in',
+                'module' => \App\Support\AuditLogger::AUTH,
+                'result' => 'success',
+                'details' => "entry {$i}",
+                'created_at' => now()->subMinutes(10 - $i),
+            ])->save();
+        }
+
+        $response = $this->withToken($systemAdmin->createToken('dashboard-test')->plainTextToken)
+            ->getJson('/api/system-admin/dashboard')
+            ->assertOk();
+
+        $this->assertCount(5, $response->json('recent_activity'));
+        $this->assertSame('entry 7', $response->json('recent_activity.0.details'));
+        $this->assertSame('Actor 7', $response->json('recent_activity.0.actor_name'));
+        $this->assertNotEmpty($response->json('recent_activity.0.action_label'));
+        $this->assertSame('entry 3', $response->json('recent_activity.4.details'));
+    }
+
     #[Group('NFR-S'), Group('NFR-S-02')]
     public function test_non_system_admin_roles_cannot_verify_a_system_admin_session(): void
     {

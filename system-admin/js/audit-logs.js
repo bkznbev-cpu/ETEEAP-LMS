@@ -4,7 +4,7 @@
 
    Read-only view of the audit trail (table audit_logs). The server
    filters and pages the entries (GET /api/system-admin/audit-logs);
-   Export CSV downloads every entry that matches the filters
+   Export downloads an Excel (.xlsx) file of every entry that matches the filters
    (GET /api/system-admin/audit-logs/export) and is logged itself.
    Times are stored in UTC and shown in Philippine time.
 ========================================================= */
@@ -70,7 +70,7 @@
         let response;
         try {
             response = await fetch(`${window.SIKNAYAN_API_ROOT}/system-admin${path}`, {
-                headers: { Accept: raw ? "text/csv, application/json" : "application/json", Authorization: `Bearer ${token()}` }
+                headers: { Accept: raw ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/json" : "application/json", Authorization: `Bearer ${token()}` }
             });
         } catch (error) {
             throw new Error("Cannot reach the server. Check that the backend is running.");
@@ -224,10 +224,10 @@
 
     /* ---------------- Export ---------------- */
 
-    async function exportCsv() {
+    async function exportExcel() {
         const button = $("exportAuditLog");
         button.disabled = true;
-        status("Preparing the CSV...");
+        status("Preparing the Excel file...");
 
         try {
             const response = await request(`/audit-logs/export?${queryString()}`, true);
@@ -236,12 +236,12 @@
             const url = URL.createObjectURL(await response.blob());
             const link = document.createElement("a");
             link.href = url;
-            link.download = match ? match[1] : "siknayan-audit-log.csv";
+            link.download = match ? match[1] : "siknayan-audit-log.xlsx";
             document.body.appendChild(link);
             link.click();
             link.remove();
             setTimeout(() => URL.revokeObjectURL(url), 60000);
-            status("CSV downloaded. The export was recorded in the audit log.");
+            status("Excel file downloaded. The export was recorded in the audit log.");
             load(1);
         } catch (error) {
             status(error.message, true);
@@ -275,7 +275,35 @@
         if (state.page < state.lastPage) load(state.page + 1);
     });
 
-    $("exportAuditLog").addEventListener("click", exportCsv);
+    $("exportAuditLog").addEventListener("click", exportExcel);
 
+    /* Filters in the page address, e.g. from a dashboard Attention link:
+       audit-logs.html?action=account_locked&from=2026-11-05. A placeholder
+       option keeps a menu choice until the real choices load. */
+    function applyLinkFilters() {
+        const params = new URLSearchParams(window.location.search);
+        const dates = { from: "auditDateFrom", to: "auditDateTo" };
+        const menus = { action: "auditAction", module: "auditModule", result: "auditResult", actor_role: "auditRole" };
+
+        Object.entries(dates).forEach(([key, id]) => {
+            const value = params.get(key);
+            if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) $(id).value = value;
+        });
+
+        Object.entries(menus).forEach(([key, id]) => {
+            const value = params.get(key);
+            if (!value) return;
+            const select = $(id);
+            if (![...select.options].some(option => option.value === value)) {
+                select.add(new Option(value, value));
+            }
+            select.value = value;
+        });
+
+        const search = params.get("q");
+        if (search) $("auditSearch").value = search.slice(0, 200);
+    }
+
+    applyLinkFilters();
     load(1);
 })();

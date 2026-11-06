@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLogEntry;
 use App\Support\AuditLogger;
+use App\Support\XlsxStreamWriter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -46,7 +47,7 @@ class SystemAdminAuditLogController extends Controller
         ]);
     }
 
-    /** CSV of every entry matching the filters (the export is logged too). */
+    /** Excel (.xlsx) file of every entry matching the filters (the export is logged too). */
     public function export(Request $request): StreamedResponse|JsonResponse
     {
         $filters = $this->filters($request);
@@ -62,23 +63,21 @@ class SystemAdminAuditLogController extends Controller
         AuditLogger::log('audit_log_exported', AuditLogger::AUDIT, [
             'target_type' => 'audit_log',
             'new' => array_filter($filters, fn ($value) => $value !== null && $value !== '') + ['rows' => $total],
-            'details' => "Exported {$total} audit log " . ($total === 1 ? 'entry' : 'entries') . ' to CSV',
+            'details' => "Exported {$total} audit log " . ($total === 1 ? 'entry' : 'entries') . ' to Excel',
             'request' => $request,
         ]);
 
-        $name = 'siknayan-audit-log-' . now(self::TIMEZONE)->format('Ymd-His') . '.csv';
+        $name = 'siknayan-audit-log-' . now(self::TIMEZONE)->format('Ymd-His') . '.xlsx';
 
         return response()->streamDownload(function () use ($filters) {
-            $out = fopen('php://output', 'w');
-            fwrite($out, "\xEF\xBB\xBF"); // so Excel reads the text correctly
-
-            fputcsv($out, ['Date & Time (Asia/Manila)', 'Actor', 'Role', 'Action', 'Module', 'Target', 'Result', 'IP Address', 'Details', 'Old Values', 'New Values']);
+            $sheet = new XlsxStreamWriter('Audit Log', [20, 24, 16, 26, 18, 24, 10, 16, 50, 40, 40]);
+            $sheet->addRow(['Date & Time (Asia/Manila)', 'Actor', 'Role', 'Action', 'Module', 'Target', 'Result', 'IP Address', 'Details', 'Old Values', 'New Values']);
 
             $this->query($filters)->orderByDesc('created_at')->orderByDesc('id')
-                ->chunk(500, function ($entries) use ($out) {
+                ->chunk(500, function ($entries) use ($sheet) {
                     foreach ($entries as $entry) {
                         $row = $this->present($entry);
-                        fputcsv($out, array_map([$this, 'csvCell'], [
+                        $sheet->addRow([
                             $entry->created_at?->timezone(self::TIMEZONE)->format('Y-m-d H:i:s'),
                             $row['actor_name'],
                             $row['actor_role'] ?? '',
@@ -90,13 +89,13 @@ class SystemAdminAuditLogController extends Controller
                             $row['details'],
                             $row['old_values'] ? json_encode($row['old_values'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '',
                             $row['new_values'] ? json_encode($row['new_values'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '',
-                        ]));
+                        ]);
                     }
                 });
 
-            fclose($out);
+            $sheet->output();
         }, $name, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Cache-Control' => 'no-store, private',
         ]);
     }
@@ -207,13 +206,5 @@ class SystemAdminAuditLogController extends Controller
             'actions' => $actions,
             'modules' => AuditLogEntry::query()->distinct()->orderBy('module')->pluck('module'),
         ];
-    }
-
-    /** Spreadsheet-safe: text that starts like a formula is shown as text. */
-    private function csvCell($value): string
-    {
-        $value = (string) ($value ?? '');
-
-        return preg_match('/^[=+\-@\t\r]/', $value) ? "'" . $value : $value;
     }
 }

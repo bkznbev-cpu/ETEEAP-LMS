@@ -486,7 +486,7 @@
                         <i data-lucide="user-round-cog"></i>
                     </div>
                     <div class="card-content">
-                        <span class="card-label">Academic Administrators</span>
+                        <span class="card-label"><span class="card-label-full">Academic Administrators</span><span class="card-label-short">Academic Admins</span></span>
                         <strong class="card-value" id="academicAdministratorsCount">...</strong>
                     </div>
                 </article>
@@ -496,7 +496,7 @@
                         <i data-lucide="shield-check"></i>
                     </div>
                     <div class="card-content">
-                        <span class="card-label">System Administrators</span>
+                        <span class="card-label"><span class="card-label-full">System Administrators</span><span class="card-label-short">System Admins</span></span>
                         <strong class="card-value" id="systemAdministratorsCount">...</strong>
                     </div>
                 </article>
@@ -553,19 +553,15 @@
 
                             <p>
 
-                                Persistent system activity is not available yet.
+                                The latest actions recorded in the audit log.
 
                             </p>
 
                         </div>
 
-                        <span
-                            class="dashboard-view-all"
-                            aria-disabled="true"
-                            title="Persistent audit logging is not configured."
-                        >
-                            Unavailable
-                        </span>
+                        <a class="dashboard-view-all" href="audit-logs.html">
+                            View all
+                        </a>
 
                     </div>
 
@@ -617,23 +613,8 @@
 
                                         >
 
-                                            <i
-
-                                                data-lucide="inbox"
-
-                                            ></i>
-
-                                            <strong>
-
-                                                No recent activity
-
-                                            </strong>
-
-                                            <span>
-
-                                                This application does not yet have a persistent activity log.
-
-                                            </span>
+                                            <i data-lucide="loader-circle"></i>
+                                            <strong>Loading recent activity...</strong>
 
                                         </div>
 
@@ -669,19 +650,18 @@
 
                             <p>
 
-                                Account lockouts and Academic Admin changes appear in Notifications.
+                                Backups, locked accounts and sign-in problems that need you.
 
                             </p>
 
                         </div>
 </div>
 
-                    <div class="attention-list">
+                    <div class="attention-list" id="attentionList">
 
                         <div class="dashboard-activity-empty">
-                            <i data-lucide="info"></i>
-                            <strong>Check Notifications for alerts</strong>
-                            <span>Automatic backup monitoring is coming soon.</span>
+                            <i data-lucide="loader-circle"></i>
+                            <strong>Checking...</strong>
                         </div>
 
 </div>

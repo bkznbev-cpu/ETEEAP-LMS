@@ -9,10 +9,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Group;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 /**
  * Audit Logs page API: System Admin only, read only, filtered and paged
- * by the server, CSV export (which is logged itself).
+ * by the server, Excel export (which is logged itself).
  */
 #[Group('integration')]
 class SystemAdminAuditLogTest extends TestCase
@@ -134,19 +136,28 @@ class SystemAdminAuditLogTest extends TestCase
     }
 
     #[Group('FR-SA'), Group('FR-SA-05')]
-    public function test_export_is_csv_spreadsheet_safe_and_logged(): void
+    public function test_export_is_xlsx_spreadsheet_safe_and_logged(): void
     {
         $admin = $this->user('system_admin', 'SYS-AL-03');
         $this->entry(['details' => '=HYPERLINK("http://evil")', 'actor_name' => '+cmd']);
 
         $response = $this->actingAs($admin)->get('/api/system-admin/audit-logs/export?result=success');
         $response->assertOk();
-        $this->assertStringContainsString('text/csv', $response->headers->get('Content-Type'));
+        $this->assertStringContainsString('spreadsheetml.sheet', $response->headers->get('Content-Type'));
+        $this->assertStringContainsString('.xlsx', $response->headers->get('Content-Disposition'));
 
-        $csv = $response->streamedContent();
-        $this->assertStringContainsString('Date & Time (Asia/Manila)', $csv);
-        $this->assertStringContainsString("'=HYPERLINK", $csv);
-        $this->assertStringContainsString("'+cmd", $csv);
+        // Opens as a real Excel file; values that look like formulas stay plain text.
+        $path = tempnam(sys_get_temp_dir(), 'audit') . '.xlsx';
+        file_put_contents($path, $response->streamedContent());
+        $sheet = IOFactory::load($path)->getActiveSheet();
+        @unlink($path);
+
+        $this->assertSame('Date & Time (Asia/Manila)', (string) $sheet->getCell('A1')->getValue());
+        $row = collect(range(2, $sheet->getHighestRow()))
+            ->first(fn ($r) => (string) $sheet->getCell("B{$r}")->getValue() === '+cmd');
+        $this->assertNotNull($row);
+        $this->assertSame('=HYPERLINK("http://evil")', (string) $sheet->getCell("I{$row}")->getValue());
+        $this->assertContains($sheet->getCell("I{$row}")->getDataType(), [DataType::TYPE_STRING, DataType::TYPE_INLINE]);
 
         $export = AuditLogEntry::where('action', 'audit_log_exported')->sole();
         $this->assertSame('Audit Logs', $export->module);

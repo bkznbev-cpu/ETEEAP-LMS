@@ -1068,3 +1068,74 @@
     color: var(--muted);
     font-size: 13px;
 }
+
+/* RECENT SYSTEM ACTIVITY (latest audit log entries) */
+.dashboard-activity-actor small {
+    display: block;
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.dashboard-activity-failed {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: #fde8e8;
+    color: #b42318;
+    font-size: 10px;
+    font-style: normal;
+    font-weight: 700;
+    vertical-align: 1px;
+}
+
+.dashboard-activity-table .dashboard-activity-meta {
+    display: none;
+}
+
+/* Phones: only the Activity column, with the time, actor and module
+   under it, so the table fits without sideways scrolling. */
+@media (max-width: 700px) {
+    .dashboard-activity-table {
+        min-width: 0;
+    }
+
+    .dashboard-activity-table th:not(:nth-child(3)),
+    .dashboard-activity-table td.dashboard-activity-time,
+    .dashboard-activity-table td.dashboard-activity-actor,
+    .dashboard-activity-table td.dashboard-activity-module {
+        display: none;
+    }
+
+    .dashboard-activity-table td {
+        padding: 12px 16px;
+    }
+
+    .dashboard-activity-action {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .dashboard-activity-table .dashboard-activity-meta {
+        display: block;
+        margin-top: 5px;
+        font-size: 11px;
+    }
+}
+
+
+/* ATTENTION: red for problems, amber for warnings, green when fine. */
+.attention-item.danger .attention-icon {
+    background: #fde8e8;
+    color: #b42318;
+}
+
+.attention-item.danger .attention-content .attention-action {
+    color: #b42318;
+}
+
+.attention-item.warning .attention-content .attention-action {
+    color: #9a6700;
+}

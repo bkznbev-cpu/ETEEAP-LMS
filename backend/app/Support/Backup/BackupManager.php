@@ -81,6 +81,8 @@ class BackupManager
                 'counts' => $meta['counts'] ?? null,
                 'files' => $meta['files'] ?? null,
                 'uploaded' => (bool) ($meta['uploaded'] ?? false),
+                // Made automatically just before restoring this backup (restoring it undoes that restore).
+                'safety_for' => $meta['safety_for'] ?? null,
             ];
         }
 
@@ -257,6 +259,7 @@ class BackupManager
 
                 // Safety copy of what is there now (no password, kept in the list).
                 $safety = $this->createUnlocked($actor, null);
+                $this->markAsSafety($safety['name'], $name);
 
                 try {
                     $this->importer->replaceDatabase($work . DIRECTORY_SEPARATOR . 'database.sql');
@@ -422,6 +425,15 @@ class BackupManager
         } finally {
             $zip->close();
         }
+    }
+
+    /** Notes in a backup's details that it was made just before restoring $restoring. */
+    private function markAsSafety(string $safetyName, string $restoring): void
+    {
+        $metaPath = $this->path($safetyName) . '.json';
+        $meta = json_decode((string) @file_get_contents($metaPath), true) ?: [];
+        $meta['safety_for'] = $restoring;
+        @file_put_contents($metaPath, json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
     /** After a failed restore: the safety backup's database goes back in. */

@@ -139,6 +139,11 @@ class SystemAdminRestoreTest extends TestCase
         $this->assertNotFalse($zip->locateName('files/private/submissions/new.pdf'));
         $zip->close();
 
+        // The list labels it as the safety backup for this restore (restoring it undoes it).
+        $listed = collect(app(\App\Support\Backup\BackupManager::class)->list())->keyBy('name');
+        $this->assertSame($name, $listed[$safety]['safety_for']);
+        $this->assertNull($listed[$name]['safety_for']);
+
         $log = AuditLogEntry::where('action', 'backup_restored')->latest('id')->first();
         $this->assertNotNull($log);
         $this->assertSame('Arcana', $log->actor_name);
