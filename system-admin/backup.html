@@ -259,7 +259,8 @@
             font-size: 13px;
         }
 
-        .backup-guide ol {
+        .backup-guide ol,
+        .backup-guide ul {
             padding-left: 22px;
         }
 
@@ -1047,78 +1048,19 @@
             <!-- RESTORE -->
             <section class="panel backup-panel backup-guide" aria-labelledby="restoreTitle">
                 <h3 id="restoreTitle">Restore a backup</h3>
-                <p>
-                    Click <strong>Restore</strong> next to a saved backup. To restore a backup you downloaded
-                    earlier, use <strong>Upload a backup file</strong> first. When you restore, the system:
+                <ul>
+                    <li>Click <strong>Restore</strong> on a saved backup. For a backup you downloaded earlier, use <strong>Upload a backup file</strong> first.</li>
+                    <li>All data and uploaded files go back to how they were when that backup was made. Anything added or changed later is lost.</li>
+                    <li>A <strong>Safety backup</strong> is made first. To undo a restore, restore that one.</li>
+                    <li>Everyone is signed out, including you, and signs in again afterwards.</li>
+                </ul>
+
+                <p class="backup-note warning">Try one restore before you rely on your backups.</p>
+
+                <p class="backup-note">
+                    If the system will not open at all, the step-by-step guide is in <strong>RESTORE.txt</strong>
+                    inside each downloaded backup. Give it to whoever manages your server.
                 </p>
-
-                <ol>
-                    <li>asks for your password and for you to type <strong>RESTORE</strong>;</li>
-                    <li>makes a <strong>safety backup</strong> of the current data (it appears in the list above);</li>
-                    <li>replaces the database and the uploaded files with the ones in the backup;</li>
-                    <li>if anything goes wrong, puts the previous data back automatically;</li>
-                    <li>signs everyone out, including you. Everyone logs in again with the accounts in the backup.</li>
-                </ol>
-
-                <p class="backup-note warning">
-                    Everything added or changed after the backup was made (accounts, grades, submissions,
-                    audit log entries) is replaced. To undo a restore, restore the safety backup.
-                    Try one restore before you rely on your backups.
-                </p>
-
-                <details class="backup-manual">
-                    <summary>Restore by hand instead (if the system will not start)</summary>
-                    <p>XAMPP is not required. The same steps are in <strong>RESTORE.txt</strong> inside each backup.</p>
-                <ol>
-                    <li>Make a fresh backup of the current system first, if it still runs.</li>
-                    <li>Download the backup and unzip it (use 7-Zip or WinRAR if it has a password).</li>
-                    <li>
-                        Import <strong>database.sql</strong> into the Siknayan database with your server's database tool
-                        (for example phpMyAdmin, Adminer, HeidiSQL or your web host's <strong>Import</strong> page).
-                        See <em>Import commands</em> below for other ways.
-                    </li>
-                    <li>Copy <code>files/private</code> to <code>backend/storage/app/private</code> and <code>files/public/profile-photos</code> to <code>backend/storage/app/public/profile-photos</code>.</li>
-                    <li>Put your private copy of <code>backend/.env</code> in place, start the backend, and log in.</li>
-                </ol>
-
-                <p class="backup-note warning">
-                    Importing into a database that already has data replaces it.
-                    Make a fresh backup first if you are not sure.
-                </p>
-                </details>
-
-                <details class="backup-manual">
-                    <summary>Import commands (hosted server, Docker, this computer)</summary>
-                    <ol>
-                        <li>
-                            <strong>Hosted server or any computer with the MySQL/MariaDB client</strong>
-                            (use the DB_ values from <code>backend/.env</code>; it asks for the password):<br>
-                            <code>mysql -h DB_HOST -P DB_PORT -u DB_USERNAME -p DB_DATABASE &lt; database.sql</code>
-                        </li>
-                        <li>
-                            <strong>Docker</strong> (run in the project folder):<br>
-                            <code>docker compose exec -T mysql sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' &lt; database.sql</code>
-                        </li>
-                        <li>
-                            <strong>This computer</strong> (Herd, Laragon, XAMPP or any local database):
-                            open your database tool, select the Siknayan database, choose <strong>Import</strong> and pick <strong>database.sql</strong>.
-                        </li>
-                    </ol>
-                </details>
-
-                <details class="backup-manual">
-                    <summary>Make a backup by hand instead</summary>
-                    <ol>
-                        <li>
-                            Export the Siknayan database as an <strong>SQL</strong> file, either with your database tool's
-                            <strong>Export</strong> page, or with:<br>
-                            <code>mysqldump -h DB_HOST -P DB_PORT -u DB_USERNAME -p --single-transaction DB_DATABASE &gt; siknayan-2026-10-24.sql</code>
-                        </li>
-                        <li>Name the file with the date, for example <code>siknayan-2026-10-24.sql</code>.</li>
-                        <li>Copy the folders <code>backend/storage/app/private</code> and <code>backend/storage/app/public/profile-photos</code> next to it.</li>
-                    </ol>
-                    <p class="backup-note warning">The .sql file contains every account, including password hashes. Store it somewhere private.</p>
-                </details>
             </section>
 
         </main>
