@@ -999,6 +999,44 @@
     <script src="../js/module-library-data.js"></script>
     <script src="../js/classes.js"></script>
 
+    <script>
+        // Phones: shrink the page description until it fits on one line.
+        (function () {
+            const text = document.querySelector(".classes-heading p");
+
+            if (!text) {
+                return;
+            }
+
+            function fit() {
+                text.style.fontSize = "";
+
+                // Not on a phone, or not shown yet.
+                if (
+                    getComputedStyle(text).whiteSpace !== "nowrap" ||
+                    text.clientWidth === 0
+                ) {
+                    return;
+                }
+
+                let size = parseFloat(getComputedStyle(text).fontSize);
+
+                while (text.scrollWidth > text.clientWidth && size > 9) {
+                    size -= 0.25;
+                    text.style.fontSize = size + "px";
+                }
+            }
+
+            fit();
+            window.addEventListener("resize", fit);
+            window.addEventListener("load", fit);
+
+            if (document.fonts) {
+                document.fonts.ready.then(fit);
+            }
+        })();
+    </script>
+
 
 </body>
 

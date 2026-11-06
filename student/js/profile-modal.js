@@ -49,7 +49,7 @@
                         <i class="fa-solid fa-pen" aria-hidden="true"></i>
                         <span class="visually-hidden">Change profile picture</span>
                         <input type="file" id="lpPhotoInput" class="visually-hidden"
-                            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                            accept="image/*">
                     </label>
                 </div>
                 <div>

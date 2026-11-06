@@ -1581,12 +1581,15 @@
         font-size: 12px;
     }
 
+    /* One line; the script in classes.html shrinks the text if needed. */
     .classes-top .classes-heading p {
         grid-column: 1 / -1;
         grid-row: 2;
         margin: 0;
         font-size: 12.5px;
         line-height: 1.4;
+        white-space: nowrap;
+        overflow: hidden;
     }
 
     .classes-top .classes-add-button {

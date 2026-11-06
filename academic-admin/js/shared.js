@@ -1778,7 +1778,7 @@ button.sik-profile-avatar {
             id="sikProfilePhotoInput"
             class="sik-profile-photo-file-input"
             type="file"
-            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+            accept="image/*"
         >
 
         <button

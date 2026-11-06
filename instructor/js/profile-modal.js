@@ -99,7 +99,7 @@
             <div class="lp-profile-photo-upload" id="lpPhotoUpload" hidden>
                 <div class="lp-profile-photo-actions">
                     <input type="file" id="lpPhotoInput" class="visually-hidden"
-                        accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                        accept="image/*">
                     <span class="lp-photo-name" id="lpPhotoName"></span>
                     <button type="button" class="lp-upload-photo" id="lpUploadPhoto" hidden>Upload Photo</button>
                     <button type="button" class="lp-btn plain" id="lpCancelPhoto">Cancel</button>

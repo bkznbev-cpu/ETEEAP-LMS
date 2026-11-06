@@ -65,7 +65,7 @@
                         ${ICON.pencil}
                         <span class="sa-visually-hidden">Change profile picture</span>
                         <input type="file" id="saPhotoInput" class="sa-visually-hidden"
-                            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                            accept="image/*">
                     </label>
                 </div>
                 <div>
