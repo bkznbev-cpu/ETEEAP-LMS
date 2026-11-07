@@ -103,4 +103,60 @@ class LearnerImportTest extends TestCase
         $this->assertDatabaseHas('users', ['school_id' => '24-12347', 'email' => null, 'role' => 'learner']);
         $this->assertDatabaseHas('users', ['school_id' => '24-12346', 'email' => null, 'role' => 'learner']);
     }
+
+    #[Group('FR-UM'), Group('FR-UM-02')]
+    public function test_file_with_an_existing_school_id_is_rejected_and_nothing_is_imported(): void
+    {
+        $this->actingAs($this->admin());
+        User::factory()->create(['role' => 'learner', 'school_id' => '24-20001']);
+
+        $response = $this->postJson('/api/admin/learners/import', [
+            'file' => $this->spreadsheet([
+                ['New Learner', '24-20002', '', 'ETEEAP', ''],
+                ['Existing Learner', '24-20001', '', 'ETEEAP', ''],
+            ]),
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('errors.0.row', 3)
+            ->assertJsonPath('errors.0.message', 'School ID 24-20001 already exists in the system.');
+
+        $this->assertStringContainsString('No accounts were created', $response->json('message'));
+        // The valid row is not imported either.
+        $this->assertDatabaseMissing('users', ['school_id' => '24-20002']);
+    }
+
+    #[Group('FR-UM'), Group('FR-UM-02')]
+    public function test_reimporting_the_same_file_says_it_was_already_imported(): void
+    {
+        $this->actingAs($this->admin());
+        $rows = [['First', '24-30001', '', '', ''], ['Second', '24-30002', '', '', '']];
+
+        $this->postJson('/api/admin/learners/import', ['file' => $this->spreadsheet($rows)])->assertCreated();
+
+        $this->postJson('/api/admin/learners/import', ['file' => $this->spreadsheet($rows)])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'This file has already been imported. Every School ID in it already exists, so no accounts were created.')
+            ->assertJsonCount(2, 'errors');
+
+        $this->assertSame(2, User::whereIn('school_id', ['24-30001', '24-30002'])->count());
+    }
+
+    #[Group('FR-UM'), Group('FR-UM-02')]
+    public function test_file_with_a_repeated_school_id_is_rejected_and_nothing_is_imported(): void
+    {
+        $this->actingAs($this->admin());
+
+        $this->postJson('/api/admin/learners/import', [
+            'file' => $this->spreadsheet([
+                ['First', '24-40001', '', '', ''],
+                ['Copy', '24-40001', '', '', ''],
+            ]),
+        ])->assertUnprocessable()
+            ->assertJsonPath('errors.0.row', 3)
+            ->assertJsonPath('errors.0.message', 'Duplicate School ID in the spreadsheet.');
+
+        $this->assertDatabaseMissing('users', ['school_id' => '24-40001']);
+    }
 }

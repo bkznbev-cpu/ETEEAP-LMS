@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Illuminate\Support\Facades\Storage;
@@ -1749,6 +1750,19 @@ public function syncClassModules(Request $request, int $id): JsonResponse
         return 'No accounts were created. Fix the spreadsheet errors and try again.';
     }
 
+    /**
+     * The database refused a School ID that appeared between the check and
+     * the save (e.g. two imports at once). The transaction rolled back, so
+     * nothing from the file was kept.
+     */
+    private function duplicateSchoolIdResponse(): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'message' => 'No accounts were created. One or more School IDs in this file already exist in the system. Re-check the file and try again.',
+        ], 422);
+    }
+
     public function importLearners(Request $request): JsonResponse
     {
         if ($response = $this->checkAdmin($request)) {
@@ -2026,6 +2040,8 @@ public function syncClassModules(Request $request, int $id): JsonResponse
                 'email_summary' => $emailSummary,
                 'learners' => $created,
             ], 201);
+        } catch (UniqueConstraintViolationException $e) {
+            return $this->duplicateSchoolIdResponse();
         } catch (\Throwable $e) {
             report($e);
 
@@ -2256,6 +2272,8 @@ public function importInstructors(Request $request): JsonResponse
             'count' => count($created),
             'instructors' => $created,
         ]);
+    } catch (UniqueConstraintViolationException $e) {
+        return $this->duplicateSchoolIdResponse();
     } catch (\Throwable $e) {
         report($e);
 

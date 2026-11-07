@@ -85,4 +85,44 @@ class InstructorImportTest extends TestCase
             'agree_terms' => true,
         ])->assertOk()->assertJsonPath('first_login', true);
     }
+
+    #[Group('FR-UM'), Group('FR-UM-02')]
+    public function test_file_with_an_existing_school_id_is_rejected_and_nothing_is_imported(): void
+    {
+        $admin = User::factory()->create(['role' => 'academic_admin', 'school_id' => 'ADM-DUP', 'is_active' => true]);
+        User::factory()->create(['role' => 'instructor', 'school_id' => 'INS-201']);
+
+        $response = $this->actingAs($admin)
+            ->postJson('/api/admin/instructors/import', [
+                'file' => $this->spreadsheet([
+                    ['New Instructor', 'INS-202', '', '', ''],
+                    // Lower case still matches the existing INS-201.
+                    ['Existing Instructor', 'ins-201', '', '', ''],
+                ]),
+            ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('errors.0.message', 'School ID INS-201 already exists in the system.');
+
+        $this->assertDatabaseMissing('users', ['school_id' => 'INS-202']);
+    }
+
+    #[Group('FR-UM'), Group('FR-UM-02')]
+    public function test_file_with_a_repeated_school_id_is_rejected_and_nothing_is_imported(): void
+    {
+        $admin = User::factory()->create(['role' => 'academic_admin', 'school_id' => 'ADM-REP', 'is_active' => true]);
+
+        $this->actingAs($admin)
+            ->postJson('/api/admin/instructors/import', [
+                'file' => $this->spreadsheet([
+                    ['First', 'INS-301', '', '', ''],
+                    ['Copy', 'INS-301', '', '', ''],
+                ]),
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.0.message', 'Duplicate School ID in the spreadsheet.');
+
+        $this->assertDatabaseMissing('users', ['school_id' => 'INS-301']);
+    }
 }
