@@ -668,6 +668,8 @@ $learner = User::create([
         }
 
         $instructors = $this->ownedUsers($request, 'instructor')
+            // Classes this instructor teaches, for the Assigned Classes column.
+            ->with('instructedCourses:id,instructor_id,code,name')
             ->latest()
             ->get([
                 'id',
@@ -683,10 +685,17 @@ $learner = User::create([
 
         // Set up once (even if reset since): shown on the accounts page.
         $setUpIds = $this->setUpAccountIds($instructors);
-        $instructors->each(fn (User $instructor) => $instructor->setAttribute(
-            'account_set_up',
-            isset($setUpIds[$instructor->id])
-        ));
+        $instructors->each(function (User $instructor) use ($setUpIds) {
+            $instructor->setAttribute('account_set_up', isset($setUpIds[$instructor->id]));
+            $instructor->setAttribute('assigned_classes', $instructor->instructedCourses
+                ->map(fn (Course $class) => [
+                    'id' => $class->id,
+                    'code' => $class->code,
+                    'name' => $class->name,
+                ])
+                ->values());
+            $instructor->unsetRelation('instructedCourses');
+        });
 
         return response()->json([
             'success' => true,

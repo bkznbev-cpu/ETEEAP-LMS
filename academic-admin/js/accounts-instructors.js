@@ -423,7 +423,17 @@ let instructorCredentialsExpiryTimer = null;
                         Boolean(instructor.account_set_up),
 
                     isActive:
-                        instructor.is_active !== false
+                        instructor.is_active !== false,
+
+                    // Classes from the server, for the Assigned Classes column.
+                    assignedClasses:
+                        Array.isArray(instructor.assigned_classes)
+                            ? instructor.assigned_classes.map(classItem => ({
+                                id: classItem.id,
+                                classCode: classItem.code || "",
+                                name: classItem.name || ""
+                            }))
+                            : null
 
                 })
             );
@@ -842,14 +852,23 @@ let instructorCredentialsExpiryTimer = null;
         instructorId
     ) {
 
+        const instructor =
+            getInstructorById(instructorId);
+
+        // The server's list is the source of truth.
+        if (Array.isArray(instructor?.assignedClasses)) {
+            return instructor.assignedClasses;
+        }
+
+        // Fallback: classes saved by the Classes page, which stores the
+        // instructor's database id rather than their School ID.
+        const ids = [instructorId, instructor?.backendId]
+            .filter(id => id !== undefined && id !== null && id !== "")
+            .map(String);
+
         return loadClasses().filter(
             classItem =>
-                String(
-                    classItem.instructorId
-                ) ===
-                String(
-                    instructorId
-                )
+                ids.includes(String(classItem.instructorId))
         );
 
     }
@@ -1911,29 +1930,20 @@ let instructorCredentialsExpiryTimer = null;
                     );
 
 
-                if (
-                    assignedClasses.length ===
-                    0
-                ) {
+                // Number of classes; hover to see which ones.
+                const classCount =
+                    assignedClasses.length;
 
-                    classesCell.textContent =
-                        "No classes";
+                classesCell.textContent =
+                    classCount === 0
+                        ? "No classes"
+                        : `${classCount} ${classCount === 1 ? "class" : "classes"}`;
 
-                } else if (
-                    assignedClasses.length ===
-                    1
-                ) {
-
-                    classesCell.textContent =
-                        getClassDisplayName(
-                            assignedClasses[0]
-                        );
-
-                } else {
-
-                    classesCell.textContent =
-                        `${assignedClasses.length} classes`;
-
+                if (classCount > 0) {
+                    classesCell.title =
+                        assignedClasses
+                            .map(getClassDisplayName)
+                            .join(", ");
                 }
 
 
