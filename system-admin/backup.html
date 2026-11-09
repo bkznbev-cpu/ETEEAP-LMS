@@ -285,6 +285,12 @@
             font-weight: 700;
         }
 
+        .backup-lock svg {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+
         .backup-lock.yes {
             background: #e3f3ea;
             color: #08683c;
@@ -653,7 +659,8 @@
                Password and Made by sit side by side. */
             .backup-table tr {
                 display: grid;
-                grid-template-columns: repeat(3, minmax(0, 1fr));
+                /* The middle (Password) column is as wide as its badge. */
+                grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
                 column-gap: 10px;
                 margin-bottom: 12px;
                 padding: 12px 14px;
@@ -686,6 +693,22 @@
             .backup-table td[data-label="Contents"],
             .backup-table td:last-child {
                 grid-column: 1 / -1;
+            }
+
+            /* Keep "Protected" on one line inside its narrow column. */
+            .backup-table .backup-lock {
+                gap: 4px;
+                max-width: 100%;
+                padding: 2px 7px;
+                font-size: 11px;
+                white-space: nowrap;
+                box-sizing: border-box;
+                overflow-wrap: normal;
+            }
+
+            .backup-table .backup-lock svg {
+                width: 12px;
+                height: 12px;
             }
 
             .backup-table td[data-label="Size"] { order: 1; }
