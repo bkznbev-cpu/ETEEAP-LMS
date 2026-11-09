@@ -171,7 +171,7 @@ Requirements that are covered in part, with the rest in the browser:
 | FR-PT-03 | The data the work queue is built from (awaiting-grade count, class learner counts, class lists) | The work queue itself is put together in the browser (`academic-admin/js/dashboard.js`). |
 | FR-PT-04 | `/api/admin/reports` returns class and learner records | CSV export (made in the browser as a Blob) and printing. |
 | FR-PT-06 | Counts of learners, instructors, classes, active classes, submissions awaiting a grade | Program count and Module-assignment count come from localStorage. |
-| NFR-U-02 | Restore needs the admin password and typing RESTORE | Delete and deactivate confirmations are browser dialogs only. The API deletes or deactivates without a confirmation field. |
+| NFR-U-02 | Restore needs the admin password | Delete and deactivate confirmations are browser dialogs only. The API deletes or deactivates without a confirmation field. |
 
 Not automated by design (per the plan): NFR-PE-01, NFR-Po-03, NFR-U-01.
 

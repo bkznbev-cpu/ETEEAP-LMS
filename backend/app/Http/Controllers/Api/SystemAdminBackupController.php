@@ -107,7 +107,7 @@ class SystemAdminBackupController extends Controller
 
     /**
      * Restore a saved backup. Replaces all current data, so the System
-     * Admin confirms with their own password and by typing RESTORE.
+     * Admin confirms with their own password.
      * A safety backup of the current system is made first. Everyone
      * (including this admin) has to log in again afterwards.
      */
@@ -115,20 +115,10 @@ class SystemAdminBackupController extends Controller
     {
         $validated = $request->validate([
             'password' => ['required', 'string', 'max:255'],
-            'confirm' => ['required', 'string'],
             'zip_password' => ['nullable', 'string', 'max:100'],
         ], [
             'password.required' => 'Enter your own password to confirm the restore.',
-            'confirm.required' => 'Type RESTORE to confirm.',
         ]);
-
-        if (trim($validated['confirm']) !== 'RESTORE') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Type RESTORE (in capital letters) to confirm.',
-                'errors' => ['confirm' => ['Type RESTORE (in capital letters) to confirm.']],
-            ], 422);
-        }
 
         $admin = $request->user();
         $limitKey = 'backup-restore-password:' . $admin->id;

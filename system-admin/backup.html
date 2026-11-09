@@ -583,6 +583,21 @@
             font-weight: 600;
         }
 
+        .restore-no-password {
+            margin: 0 0 12px;
+            padding: 10px 12px;
+            border-left: 3px solid #086b3c;
+            border-radius: 6px;
+            background: #eef7f1;
+            color: #1f2a24;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .restore-no-password[hidden] {
+            display: none;
+        }
+
         #restoreForm {
             counter-reset: restore-step;
         }
@@ -1145,6 +1160,11 @@
                 <li>Everyone is signed out, including you. Sign in again when it is done.</li>
             </ul>
 
+            <p class="restore-no-password" id="restoreNoPassword" hidden>
+                This backup is not password-protected, so no backup password is needed.
+                Enter your own password to confirm that you really want to restore it.
+            </p>
+
             <div class="restore-field" id="restoreZipField" hidden>
                 <label for="restoreZipPassword">Enter the backup password</label>
                 <div class="password-wrap">
@@ -1166,11 +1186,6 @@
                         <span class="icon-hide" hidden><i data-lucide="eye-off"></i></span>
                     </button>
                 </div>
-            </div>
-
-            <div class="restore-field">
-                <label for="restoreConfirm">Type RESTORE to confirm</label>
-                <input type="text" id="restoreConfirm" maxlength="20" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="RESTORE">
             </div>
 
             <p class="backup-message" id="restoreMessage" role="alert" aria-live="assertive"></p>

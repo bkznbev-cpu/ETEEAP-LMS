@@ -14,7 +14,7 @@ use ZipArchive;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * Restore from the Data Backup page: own password + typing RESTORE,
+ * Restore from the Data Backup page: own password (and the backup password if protected),
  * a safety backup first, the database and files put back, and the old
  * data put back again if the restore fails.
  */
@@ -102,7 +102,7 @@ class SystemAdminRestoreTest extends TestCase
     {
         return $this->actingAs($this->admin)->postJson(
             "/api/system-admin/backups/{$name}/restore",
-            array_merge(['password' => 'password', 'confirm' => 'RESTORE'], $body)
+            array_merge(['password' => 'password'], $body)
         );
     }
 
@@ -151,12 +151,11 @@ class SystemAdminRestoreTest extends TestCase
     }
 
     #[Group('FR-SA'), Group('NFR-U'), Group('FR-SA-02'), Group('NFR-U-02')]
-    public function test_restore_needs_the_admin_password_and_typing_restore(): void
+    public function test_restore_needs_the_admin_password(): void
     {
         $name = $this->makeBackup();
 
-        $this->restore($name, ['confirm' => 'restore please'])->assertStatus(422)->assertJsonValidationErrors('confirm');
-        $this->restore($name, ['confirm' => ''])->assertStatus(422);
+        $this->restore($name, ['password' => ''])->assertStatus(422)->assertJsonValidationErrors('password');
         $this->restore($name, ['password' => 'wrong-password'])->assertStatus(422)->assertJsonValidationErrors('password');
 
         $this->assertSame([], self::$imported);
@@ -279,7 +278,7 @@ class SystemAdminRestoreTest extends TestCase
             $user = User::factory()->create(['role' => $role, 'school_id' => "RS-{$role}", 'is_active' => true]);
 
             $this->actingAs($user)->postJson("/api/system-admin/backups/{$name}/restore", [
-                'password' => 'password', 'confirm' => 'RESTORE',
+                'password' => 'password',
             ])->assertForbidden();
 
             $this->actingAs($user)->post('/api/system-admin/backups/upload', [], ['Accept' => 'application/json'])

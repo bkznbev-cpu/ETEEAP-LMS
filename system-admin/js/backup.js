@@ -371,9 +371,9 @@
             : "";
 
         $("restoreZipField").hidden = !item.encrypted;
+        $("restoreNoPassword").hidden = Boolean(item.encrypted);
         $("restoreZipPassword").value = "";
         $("restorePassword").value = "";
-        $("restoreConfirm").value = "";
         hideAllPasswords();
         restoreMessage("");
         updateRestoreButton();
@@ -395,23 +395,14 @@
 
     $("restoreCancel").addEventListener("click", closeRestore);
 
-    // The Restore button turns on once every box is filled in and
-    // RESTORE is typed (any letters are shown and sent in capitals).
+    // The Restore button turns on once every password box is filled in.
     function updateRestoreButton() {
         const ready = Boolean(restoring)
             && (!restoring.encrypted || $("restoreZipPassword").value !== "")
-            && $("restorePassword").value !== ""
-            && $("restoreConfirm").value.trim().toUpperCase() === "RESTORE";
+            && $("restorePassword").value !== "";
         $("restoreSubmit").disabled = !ready;
     }
 
-    $("restoreConfirm").addEventListener("input", event => {
-        const input = event.target;
-        const caret = input.selectionStart;
-        input.value = input.value.toUpperCase();
-        try { input.setSelectionRange(caret, caret); } catch (error) { /* ignore */ }
-        updateRestoreButton();
-    });
     $("restorePassword").addEventListener("input", updateRestoreButton);
     $("restoreZipPassword").addEventListener("input", updateRestoreButton);
 
@@ -421,7 +412,6 @@
 
         const zipPassword = $("restoreZipPassword").value;
         const password = $("restorePassword").value;
-        const confirm = $("restoreConfirm").value.trim().toUpperCase();
 
         if (restoring.encrypted && !zipPassword) {
             restoreMessage("Enter the backup password.", "error");
@@ -430,10 +420,6 @@
         if (!password) {
             restoreMessage("Enter your own password to confirm.", "error");
             return $("restorePassword").focus();
-        }
-        if (confirm !== "RESTORE") {
-            restoreMessage("Type RESTORE (in capital letters) to confirm.", "error");
-            return $("restoreConfirm").focus();
         }
 
         const submit = $("restoreSubmit");
@@ -447,7 +433,6 @@
                 method: "POST",
                 body: {
                     password,
-                    confirm,
                     ...(restoring.encrypted ? { zip_password: zipPassword } : {})
                 }
             });
