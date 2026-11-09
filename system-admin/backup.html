@@ -154,7 +154,8 @@
             position: relative;
         }
 
-        .backup-password .password-wrap input {
+        .backup-password .password-wrap input,
+        .restore-field .password-wrap input {
             padding-right: 44px;
         }
 
@@ -1146,13 +1147,25 @@
 
             <div class="restore-field" id="restoreZipField" hidden>
                 <label for="restoreZipPassword">Enter the backup password</label>
-                <input type="password" id="restoreZipPassword" maxlength="100" autocomplete="off">
+                <div class="password-wrap">
+                    <input type="password" id="restoreZipPassword" maxlength="100" autocomplete="off">
+                    <button type="button" class="password-toggle" data-toggle-for="restoreZipPassword" aria-label="Show backup password" aria-pressed="false" title="Show password">
+                        <span class="icon-show"><i data-lucide="eye"></i></span>
+                        <span class="icon-hide" hidden><i data-lucide="eye-off"></i></span>
+                    </button>
+                </div>
                 <small>The password typed when this backup was made.</small>
             </div>
 
             <div class="restore-field">
                 <label for="restorePassword">Enter your own password</label>
-                <input type="password" id="restorePassword" maxlength="255" autocomplete="current-password">
+                <div class="password-wrap">
+                    <input type="password" id="restorePassword" maxlength="255" autocomplete="current-password">
+                    <button type="button" class="password-toggle" data-toggle-for="restorePassword" aria-label="Show your password" aria-pressed="false" title="Show password">
+                        <span class="icon-show"><i data-lucide="eye"></i></span>
+                        <span class="icon-hide" hidden><i data-lucide="eye-off"></i></span>
+                    </button>
+                </div>
             </div>
 
             <div class="restore-field">

@@ -374,6 +374,7 @@
         $("restoreZipPassword").value = "";
         $("restorePassword").value = "";
         $("restoreConfirm").value = "";
+        hideAllPasswords();
         restoreMessage("");
         updateRestoreButton();
 
@@ -388,6 +389,7 @@
         else dialog.removeAttribute("open");
         $("restorePassword").value = "";
         $("restoreZipPassword").value = "";
+        hideAllPasswords();
         restoring = null;
     }
 
