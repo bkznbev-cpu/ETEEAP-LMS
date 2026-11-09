@@ -150,6 +150,54 @@
             border-color: #086b3c;
         }
 
+        .password-wrap {
+            position: relative;
+        }
+
+        .backup-password .password-wrap input {
+            padding-right: 44px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            top: 50%;
+            right: 6px;
+            transform: translateY(-50%);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border: 0;
+            border-radius: 6px;
+            background: transparent;
+            color: #667085;
+            cursor: pointer;
+        }
+
+        .password-toggle:hover {
+            color: #086b3c;
+            background: rgba(8, 107, 60, 0.08);
+        }
+
+        .password-toggle:focus-visible {
+            outline: 2px solid rgba(8, 107, 60, 0.4);
+        }
+
+        .password-toggle span {
+            display: inline-flex;
+        }
+
+        .password-toggle span[hidden] {
+            display: none;
+        }
+
+        .password-toggle svg {
+            width: 18px;
+            height: 18px;
+        }
+
         .backup-password .backup-note {
             grid-column: 1 / -1;
         }
@@ -983,11 +1031,23 @@
                     <div class="backup-password" id="backupPasswordFields" hidden>
                         <div>
                             <label for="backupPassword">Backup password</label>
-                            <input type="password" id="backupPassword" minlength="8" maxlength="100" autocomplete="new-password">
+                            <div class="password-wrap">
+                                <input type="password" id="backupPassword" minlength="8" maxlength="100" autocomplete="new-password">
+                                <button type="button" class="password-toggle" data-toggle-for="backupPassword" aria-label="Show backup password" aria-pressed="false" title="Show password">
+                                    <span class="icon-show"><i data-lucide="eye"></i></span>
+                                    <span class="icon-hide" hidden><i data-lucide="eye-off"></i></span>
+                                </button>
+                            </div>
                         </div>
                         <div>
                             <label for="backupPasswordConfirm">Type it again</label>
-                            <input type="password" id="backupPasswordConfirm" minlength="8" maxlength="100" autocomplete="new-password">
+                            <div class="password-wrap">
+                                <input type="password" id="backupPasswordConfirm" minlength="8" maxlength="100" autocomplete="new-password">
+                                <button type="button" class="password-toggle" data-toggle-for="backupPasswordConfirm" aria-label="Show password confirmation" aria-pressed="false" title="Show password">
+                                    <span class="icon-show"><i data-lucide="eye"></i></span>
+                                    <span class="icon-hide" hidden><i data-lucide="eye-off"></i></span>
+                                </button>
+                            </div>
                         </div>
                         <p class="backup-note warning">
                             Write this password down and keep it away from this computer.

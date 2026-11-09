@@ -229,6 +229,30 @@
 
     /* ---------------- Make a backup ---------------- */
 
+    // Eye button: show or hide a password field.
+    function setPasswordVisible(button, visible) {
+        const input = $(button.dataset.toggleFor);
+        if (!input) return;
+        input.type = visible ? "text" : "password";
+        button.setAttribute("aria-pressed", String(visible));
+        button.setAttribute("aria-label", button.getAttribute("aria-label").replace(/^(Show|Hide)/, visible ? "Hide" : "Show"));
+        button.title = visible ? "Hide password" : "Show password";
+        button.querySelector(".icon-show").hidden = visible;
+        button.querySelector(".icon-hide").hidden = !visible;
+    }
+
+    function hideAllPasswords() {
+        document.querySelectorAll(".password-toggle").forEach(button => setPasswordVisible(button, false));
+    }
+
+    document.querySelectorAll(".password-toggle").forEach(button => {
+        button.addEventListener("click", () => {
+            const input = $(button.dataset.toggleFor);
+            setPasswordVisible(button, input.type === "password");
+            input.focus();
+        });
+    });
+
     $("backupProtect").addEventListener("change", () => {
         const on = $("backupProtect").checked;
         $("backupPasswordFields").hidden = !on;
@@ -236,6 +260,7 @@
         else {
             $("backupPassword").value = "";
             $("backupPasswordConfirm").value = "";
+            hideAllPasswords();
         }
     });
 
@@ -265,6 +290,7 @@
 
             $("backupPassword").value = "";
             $("backupPasswordConfirm").value = "";
+            hideAllPasswords();
             message(
                 `Backup ready (${size(data.backup?.size)}). Download it and keep a copy away from this computer.` +
                 (protect ? " Remember: it opens only with the password you just typed." : ""),
