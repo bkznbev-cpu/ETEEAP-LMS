@@ -1405,6 +1405,42 @@ button.sik-profile-avatar {
             font: inherit;
         }
 
+        #sikChangePasswordForm .sik-pw-input {
+            position: relative;
+        }
+
+        #sikChangePasswordForm .sik-pw-input input {
+            padding-right: 42px;
+        }
+
+        #sikChangePasswordForm .sik-pw-eye {
+            position: absolute;
+            top: 50%;
+            right: 4px;
+            width: 32px;
+            height: 32px;
+            display: grid;
+            place-items: center;
+            margin: 0;
+            padding: 0;
+            transform: translateY(-50%);
+            border: 0;
+            border-radius: 6px;
+            background: transparent;
+            color: #667085;
+            cursor: pointer;
+        }
+
+        #sikChangePasswordForm .sik-pw-eye:hover {
+            color: #087443;
+            background: #eef6f1;
+        }
+
+        #sikChangePasswordForm .sik-pw-eye svg {
+            width: 18px;
+            height: 18px;
+        }
+
         #sikChangePasswordForm input:focus {
             outline: 2px solid rgba(8, 116, 67, .2);
             border-color: #087443;
@@ -2712,6 +2748,20 @@ overlay.querySelectorAll('[data-sik-action="password"]').forEach(button => {
 
         let form = $("sikChangePasswordForm");
 
+        const SIK_EYE_ICON =
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/></svg>';
+        const SIK_EYE_OFF_ICON =
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><line x1="2" x2="22" y1="2" y2="22"/></svg>';
+
+        const setPasswordVisible = (eye, visible) => {
+            const input = eye.parentElement.querySelector("input");
+            input.type = visible ? "text" : "password";
+            eye.innerHTML = visible ? SIK_EYE_OFF_ICON : SIK_EYE_ICON;
+            eye.setAttribute("aria-label", visible ? "Hide password" : "Show password");
+            eye.title = visible ? "Hide password" : "Show password";
+            eye.setAttribute("aria-pressed", String(visible));
+        };
+
         if (!form) {
             form = document.createElement("form");
             form.id = "sikChangePasswordForm";
@@ -2720,31 +2770,40 @@ overlay.querySelectorAll('[data-sik-action="password"]').forEach(button => {
             form.innerHTML = `
                 <div class="sik-pw-field sik-pw-wide">
                     <label for="sikCurrentPassword">Current Password</label>
+                    <div class="sik-pw-input">
                     <input id="sikCurrentPassword"
                            name="current_password"
                            type="password"
                            autocomplete="current-password"
                            required>
+                        <button type="button" class="sik-pw-eye" data-sik-eye aria-label="Show password" title="Show password"></button>
+                    </div>
                 </div>
 
                 <div class="sik-pw-field">
                     <label for="sikNewPassword">New Password</label>
+                    <div class="sik-pw-input">
                     <input id="sikNewPassword"
                            name="password"
                            type="password"
                            autocomplete="new-password"
                            minlength="8"
                            required>
+                        <button type="button" class="sik-pw-eye" data-sik-eye aria-label="Show password" title="Show password"></button>
+                    </div>
                 </div>
 
                 <div class="sik-pw-field">
                     <label for="sikConfirmPassword">Confirm New Password</label>
+                    <div class="sik-pw-input">
                     <input id="sikConfirmPassword"
                            name="password_confirmation"
                            type="password"
                            autocomplete="new-password"
                            minlength="8"
                            required>
+                        <button type="button" class="sik-pw-eye" data-sik-eye aria-label="Show password" title="Show password"></button>
+                    </div>
                 </div>
 
                 <p id="sikChangePasswordMessage"
@@ -2760,6 +2819,22 @@ overlay.querySelectorAll('[data-sik-action="password"]').forEach(button => {
                     </div>
                 </div>
             `;
+
+            // Eye buttons: show or hide each password.
+            form.querySelectorAll("[data-sik-eye]").forEach(eye => {
+                eye.innerHTML = SIK_EYE_ICON;
+                eye.addEventListener("click", () => {
+                    const input = eye.parentElement.querySelector("input");
+                    setPasswordVisible(eye, input.type === "password");
+                    input.focus();
+                });
+            });
+
+            form.addEventListener("reset", () => {
+                form.querySelectorAll("[data-sik-eye]").forEach(eye =>
+                    setPasswordVisible(eye, false)
+                );
+            });
 
             form.addEventListener("submit", async event => {
                 event.preventDefault();
