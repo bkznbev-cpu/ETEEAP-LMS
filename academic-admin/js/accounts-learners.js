@@ -2813,12 +2813,14 @@ await saveCredentialFile(
             .join("\n");
     }
 
-    throw new Error(
+    const importError = new Error(
         [
             payload?.message || `Import failed (${response.status}).`,
             details
         ].filter(Boolean).join("\n")
     );
+    importError.importPayload = payload;
+    throw importError;
 }
 
             latestImportedLearners = Array.isArray(payload.learners)
@@ -2963,8 +2965,16 @@ await saveCredentialFile(
 
         } catch (error) {
             console.error("Excel learner import failed:", error);
+
+            // Duplicated School IDs open their own error box; the strip keeps a short headline.
+            const shownInBox =
+                typeof window.showImportErrorBox === "function" &&
+                window.showImportErrorBox(error.importPayload);
+
             setExcelImportStatus(
-                error.message || "Unable to import the spreadsheet.",
+                shownInBox
+                    ? error.importPayload?.message || "Duplicated School IDs found. No accounts were created."
+                    : error.message || "Unable to import the spreadsheet.",
                 true
             );
         } finally {

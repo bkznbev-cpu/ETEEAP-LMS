@@ -2022,11 +2022,18 @@
         table-layout: auto;
     }
 
-    .classes-table th:nth-child(2),
-    .classes-table td:nth-child(2),
-    .classes-table th:nth-child(4),
-    .classes-table td:nth-child(4) {
+    /* Column 1 is No.; hide Program (3) and Instructor (5). */
+    .classes-table th:nth-child(3),
+    .classes-table td:nth-child(3),
+    .classes-table th:nth-child(5),
+    .classes-table td:nth-child(5) {
         display: none;
+    }
+
+    .classes-table td.row-number {
+        width: 1%;
+        color: #6b7280;
+        white-space: nowrap;
     }
 
     .classes-table th {
@@ -2078,7 +2085,7 @@
         color: #4b5563;
     }
 
-    .classes-table td:nth-child(5) {
+    .classes-table td:nth-child(6) {
         text-align: center;
     }
 
@@ -2206,7 +2213,7 @@ html.sk-nav .sk-drawer .sidebar-profile {
 
 /* =========================================================
    PHONES: Learners table fits the screen
-   No. and Student ID / Program columns are hidden; the Student ID
+   Student ID / Program columns are hidden; the Student ID
    and Program show under the learner's name instead.
    ========================================================= */
 .learner-mobile-extra {
@@ -2222,13 +2229,18 @@ html.sk-nav .sk-drawer .sidebar-profile {
         min-width: 0;
     }
 
-    .learner-table th:nth-child(1),
-    .learner-table td:nth-child(1),
+    /* Keep No. (1); hide Student ID (2) and Program (4). */
     .learner-table th:nth-child(2),
     .learner-table td:nth-child(2),
     .learner-table th:nth-child(4),
     .learner-table td:nth-child(4) {
         display: none;
+    }
+
+    .learner-table td.row-number {
+        width: 1%;
+        color: #6b7280;
+        white-space: nowrap;
     }
 
     .learner-table td[colspan] {

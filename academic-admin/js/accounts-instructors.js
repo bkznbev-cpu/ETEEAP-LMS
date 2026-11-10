@@ -101,10 +101,12 @@ async function instructorApiRequest(path, options = {}) {
                 : "";
 
         // Headline first (e.g. "This file has already been imported"), then each row.
-        throw new Error(
+        const requestError = new Error(
             [payload?.message, validationErrors].filter(Boolean).join("\n\n") ||
             `API request failed (${response.status}).`
         );
+        requestError.importPayload = payload;
+        throw requestError;
     }
 
     return payload;
@@ -3136,7 +3138,15 @@ async function importInstructorsFromExcel() {
             );
         } else {
             clearInstructorCredentialExports();
-            alert(error.message || "Unable to import instructor accounts.");
+
+            // Duplicated School IDs open their own error box.
+            const shownInBox =
+                typeof window.showImportErrorBox === "function" &&
+                window.showImportErrorBox(error.importPayload);
+
+            if (!shownInBox) {
+                alert(error.message || "Unable to import instructor accounts.");
+            }
         }
     } finally {
         importInstructorsExcelBtn.disabled = false;

@@ -1746,11 +1746,12 @@ function cloneArray(
 
 
         filtered.forEach(
-            classItem => {
+            (classItem, index) => {
 
                 tableBody.appendChild(
                     createClassRow(
-                        classItem
+                        classItem,
+                        index + 1
                     )
                 );
             }
@@ -1771,7 +1772,8 @@ function cloneArray(
        ===================================================== */
 
     function createClassRow(
-        classItem
+        classItem,
+        rowNumber
     ) {
 
         const row =
@@ -1795,6 +1797,10 @@ function cloneArray(
 
 
         row.innerHTML = `
+
+            <td class="row-number">
+                ${rowNumber}
+            </td>
 
             <td>
                 <strong class="class-code">

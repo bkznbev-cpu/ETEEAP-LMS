@@ -3124,6 +3124,213 @@ window.chooseWorkbookSheets = async function chooseWorkbookSheets(file, options 
 
 
 /* =========================================================
+   IMPORT ERROR BOX
+   ---------------------------------------------------------
+   window.showImportErrorBox(payload)
+   payload is the import API's error response:
+     { message, errors: [{ sheet?, row, school_id?, message }] }
+   Duplicated School IDs get their own table so they are easy
+   to find in the spreadsheet. Returns false when there is no
+   duplicate School ID to show (the caller keeps its normal
+   message).
+========================================================= */
+
+window.isDuplicateSchoolIdError = function isDuplicateSchoolIdError(error) {
+    const text = String(error?.message || "").toLowerCase();
+    return text.includes("school id") &&
+        (text.includes("duplicate") || text.includes("already exists"));
+};
+
+window.showImportErrorBox = function showImportErrorBox(payload = {}) {
+    const errors = Array.isArray(payload.errors) ? payload.errors : [];
+    const duplicates = errors.filter(window.isDuplicateSchoolIdError);
+    const others = errors.filter(error => !window.isDuplicateSchoolIdError(error));
+
+    if (!duplicates.length) return false;
+
+    document.getElementById("sikImportErrorBox")?.remove();
+
+    const red = "#b42318";
+    const hasSheets = duplicates.some(error => error.sheet);
+
+    const overlay = document.createElement("div");
+    overlay.id = "sikImportErrorBox";
+    overlay.setAttribute("role", "alertdialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "sikImportErrorTitle");
+    Object.assign(overlay.style, {
+        position: "fixed", inset: "0", zIndex: "10001",
+        background: "rgba(0,0,0,.55)", display: "flex",
+        alignItems: "center", justifyContent: "center", padding: "16px"
+    });
+
+    const panel = document.createElement("div");
+    Object.assign(panel.style, {
+        background: "#fff", color: "#1f2937", width: "min(620px, 100%)",
+        maxHeight: "88vh", display: "flex", flexDirection: "column",
+        borderRadius: "12px", boxShadow: "0 12px 40px rgba(0,0,0,.25)",
+        overflow: "hidden"
+    });
+
+    const header = document.createElement("div");
+    Object.assign(header.style, {
+        display: "flex", gap: "12px", alignItems: "flex-start",
+        padding: "20px 22px 14px"
+    });
+
+    const icon = document.createElement("span");
+    icon.textContent = "!";
+    icon.setAttribute("aria-hidden", "true");
+    Object.assign(icon.style, {
+        flex: "0 0 auto", width: "32px", height: "32px", borderRadius: "50%",
+        background: "#fee2e2", color: red, fontWeight: "700", fontSize: "18px",
+        display: "flex", alignItems: "center", justifyContent: "center"
+    });
+
+    const headText = document.createElement("div");
+    const title = document.createElement("h2");
+    title.id = "sikImportErrorTitle";
+    title.textContent = "Duplicated School ID";
+    Object.assign(title.style, { margin: "2px 0 6px", fontSize: "19px", color: red });
+
+    const summary = document.createElement("p");
+    summary.textContent = payload.message ||
+        "No accounts were created because some School IDs are duplicated.";
+    Object.assign(summary.style, { margin: "0", color: "#4b5563", lineHeight: "1.5" });
+    headText.append(title, summary);
+    header.append(icon, headText);
+
+    const body = document.createElement("div");
+    Object.assign(body.style, { padding: "0 22px 8px", overflowY: "auto" });
+
+    // The box that lists every duplicated School ID.
+    const box = document.createElement("div");
+    Object.assign(box.style, {
+        border: "1px solid #fecaca", background: "#fef2f2",
+        borderRadius: "10px", overflow: "hidden"
+    });
+
+    const boxTitle = document.createElement("div");
+    boxTitle.textContent = `${duplicates.length} duplicated School ID${duplicates.length === 1 ? "" : "s"}`;
+    Object.assign(boxTitle.style, {
+        padding: "10px 14px", fontWeight: "700", color: red,
+        borderBottom: "1px solid #fecaca"
+    });
+
+    const tableWrap = document.createElement("div");
+    Object.assign(tableWrap.style, { overflowX: "auto", maxHeight: "300px", overflowY: "auto" });
+
+    const table = document.createElement("table");
+    Object.assign(table.style, {
+        width: "100%", borderCollapse: "collapse", fontSize: "14px", background: "#fff"
+    });
+
+    const headings = [...(hasSheets ? ["Sheet"] : []), "Row", "School ID", "Problem"];
+    const thead = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    headings.forEach(text => {
+        const th = document.createElement("th");
+        th.textContent = text;
+        Object.assign(th.style, {
+            textAlign: "left", padding: "8px 14px", position: "sticky", top: "0",
+            background: "#fff5f5", color: "#7f1d1d", fontWeight: "600",
+            borderBottom: "1px solid #fecaca", whiteSpace: "nowrap"
+        });
+        headRow.append(th);
+    });
+    thead.append(headRow);
+
+    const tbody = document.createElement("tbody");
+    duplicates.forEach(error => {
+        const inFile = String(error.message || "").toLowerCase().includes("in the spreadsheet");
+        const cells = [
+            ...(hasSheets ? [error.sheet || "—"] : []),
+            error.row ?? "?",
+            error.school_id || (String(error.message).match(/School ID (\S+)/)?.[1] ?? "—"),
+            inFile ? "Repeated in this file" : "Already in the system"
+        ];
+        const tr = document.createElement("tr");
+        cells.forEach((value, index) => {
+            const td = document.createElement("td");
+            td.textContent = String(value);
+            Object.assign(td.style, {
+                padding: "8px 14px", borderBottom: "1px solid #fde2e2",
+                overflowWrap: "anywhere",
+                fontWeight: headings[index] === "School ID" ? "600" : "400"
+            });
+            tr.append(td);
+        });
+        tbody.append(tr);
+    });
+
+    table.append(thead, tbody);
+    tableWrap.append(table);
+    box.append(boxTitle, tableWrap);
+    body.append(box);
+
+    // Any other row problems, listed under the box.
+    if (others.length) {
+        const otherTitle = document.createElement("p");
+        otherTitle.textContent = "Other problems in the file";
+        Object.assign(otherTitle.style, { margin: "16px 0 6px", fontWeight: "600" });
+
+        const list = document.createElement("ul");
+        Object.assign(list.style, {
+            margin: "0", paddingLeft: "20px", color: "#4b5563", lineHeight: "1.6"
+        });
+        others.forEach(error => {
+            const li = document.createElement("li");
+            li.textContent =
+                `${error.sheet ? `Sheet "${error.sheet}", row` : "Row"} ${error.row ?? "?"}: ${error.message || "Invalid data."}`;
+            list.append(li);
+        });
+        body.append(otherTitle, list);
+    }
+
+    const hint = document.createElement("p");
+    hint.textContent = "Each School ID must be unique. Fix these rows in the spreadsheet, then import it again.";
+    Object.assign(hint.style, { margin: "14px 0 6px", color: "#4b5563", fontSize: "13px" });
+    body.append(hint);
+
+    const actions = document.createElement("div");
+    Object.assign(actions.style, {
+        display: "flex", justifyContent: "flex-end", padding: "12px 22px 18px"
+    });
+
+    const okButton = document.createElement("button");
+    okButton.type = "button";
+    okButton.textContent = "OK";
+    Object.assign(okButton.style, {
+        padding: "10px 22px", borderRadius: "8px", cursor: "pointer",
+        font: "inherit", fontWeight: "600", border: "1px solid #086642",
+        background: "#086642", color: "#fff"
+    });
+    actions.append(okButton);
+
+    const close = () => {
+        document.removeEventListener("keydown", onKeydown);
+        overlay.remove();
+    };
+    const onKeydown = event => {
+        if (event.key === "Escape") close();
+    };
+
+    okButton.addEventListener("click", close);
+    overlay.addEventListener("click", event => {
+        if (event.target === overlay) close();
+    });
+
+    panel.append(header, body, actions);
+    overlay.append(panel);
+    document.body.append(overlay);
+    document.addEventListener("keydown", onKeydown);
+    okButton.focus();
+
+    return true;
+};
+
+
+/* =========================================================
    IN-PAGE TOAST
    ---------------------------------------------------------
    A small message in the corner of the page. Used instead of
