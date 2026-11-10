@@ -1590,6 +1590,156 @@ button.sik-profile-avatar {
             }
         }
 
+        /* Tighter spacing so the whole card fits on a laptop screen
+           without a scroll bar. */
+        .sik-profile-modal {
+            max-height: calc(100dvh - 40px);
+        }
+
+        .sik-profile-cover {
+            gap: 18px;
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+
+        .sik-profile-avatar,
+        button.sik-profile-avatar {
+            width: 76px;
+            height: 76px;
+            min-width: 76px;
+            min-height: 76px;
+            flex-basis: 76px;
+        }
+
+        .sik-profile-cover h2 {
+            margin-bottom: 4px;
+            font-size: 21px;
+        }
+
+        .sik-profile-cover p {
+            margin-bottom: 6px;
+        }
+
+        .sik-profile-body {
+            padding-top: 18px;
+            padding-bottom: 20px;
+        }
+
+        .sik-profile-body h3 {
+            margin-bottom: 12px;
+            font-size: 17px;
+        }
+
+        .sik-profile-grid {
+            gap: 12px 25px;
+        }
+
+        .sik-profile-field label {
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+
+        .sik-profile-field p {
+            font-size: 15px;
+        }
+
+        .sik-profile-security {
+            margin-top: 16px;
+            padding-top: 16px;
+        }
+
+        .sik-profile-security-row {
+            margin-bottom: 12px;
+        }
+
+        .sik-profile-security-icon {
+            width: 40px;
+            height: 40px;
+        }
+
+        .sik-profile-actions {
+            margin-top: 14px;
+            padding-top: 16px;
+        }
+
+        .sik-profile-button {
+            min-height: 44px;
+            padding: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .sik-profile-modal {
+                max-height: calc(100dvh - 24px);
+            }
+        }
+
+        /* Desktop: two columns. Personal Information and the buttons on
+           the left, Account & Security on the right, so opening Change
+           Password or Change Email does not push the card past the screen. */
+        @media (min-width: 900px) {
+            .sik-profile-body {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+                grid-template-rows: auto auto 1fr;
+                grid-template-areas:
+                    "msg     msg"
+                    "info    security"
+                    "actions security";
+                column-gap: 28px;
+                align-items: start;
+            }
+
+            #sikProfileMessage {
+                grid-area: msg;
+            }
+
+            .sik-profile-body > section:not(.sik-profile-security) {
+                grid-area: info;
+            }
+
+            .sik-profile-body .sik-profile-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .sik-profile-security {
+                grid-area: security;
+                margin-top: 0;
+                padding-top: 0;
+                padding-left: 28px;
+                border-top: 0;
+                border-left: 1px solid #e5e7eb;
+                align-self: stretch;
+            }
+
+            .sik-profile-actions {
+                grid-area: actions;
+                align-self: end;
+                margin-top: 16px;
+                padding-top: 16px;
+            }
+
+            /* Visible buttons share the column width. */
+            .sik-profile-actions:not([hidden]) {
+                display: flex;
+                gap: 12px;
+            }
+
+            .sik-profile-actions .sik-profile-button {
+                flex: 1 1 0;
+            }
+
+            #sikChangePasswordForm {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                margin: 0 0 12px;
+            }
+
+            #sikChangePasswordForm .sik-pw-wide,
+            #sikChangePasswordForm .sik-pw-field.sik-pw-wide {
+                grid-column: 1 / -1;
+            }
+        }
+
         /* Phones: tidy profile pop-up. Smaller photo, the X sits in the
            corner without covering the name, Upload/Cancel side by side,
            and the email gets its own full-width line. */
