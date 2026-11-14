@@ -10970,6 +10970,25 @@ body:has(.instructor-accounts-page) .instructor-accounts-page .learner-accounts-
     height: 28px;
 }
 
+/* Shown on a module card when the module is archived. */
+.module-archived-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 9px;
+    border-radius: 3px;
+    background: #b9c7ff;
+    color: #3047a3;
+    font-size: 11px;
+    line-height: 1;
+    font-weight: 600;
+}
+
+.module-archived-label svg {
+    width: 12px;
+    height: 12px;
+}
+
 @media (max-width: 900px) {
     .module-grid {
         grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));

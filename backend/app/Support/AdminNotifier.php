@@ -44,6 +44,29 @@ class AdminNotifier
         );
     }
 
+    /**
+     * An Instructor changed a score that was already saved.
+     */
+    public static function gradeChanged(
+        User $instructor,
+        User $learner,
+        string $moduleTitle,
+        string $courseName,
+        float|int|string $oldScore,
+        float|int|string $oldMaxScore,
+        float|int|string $newScore,
+        float|int|string $newMaxScore
+    ): void {
+        self::notifyRole(
+            'academic_admin',
+            'Grade Updated',
+            "{$instructor->name} changed {$learner->name}'s grade for \"{$moduleTitle}\" in {$courseName} from "
+                . self::number($oldScore) . '/' . self::number($oldMaxScore) . ' to '
+                . self::number($newScore) . '/' . self::number($newMaxScore) . '.',
+            self::TYPE_GRADE
+        );
+    }
+
     public static function accountLocked(User $user, int $seconds): void
     {
         $recipientRole = match ($user->role) {

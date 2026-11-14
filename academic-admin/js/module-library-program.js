@@ -877,6 +877,13 @@
                     )}
                 </h4>
 
+                ${module.status === "archived"
+                    ? `<span class="module-archived-label">
+                           <i data-lucide="archive"></i>
+                           Archived
+                       </span>`
+                    : ""}
+
                     <button
                         type="button"
                         class="module-view-button"

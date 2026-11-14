@@ -550,6 +550,17 @@ class GradeController extends Controller
                         ],
                         'is_read' => false,
                     ]);
+
+                    AdminNotifier::gradeChanged(
+                        $instructor,
+                        $submission->learner,
+                        $submission->module->title,
+                        $submission->module->course->name,
+                        $before['score'],
+                        $before['max_score'],
+                        $after['score'],
+                        $after['max_score']
+                    );
                 }
             } else {
                 \App\Support\AuditLogger::log('create', \App\Support\AuditLogger::GRADES, [

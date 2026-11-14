@@ -90,6 +90,11 @@ class NotificationTest extends TestCase
             $this->requirementNotMet('FR-NM-05', 'the Academic Administrator is notified when work is first graded, but not when an Instructor changes a saved score. (The change is written to the audit log, and the Learner is notified.)');
         }
         $this->assertGreaterThan($before, Notification::where('user_id', $this->admin->id)->count());
+
+        $latest = Notification::where('user_id', $this->admin->id)->latest('id')->first();
+        $this->assertSame('Grade Updated', $latest->title);
+        $this->assertSame('grade', $latest->type);
+        $this->assertStringContainsString('from 5/10 to 9/10', $latest->message);
     }
 
     #[Group('FR-NM'), Group('NFR-S'), Group('FR-NM-07'), Group('NFR-S-02')]
