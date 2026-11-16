@@ -117,17 +117,17 @@ class AuditLogEventsTest extends TestCase
 
         $newToken = $this->withToken($token)
             ->postJson('/api/student/setup-password', [
-                'password' => 'learner-own-pass',
-                'password_confirmation' => 'learner-own-pass',
+                'password' => 'Learner-own-pass1',
+                'password_confirmation' => 'Learner-own-pass1',
             ])->assertOk()->json('token');
 
         $this->app['auth']->forgetGuards();
 
         $this->withToken($newToken)
             ->putJson('/api/account/password', [
-                'current_password' => 'learner-own-pass',
-                'password' => 'learner-newer-pass',
-                'password_confirmation' => 'learner-newer-pass',
+                'current_password' => 'Learner-own-pass1',
+                'password' => 'Learner-newer-pass1',
+                'password_confirmation' => 'Learner-newer-pass1',
             ])->assertOk();
 
         $this->assertCount(1, $this->entries('password_set'));

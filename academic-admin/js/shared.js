@@ -2812,7 +2812,7 @@ overlay.querySelectorAll('[data-sik-action="password"]').forEach(button => {
                    aria-live="polite"></p>
 
                 <div class="sik-pw-buttons sik-pw-wide">
-                    <span>At least 8 characters.</span>
+                    <span>At least 8 characters, with one uppercase letter and one number.</span>
                     <div>
                         <button id="sikCancelPasswordChange" type="button">Cancel</button>
                         <button id="sikSubmitPasswordChange" type="submit">Update Password</button>
@@ -2846,6 +2846,12 @@ overlay.querySelectorAll('[data-sik-action="password"]').forEach(button => {
                 const confirmPassword = $("sikConfirmPassword").value;
 
                 result.style.color = "#b42318";
+
+                if (newPassword.length < 8 || !/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+                    result.textContent =
+                        "The new password must have at least 8 characters, one uppercase letter, and one number.";
+                    return;
+                }
 
                 if (newPassword !== confirmPassword) {
                     result.textContent = "The new passwords do not match.";

@@ -208,8 +208,8 @@ class InstructorPortalTest extends TestCase
         $this->actingAs($this->instructor)
             ->postJson('/api/instructor/profile/password', [
                 'current_password' => 'instructor-pass',
-                'new_password' => 'brand-new-pass',
-                'new_password_confirmation' => 'brand-new-pass',
+                'new_password' => 'Brand-new-pass1',
+                'new_password_confirmation' => 'Brand-new-pass1',
             ])
             ->assertOk();
     }

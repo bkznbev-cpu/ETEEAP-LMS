@@ -101,12 +101,10 @@ class InstructorProfileController extends Controller
             ],
 
             'new_password' => [
-                'required',
-                'string',
-                'min:8',
+                ...\App\Support\PasswordPolicy::rules('instructor'),
                 'confirmed',
             ],
-        ]);
+        ], \App\Support\PasswordPolicy::messages('instructor', 'new_password'));
 
         if (!Hash::check(
             $validated['current_password'],

@@ -1525,6 +1525,51 @@ public function syncClassModules(Request $request, int $id): JsonResponse
         ->values();
 
     /*
+     * FR-CM-04: a Class gets only Modules from its own Course. Each newly
+     * added Module must be in the Module Library under this Class's
+     * Program and Course (subject code). Modules the Class already has
+     * are kept even if the library has since changed, so re-saving the
+     * Class never fails because of an older assignment.
+     */
+    $alreadyAssigned = Module::where('course_id', $class->id)
+        ->whereNotNull('library_key')
+        ->pluck('library_key')
+        ->map(fn ($key) => (string) $key)
+        ->all();
+
+    $newModules = $selectedModules
+        ->filter(fn ($module) => !in_array((string) $module['library_key'], $alreadyAssigned, true));
+
+    if ($newModules->isNotEmpty()) {
+        if (trim((string) $class->program) === '' || trim((string) $class->subject_code) === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Set this Class\'s Program and Course before assigning Modules.',
+                'errors' => ['modules' => ['Set this Class\'s Program and Course before assigning Modules.']],
+            ], 422);
+        }
+
+        $allowedKeys = \App\Models\ModuleLibrary::current()
+            ?->moduleKeysForCourse($class->program, $class->subject_code) ?? [];
+
+        $outside = $newModules
+            ->reject(fn ($module) => in_array((string) $module['library_key'], $allowedKeys, true));
+
+        if ($outside->isNotEmpty()) {
+            $message = "Only Modules from this Class's Course ({$class->subject_code}) can be assigned. Not in that Course: "
+                . $outside->pluck('title')->implode(', ') . '.';
+
+            return response()->json([
+                'success' => false,
+                'message' => $message,
+                'errors' => $outside->mapWithKeys(fn ($module, $index) => [
+                    "modules.{$index}.library_key" => [$message],
+                ])->all(),
+            ], 422);
+        }
+    }
+
+    /*
      * Soft-delete modules that were previously assigned
      * to this class but are no longer selected.
      *

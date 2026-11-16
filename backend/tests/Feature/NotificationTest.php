@@ -44,6 +44,7 @@ class NotificationTest extends TestCase
     #[Group('FR-NM'), Group('FR-NM-01'), Group('discrepancy')]
     public function test_learner_is_notified_when_module_is_assigned_to_their_class(): void
     {
+        $this->libraryCourseFor($this->class, ['BSCRIM-LAW1-M2'], 'LAW1');
         $this->actingAs($this->admin)->putJson("/api/admin/classes/{$this->class->id}/modules/sync", [
             'modules' => [['library_key' => 'BSCRIM-LAW1-M2', 'title' => 'Module 2', 'is_published' => true]],
         ])->assertOk();

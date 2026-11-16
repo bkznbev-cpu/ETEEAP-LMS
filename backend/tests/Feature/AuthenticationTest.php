@@ -66,34 +66,49 @@ class AuthenticationTest extends TestCase
         $this->assertTrue(Hash::check('TempPass99', $stored));
     }
 
-    #[Group('NFR-S'), Group('NFR-S-03'), Group('discrepancy')]
+    #[Group('NFR-S'), Group('NFR-S-03')]
     public function test_new_password_without_an_uppercase_letter_or_number_is_rejected(): void
     {
-        $response = $this->actingAs($this->learner)->putJson('/api/account/password', [
-            'current_password' => 'password',
-            'password' => 'alllowercaseletters',
-            'password_confirmation' => 'alllowercaseletters',
-        ]);
-
-        if ($response->status() === 200) {
-            $this->requirementNotMet('NFR-S-03', 'the server accepts a new password with no uppercase letter and no number; only the length (8) is checked. The uppercase and number rules exist only in the web pages.');
+        foreach (['alllowercaseletters', 'NoNumbersHere', 'nouppercase123'] as $weak) {
+            $this->actingAs($this->learner)->putJson('/api/account/password', [
+                'current_password' => 'password',
+                'password' => $weak,
+                'password_confirmation' => $weak,
+            ])->assertStatus(422)->assertJsonValidationErrors('password');
         }
-        $response->assertStatus(422);
+
+        $this->actingAs($this->learner)->putJson('/api/account/password', [
+            'current_password' => 'password',
+            'password' => 'GoodPass1',
+            'password_confirmation' => 'GoodPass1',
+        ])->assertOk();
     }
 
-    #[Group('NFR-S'), Group('NFR-S-03'), Group('discrepancy')]
+    #[Group('NFR-S'), Group('NFR-S-03')]
+    public function test_first_time_password_setup_needs_an_uppercase_letter_and_number(): void
+    {
+        $this->learner->update(['password_setup_complete' => false]);
+
+        $this->actingAs($this->learner)->postJson('/api/student/setup-password', [
+            'password' => 'lowercase1',
+            'password_confirmation' => 'lowercase1',
+        ])->assertStatus(422)->assertJsonValidationErrors('password');
+    }
+
+    #[Group('NFR-S'), Group('NFR-S-03')]
     public function test_system_administrator_cannot_change_own_password_to_fewer_than_15_characters(): void
     {
-        $response = $this->actingAs($this->systemAdmin)->putJson('/api/account/password', [
+        $this->actingAs($this->systemAdmin)->putJson('/api/account/password', [
             'current_password' => 'password',
             'password' => 'Short1Pass',
             'password_confirmation' => 'Short1Pass',
-        ]);
+        ])->assertStatus(422)->assertJsonValidationErrors('password');
 
-        if ($response->status() === 200) {
-            $this->requirementNotMet('NFR-S-03', 'a System Administrator can change their own password (PUT /api/account/password) to 10 characters; that endpoint requires only 8 for every role. The 15-character rule applies only to password reset.');
-        }
-        $response->assertStatus(422);
+        $this->actingAs($this->systemAdmin)->putJson('/api/account/password', [
+            'current_password' => 'password',
+            'password' => 'a long passphrase here',
+            'password_confirmation' => 'a long passphrase here',
+        ])->assertOk();
     }
 
     #[Group('NFR-S'), Group('NFR-S-04'), Group('discrepancy')]

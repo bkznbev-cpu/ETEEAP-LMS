@@ -54,6 +54,7 @@ class ModuleMaterialTest extends TestCase
         Storage::fake('local');
         $admin = $this->user('academic_admin', 'ADM-M1');
         $course = $this->course(null, $admin);
+        $this->libraryCourseFor($course, ['module-1']);
         $path = $this->upload($admin);
 
         $this->assertStringStartsWith('module-materials/', $path);
@@ -86,6 +87,7 @@ class ModuleMaterialTest extends TestCase
         Storage::fake('local');
         $admin = $this->user('academic_admin', 'ADM-M2');
         $course = $this->course(null, $admin);
+        $this->libraryCourseFor($course, ['module-1']);
 
         $sync = fn (?string $path) => $this->actingAs($admin)
             ->putJson("/api/admin/classes/{$course->id}/modules/sync", [

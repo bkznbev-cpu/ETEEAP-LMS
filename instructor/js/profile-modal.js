@@ -175,7 +175,7 @@
                         </div>
                         <p class="lp-message" id="lpPasswordMessage" role="status" aria-live="polite"></p>
                         <div class="lp-password-buttons">
-                            <span>At least 8 characters. Other devices will be signed out.</span>
+                            <span>At least 8 characters, with one uppercase letter and one number. Other devices will be signed out.</span>
                             <div>
                                 <button type="button" class="lp-btn plain" id="lpCancelPassword">Cancel</button>
                                 <button type="submit" class="lp-btn" id="lpSavePassword">Update Password</button>
@@ -440,7 +440,7 @@
         const confirmation = $("lpConfirmPassword").value;
 
         if (!current || !next || !confirmation) return message("lpPasswordMessage", "Please fill in all three password fields.", "error");
-        if (next.length < 8) return message("lpPasswordMessage", "The new password must be at least 8 characters.", "error");
+        if (next.length < 8 || !/[A-Z]/.test(next) || !/[0-9]/.test(next)) return message("lpPasswordMessage", "The new password must have at least 8 characters, one uppercase letter, and one number.", "error");
         if (next !== confirmation) return message("lpPasswordMessage", "The new passwords do not match.", "error");
         if (next === current) return message("lpPasswordMessage", "The new password must be different from your current one.", "error");
 

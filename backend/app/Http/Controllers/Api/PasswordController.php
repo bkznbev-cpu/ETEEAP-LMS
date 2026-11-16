@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Support\AuditLogger;
+use App\Support\PasswordPolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -51,16 +52,11 @@ class PasswordController extends Controller
     // Shared password setup logic
     private function completeSetup(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'password' => [
-                'required',
-                'string',
-                'min:8',
-                'confirmed',
-            ],
-        ]);
-
         $user = $request->user();
+
+        $validated = $request->validate([
+            'password' => [...PasswordPolicy::rules($user->role), 'confirmed'],
+        ], PasswordPolicy::messages($user->role));
 
         if ($user->password_setup_complete) {
             return response()->json([
@@ -117,13 +113,11 @@ class PasswordController extends Controller
         $validated = $request->validate([
             'current_password' => ['required', 'string'],
             'password' => [
-                'required',
-                'string',
-                'min:8',
+                ...PasswordPolicy::rules($user->role),
                 'confirmed',
                 'different:current_password',
             ],
-        ]);
+        ], PasswordPolicy::messages($user->role));
 
         if (!Hash::check($validated['current_password'], $user->password)) {
             return response()->json([

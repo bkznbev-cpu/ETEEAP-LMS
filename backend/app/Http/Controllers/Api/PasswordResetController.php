@@ -147,13 +147,10 @@ class PasswordResetController extends Controller
 
         $user = $this->findAccount($request->input('email'), $request->input('school_id'));
 
-        // System Administrators need a longer password, as elsewhere.
-        $minimum = \App\Support\PasswordPolicy::minimumLength($user?->role);
-
+        // Same password rule as setup and change (System Administrators: 15+).
         $request->validate([
-            'password' => ['required', 'string', "min:{$minimum}", 'max:255', 'confirmed'],
-        ], [
-            'password.min' => "The new password must be at least {$minimum} characters.",
+            'password' => [...\App\Support\PasswordPolicy::rules($user?->role), 'confirmed'],
+        ], \App\Support\PasswordPolicy::messages($user?->role) + [
             'password.confirmed' => 'The new passwords do not match.',
         ]);
 

@@ -70,8 +70,8 @@ class ForcedPasswordChangeTest extends TestCase
 
         $newToken = $this->withToken($token)
             ->postJson('/api/student/setup-password', [
-                'password' => 'my-new-password',
-                'password_confirmation' => 'my-new-password',
+                'password' => 'My-new-password1',
+                'password_confirmation' => 'My-new-password1',
             ])
             ->assertOk()
             ->json('token');
@@ -198,21 +198,21 @@ class ForcedPasswordChangeTest extends TestCase
         $this->withToken($token)
             ->putJson('/api/account/password', [
                 'current_password' => 'wrong-password',
-                'password' => 'learner-new-pass',
-                'password_confirmation' => 'learner-new-pass',
+                'password' => 'Learner-new-pass1',
+                'password_confirmation' => 'Learner-new-pass1',
             ])
             ->assertStatus(422);
 
         $this->withToken($token)
             ->putJson('/api/account/password', [
                 'current_password' => 'temporary-pass',
-                'password' => 'learner-new-pass',
-                'password_confirmation' => 'learner-new-pass',
+                'password' => 'Learner-new-pass1',
+                'password_confirmation' => 'Learner-new-pass1',
             ])
             ->assertOk();
 
         $this->app['auth']->forgetGuards();
-        $this->login('24-00006', 'learner-new-pass');
+        $this->login('24-00006', 'Learner-new-pass1');
     }
 
     #[Group('FR-AU'), Group('FR-AU-04')]
@@ -225,8 +225,8 @@ class ForcedPasswordChangeTest extends TestCase
         $this->withToken($current)
             ->putJson('/api/admin/change-password', [
                 'current_password' => 'temporary-pass',
-                'password' => 'brand-new-pass',
-                'password_confirmation' => 'brand-new-pass',
+                'password' => 'Brand-new-pass1',
+                'password_confirmation' => 'Brand-new-pass1',
             ])
             ->assertOk();
 

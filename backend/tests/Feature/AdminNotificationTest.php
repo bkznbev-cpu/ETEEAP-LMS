@@ -48,8 +48,8 @@ class AdminNotificationTest extends TestCase
 
         $this->withToken($token)
             ->postJson('/api/student/setup-password', [
-                'password' => 'learner-own-pass',
-                'password_confirmation' => 'learner-own-pass',
+                'password' => 'Learner-own-pass1',
+                'password_confirmation' => 'Learner-own-pass1',
             ])
             ->assertOk();
 

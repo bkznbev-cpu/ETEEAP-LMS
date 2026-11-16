@@ -48,7 +48,7 @@ class PasswordResetTest extends TestCase
         return $code;
     }
 
-    private function reset(string $code, string $password = 'brand-new-pass', string $email = 'ana@example.com', ?string $confirm = null)
+    private function reset(string $code, string $password = 'Brand-new-pass1', string $email = 'ana@example.com', ?string $confirm = null)
     {
         return $this->postJson('/api/password/reset', [
             'email' => $email, 'code' => $code,
@@ -154,12 +154,12 @@ class PasswordResetTest extends TestCase
         $this->reset($code)->assertOk()->assertJsonPath('success', true);
 
         $this->learner->refresh();
-        $this->assertTrue(Hash::check('brand-new-pass', $this->learner->password));
+        $this->assertTrue(Hash::check('Brand-new-pass1', $this->learner->password));
         $this->assertSame(0, $this->learner->tokens()->count());
         $this->assertDatabaseMissing('password_reset_tokens', ['email' => 'ana@example.com']);
         $this->assertDatabaseHas('audit_logs', ['action' => 'password_reset', 'module' => 'Authentication', 'target_id' => $this->learner->school_id]);
 
-        $this->postJson('/api/login', ['school_id' => '24-RS001', 'password' => 'brand-new-pass'])->assertOk();
+        $this->postJson('/api/login', ['school_id' => '24-RS001', 'password' => 'Brand-new-pass1'])->assertOk();
 
         // Used once only.
         $this->reset($code, 'another-pass-1')->assertStatus(422);
@@ -194,7 +194,7 @@ class PasswordResetTest extends TestCase
         $this->postJson('/api/password/verify-code', ['email' => 'ana@example.com', 'code' => '12a45'])
             ->assertStatus(422)->assertJsonValidationErrors('code');
         $this->reset($code, 'short')->assertStatus(422)->assertJsonValidationErrors('password');
-        $this->reset($code, 'brand-new-pass', 'ana@example.com', 'different-pass')->assertStatus(422)->assertJsonValidationErrors('password');
+        $this->reset($code, 'Brand-new-pass1', 'ana@example.com', 'Different-pass1')->assertStatus(422)->assertJsonValidationErrors('password');
 
         $this->travel(16)->minutes();
         $this->reset($code)->assertStatus(422)->assertJsonPath('message', 'The verification code has expired. Please request a new code.');
@@ -263,10 +263,10 @@ class PasswordResetTest extends TestCase
 
         $this->postJson('/api/password/reset', [
             'school_id' => 'INS-SHARE', 'email' => 'ana@example.com', 'code' => $code,
-            'password' => 'brand-new-pass', 'password_confirmation' => 'brand-new-pass',
+            'password' => 'Brand-new-pass1', 'password_confirmation' => 'Brand-new-pass1',
         ])->assertOk();
 
-        $this->assertTrue(Hash::check('brand-new-pass', $instructor->fresh()->password));
+        $this->assertTrue(Hash::check('Brand-new-pass1', $instructor->fresh()->password));
         $this->assertSame($learnerPassword, $this->learner->fresh()->password);
     }
 }

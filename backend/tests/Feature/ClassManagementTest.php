@@ -70,6 +70,7 @@ class ClassManagementTest extends TestCase
     #[Group('FR-CM'), Group('FR-CM-04')]
     public function test_academic_administrator_can_assign_library_modules_to_class(): void
     {
+        $this->libraryCourseFor($this->class, ['BSCRIM-LAW1-M2'], 'LAW1');
         $this->actingAs($this->admin)->putJson("/api/admin/classes/{$this->class->id}/modules/sync", [
             'modules' => [['library_key' => 'BSCRIM-LAW1-M2', 'title' => 'Module 2', 'is_published' => true]],
         ])->assertOk();
@@ -77,19 +78,50 @@ class ClassManagementTest extends TestCase
         $this->assertDatabaseHas('modules', ['course_id' => $this->class->id, 'library_key' => 'BSCRIM-LAW1-M2', 'title' => 'Module 2']);
     }
 
-    #[Group('FR-CM'), Group('FR-CM-04'), Group('discrepancy')]
+    #[Group('FR-CM'), Group('FR-CM-04')]
     public function test_module_from_another_course_cannot_be_assigned(): void
     {
-        // The server stores no Course for a Class and no Course for a library
-        // module, so it has nothing to compare. Any library module is accepted.
-        $response = $this->actingAs($this->admin)->putJson("/api/admin/classes/{$this->class->id}/modules/sync", [
-            'modules' => [['library_key' => 'BSIT-WEBDEV-M1', 'title' => 'Web Development Module 1', 'is_published' => true]],
-        ]);
+        // This Class's Course is LAW1; BSIT-WEBDEV-M1 belongs to another Course.
+        $this->libraryCourseFor($this->class, ['BSCRIM-LAW1-M2'], 'LAW1');
+        $this->libraryCourseFor($this->otherClass, ['BSIT-WEBDEV-M1'], 'WEBDEV');
 
-        if ($response->status() === 200) {
-            $this->requirementNotMet('FR-CM-04', 'the server accepts any Module for any Class. Classes store only a Program name, and Courses exist only in the browser, so the "Modules from the Class\'s Course" rule is enforced only by the web page.');
-        }
-        $response->assertStatus(422);
+        $this->actingAs($this->admin)->putJson("/api/admin/classes/{$this->class->id}/modules/sync", [
+            'modules' => [['library_key' => 'BSIT-WEBDEV-M1', 'title' => 'Web Development Module 1', 'is_published' => true]],
+        ])->assertStatus(422)->assertJsonValidationErrors('modules.0.library_key');
+
+        $this->assertDatabaseMissing('modules', ['course_id' => $this->class->id, 'library_key' => 'BSIT-WEBDEV-M1']);
+    }
+
+    #[Group('FR-CM'), Group('FR-CM-04')]
+    public function test_module_not_in_the_library_cannot_be_assigned(): void
+    {
+        $this->libraryCourseFor($this->class, ['BSCRIM-LAW1-M2'], 'LAW1');
+
+        $this->actingAs($this->admin)->putJson("/api/admin/classes/{$this->class->id}/modules/sync", [
+            'modules' => [['library_key' => 'made-up-key', 'title' => 'Fake', 'is_published' => true]],
+        ])->assertStatus(422);
+    }
+
+    #[Group('FR-CM'), Group('FR-CM-04')]
+    public function test_class_without_a_course_cannot_receive_modules(): void
+    {
+        $this->actingAs($this->admin)->putJson("/api/admin/classes/{$this->class->id}/modules/sync", [
+            'modules' => [['library_key' => 'BSCRIM-LAW1-M2', 'title' => 'Module 2', 'is_published' => true]],
+        ])->assertStatus(422);
+    }
+
+    #[Group('FR-CM'), Group('FR-CM-04')]
+    public function test_modules_already_assigned_stay_after_the_library_changes(): void
+    {
+        $this->libraryCourseFor($this->class, ['BSCRIM-LAW1-M2'], 'LAW1');
+        $sync = fn () => $this->actingAs($this->admin)->putJson("/api/admin/classes/{$this->class->id}/modules/sync", [
+            'modules' => [['library_key' => 'BSCRIM-LAW1-M2', 'title' => 'Module 2', 'is_published' => true]],
+        ]);
+        $sync()->assertOk();
+
+        // The module is later removed from the library; re-saving still works.
+        \App\Models\ModuleLibrary::current()->update(['data' => json_encode(['programs' => []])]);
+        $sync()->assertOk();
     }
 
     #[Group('FR-CM'), Group('FR-CM-07')]

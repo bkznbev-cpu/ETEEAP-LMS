@@ -137,6 +137,7 @@ class AuditTrailCoverageTest extends TestCase
         $first = $upload('Lesson 1.pdf');
         $this->assertSame('Lesson 1.pdf', $this->last('upload', AuditLogger::MODULES)->target_id);
 
+        $this->libraryCourseFor($this->class, ['lesson-1']);
         $sync = fn (?string $path, ?string $name) => $this->actingAs($this->admin)->putJson("/api/admin/classes/{$this->class->id}/modules/sync", [
             'modules' => [['library_key' => 'lesson-1', 'title' => 'Lesson 1', 'material_path' => $path, 'material_name' => $name, 'module_order' => 1, 'is_published' => true]],
         ])->assertOk();
