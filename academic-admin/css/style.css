@@ -5597,6 +5597,31 @@ body:has(.program-library-page) {
     line-height: 1.5;
 }
 
+/* Delete Class: larger text, so the reason a class cannot be deleted
+   is easy to read. */
+#dynamicDeleteClassModal .delete-modal {
+    width: min(460px, 100%);
+}
+
+#dynamicDeleteClassModal .modal-header h3 {
+    font-size: 24px;
+}
+
+#dynamicDeleteClassModal .modal-header p {
+    font-size: 16px;
+    line-height: 1.55;
+}
+
+#dynamicDeleteClassModal .field-help {
+    margin-top: 0;
+    font-size: 14.5px;
+    line-height: 1.55;
+}
+
+#dynamicDeleteClassModal .modal-button {
+    font-size: 15px;
+}
+
 .delete-confirm-button {
     border: 1px solid #b42318;
     background: #c62828;
