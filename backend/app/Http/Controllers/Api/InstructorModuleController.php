@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Module;
+use App\Support\ActivityDetector;
 use App\Support\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,6 +34,47 @@ class InstructorModuleController extends Controller
         }
 
         return ModuleController::sendMaterial($request, $module);
+    }
+
+    /**
+     * The activities a scoring card for this module starts with: the
+     * module's saved activity list, or, before any card is saved, the
+     * activities found in the module's file.
+     */
+    public function activities(Request $request, int $moduleId): JsonResponse
+    {
+        $module = Module::withTrashed()
+            ->where('id', $moduleId)
+            ->whereHas('course', fn ($query) => $query->where('instructor_id', $request->user()->id))
+            ->first();
+
+        if (!$module) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Module not found.',
+            ], 404);
+        }
+
+        $saved = $module->activities()->get(['title', 'max_score']);
+
+        if ($saved->isNotEmpty()) {
+            return response()->json([
+                'success' => true,
+                'source' => 'saved',
+                'activities' => $saved->map(fn ($activity) => [
+                    'title' => $activity->title,
+                    'max_score' => $activity->max_score,
+                ])->values(),
+            ]);
+        }
+
+        $detected = ActivityDetector::detect($module);
+
+        return response()->json([
+            'success' => true,
+            'source' => $detected === [] ? 'none' : 'detected',
+            'activities' => $detected,
+        ]);
     }
 
     public function store(

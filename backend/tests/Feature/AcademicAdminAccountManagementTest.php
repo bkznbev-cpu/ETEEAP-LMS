@@ -345,6 +345,13 @@ class AcademicAdminAccountManagementTest extends TestCase
             'is_active' => true,
         ]);
 
+        // An active class cannot be deleted.
+        $this->actingAs($admin)
+            ->deleteJson("/api/admin/classes/{$course->id}")
+            ->assertStatus(409);
+
+        $course->update(['is_active' => false]);
+
         $this->actingAs($admin)
             ->deleteJson("/api/admin/classes/{$course->id}")
             ->assertOk()

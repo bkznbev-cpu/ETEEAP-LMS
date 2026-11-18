@@ -282,10 +282,31 @@ class AcademicAdminSafeDeleteTest extends TestCase
     }
 
     #[Group('FR-CM'), Group('FR-CM-01')]
-    public function test_class_without_learner_records_can_be_deleted(): void
+    public function test_only_an_inactive_class_without_learners_or_modules_can_be_deleted(): void
     {
-        [$course] = $this->classWithModule();
+        $learner = $this->user('learner');
+        [$course, $module] = $this->classWithModule();
+        $course->learners()->attach($learner->id);
 
+        // Active, with a learner and a module.
+        $this->actingAs($this->admin())
+            ->deleteJson("/api/admin/classes/{$course->id}")
+            ->assertStatus(409);
+
+        // Inactive, but still with a learner and a module.
+        $course->update(['is_active' => false]);
+        $this->actingAs($this->admin())
+            ->deleteJson("/api/admin/classes/{$course->id}")
+            ->assertStatus(409);
+
+        // Inactive, learner removed, module still there.
+        $course->learners()->detach($learner->id);
+        $this->actingAs($this->admin())
+            ->deleteJson("/api/admin/classes/{$course->id}")
+            ->assertStatus(409);
+
+        // Inactive and empty.
+        $module->forceDelete();
         $this->actingAs($this->admin())
             ->deleteJson("/api/admin/classes/{$course->id}")
             ->assertOk();

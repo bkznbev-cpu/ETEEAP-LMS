@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Mail\ActivityGraded;
 use App\Models\Grade;
+use App\Models\GradeItem;
+use App\Models\ModuleActivity;
 use App\Models\Notification;
 use App\Models\Progress;
 use App\Models\Submission;
@@ -143,7 +145,12 @@ class GradeController extends Controller
             return response()->json(['success' => false, 'message' => 'You are not assigned to this course.'], 403);
         }
 
-        if (!$submission->grade) {
+        // Not graded yet: only needed when the card changes the Over of
+        // activities other learners of the module were already graded on.
+        $moduleHasGrades = Grade::whereHas('submission', fn ($query) => $query
+            ->where('module_id', $submission->module_id))->exists();
+
+        if (!$submission->grade && !$moduleHasGrades) {
             return response()->json(['success' => false, 'message' => 'This submission has no saved score yet.'], 422);
         }
 
@@ -165,7 +172,7 @@ class GradeController extends Controller
 
             \App\Support\AuditLogger::log('grade_edit_refused', \App\Support\AuditLogger::GRADES, [
                 'actor' => $instructor,
-                'target' => $submission->grade,
+                'target' => $submission->grade ?? $submission,
                 'target_label' => $label,
                 'result' => 'failed',
                 'details' => "Wrong password when confirming a score change for {$label}",
@@ -220,7 +227,7 @@ class GradeController extends Controller
                 'items' => ['required', 'array', 'min:1', 'max:30'],
                 'items.*.title' => ['required', 'string', 'max:150'],
                 'items.*.score' => ['required', 'numeric', 'min:0', 'max:100000'],
-                'items.*.max_score' => ['required', 'numeric', 'gt:0', 'max:100000'],
+                'items.*.max_score' => ['required', 'integer', 'min:1', 'max:100000'],
                 'feedback' => ['nullable', 'string', 'max:2000'],
             ], [
                 'items.required' => 'Add at least one activity to the scoring card.',
@@ -228,7 +235,8 @@ class GradeController extends Controller
                 'items.*.title.required' => 'Every activity needs a title.',
                 'items.*.score.required' => 'Every activity needs a score.',
                 'items.*.max_score.required' => 'Every activity needs the total it is scored over.',
-                'items.*.max_score.gt' => 'The total of an activity must be greater than zero.',
+                'items.*.max_score.integer' => 'The total (Over) of every activity must be a whole number.',
+                'items.*.max_score.min' => 'The total (Over) of an activity must be at least 1.',
             ]);
 
             $items = collect(ScoreCalculator::normalizeItems($validated['items']));
@@ -255,7 +263,7 @@ class GradeController extends Controller
 
                 'max_score' => [
                     'required',
-                    'numeric',
+                    'integer',
                     'min:1',
                 ],
 
@@ -401,6 +409,42 @@ class GradeController extends Controller
 
 
             /*
+            | The Over of each activity is the same for every learner of the
+            | module: a changed Over is applied to the learners already
+            | graded too. That changes scores already given, so it needs
+            | the password confirmation, and no learner's score may end up
+            | higher than the new Over.
+            */
+            $otherChanges = $items
+                ? self::otherLearnersOverChanges($submission, $items)
+                : collect();
+
+            if ($otherChanges->isNotEmpty()) {
+                $tooHigh = $otherChanges->first(fn ($change) => $change['item']->score > $change['max_score']);
+
+                if ($tooHigh) {
+                    return ['error' => sprintf(
+                        '"%s" cannot be scored over %d: %s already has a score of %s on it. Change that learner\'s score first.',
+                        $tooHigh['item']->title,
+                        $tooHigh['max_score'],
+                        $tooHigh['learner'],
+                        rtrim(rtrim(number_format((float) $tooHigh['item']->score, 2, '.', ''), '0'), '.')
+                    )];
+                }
+
+                if (!$passIsValid) {
+                    $count = $otherChanges->pluck('item.grade_id')->unique()->count();
+
+                    return ['locked' => sprintf(
+                        'Changing the Over of an activity also changes it for %d learner%s already graded in this module. Please confirm with your password.',
+                        $count,
+                        $count === 1 ? '' : 's'
+                    )];
+                }
+            }
+
+
+            /*
             |--------------------------------------------------------------------------
             | Create or update grade
             |--------------------------------------------------------------------------
@@ -426,6 +470,20 @@ class GradeController extends Controller
 
             if ($items) {
                 $grade->items()->createMany($items->all());
+
+                // This card's activities become the module's activity list.
+                ModuleActivity::where('module_id', $submission->module_id)->delete();
+
+                foreach ($items as $item) {
+                    ModuleActivity::create([
+                        'module_id' => $submission->module_id,
+                        'title' => $item['title'],
+                        'max_score' => (int) $item['max_score'],
+                        'position' => $item['position'],
+                    ]);
+                }
+
+                self::applyOverChanges($otherChanges, $instructor, $submission);
             }
 
 
@@ -573,7 +631,7 @@ class GradeController extends Controller
             }
 
             return [
-                'used_edit_pass' => $savedScoresChanged,
+                'used_edit_pass' => $savedScoresChanged || $otherChanges->isNotEmpty(),
                 'grade' => $grade,
                 'new_grade' => !$existingGrade,
                 'submission' => $submission,
@@ -584,6 +642,13 @@ class GradeController extends Controller
             ];
         });
 
+
+        if (isset($result['error'])) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['error'],
+            ], 422);
+        }
 
         if (isset($result['locked'])) {
             return response()->json([
@@ -622,6 +687,105 @@ class GradeController extends Controller
         ]);
     }
 
+
+    /**
+     * The activity rows of other learners' grades in the same module whose
+     * Over differs from the Over sent on this card for the same activity
+     * (matched by title, ignoring case). Each change holds the row, the
+     * new Over and the learner's name.
+     *
+     * @return Collection<int, array{item: GradeItem, max_score: int, learner: string}>
+     */
+    private static function otherLearnersOverChanges(Submission $submission, Collection $items): Collection
+    {
+        $overs = [];
+
+        foreach ($items as $item) {
+            $overs[mb_strtolower(trim($item['title']))] ??= (int) $item['max_score'];
+        }
+
+        return GradeItem::query()
+            ->with('grade.submission.learner:id,name')
+            ->whereHas('grade.submission', fn ($query) => $query
+                ->where('module_id', $submission->module_id)
+                ->where('id', '!=', $submission->id))
+            ->lockForUpdate()
+            ->get()
+            ->filter(function (GradeItem $item) use ($overs) {
+                $key = mb_strtolower(trim($item->title));
+
+                return isset($overs[$key]) && abs($item->max_score - $overs[$key]) >= 0.005;
+            })
+            ->map(fn (GradeItem $item) => [
+                'item' => $item,
+                'max_score' => $overs[mb_strtolower(trim($item->title))],
+                'learner' => $item->grade?->submission?->learner?->name ?? 'a learner',
+            ])
+            ->values();
+    }
+
+    /**
+     * Save the new Over on other learners' rows, update their grade
+     * totals, record it in the audit trail and tell each learner.
+     */
+    private static function applyOverChanges(Collection $changes, $instructor, Submission $submission): void
+    {
+        foreach ($changes->groupBy(fn ($change) => $change['item']->grade_id) as $gradeChanges) {
+            $grade = $gradeChanges->first()['item']->grade;
+
+            if (!$grade) {
+                continue;
+            }
+
+            $before = ['score' => (float) $grade->score, 'max_score' => (float) $grade->max_score];
+
+            foreach ($gradeChanges as $change) {
+                $change['item']->update(['max_score' => $change['max_score']]);
+            }
+
+            $totals = ScoreCalculator::totals(
+                $grade->items()->get()->map(fn ($item) => [
+                    'score' => (float) $item->score,
+                    'max_score' => (float) $item->max_score,
+                ])
+            );
+
+            $grade->update($totals);
+
+            $other = $grade->submission;
+            $learnerName = $other?->learner?->name ?? 'a learner';
+            $moduleTitle = $submission->module?->title ?? 'an activity';
+            $titles = $gradeChanges->map(fn ($change) => '"' . $change['item']->title . '"')->implode(', ');
+
+            \App\Support\AuditLogger::log('update', \App\Support\AuditLogger::GRADES, [
+                'actor' => $instructor,
+                'target' => $grade,
+                'target_label' => "{$learnerName} — {$moduleTitle}",
+                'old' => $before,
+                'new' => $totals,
+                'details' => "Changed the Over of {$titles} for {$learnerName} in \"{$moduleTitle}\" "
+                    . "(applied to every learner of the module): "
+                    . "{$before['score']}/{$before['max_score']} to {$totals['score']}/{$totals['max_score']}",
+            ]);
+
+            if ($other) {
+                Notification::create([
+                    'user_id' => $other->learner_id,
+                    'title' => 'Grade Updated',
+                    'message' => 'Your grade for "' . $moduleTitle . '" was updated from '
+                        . $before['score'] . '/' . $before['max_score'] . ' to '
+                        . $totals['score'] . '/' . $totals['max_score'] . '.',
+                    'type' => 'grade',
+                    'data' => [
+                        'course_id' => $submission->module->course_id,
+                        'module_id' => $submission->module_id,
+                        'submission_id' => $other->id,
+                    ],
+                    'is_read' => false,
+                ]);
+            }
+        }
+    }
 
     /**
      * A grade that was already given cannot be lowered or raised: every

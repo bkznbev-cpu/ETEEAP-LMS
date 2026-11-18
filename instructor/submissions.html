@@ -1572,6 +1572,12 @@ body {
     font-size: 12px;
 }
 
+.score-card-head .score-source {
+    margin: -6px 0 12px;
+    color: #2f6b4a;
+    font-weight: 600;
+}
+
 .score-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 84px 12px 84px 34px;
@@ -2723,7 +2729,8 @@ body {
                 <div class="score-card-head">
                     <div>
                         <h4 id="scoreCardTitle">Scoring Card</h4>
-                        <p>Score each activity in the submitted file.</p>
+                        <p>Score each activity in the submitted file. The Over of each activity is a whole number and is the same for every learner of this module.</p>
+                        <p class="score-source" id="scoreSource" hidden></p>
                     </div>
                 </div>
 
@@ -3686,6 +3693,12 @@ function openGradingModal(
                 : [{ title: "Activity 1", score: "", max_score: "" }];
 
     setScoreRows(savedItems, grade ? savedItems.length : 0);
+    setScoreSource("");
+
+    // A card not graded yet starts with the module's activities.
+    if (!grade && !viewOnly) {
+        loadModuleActivities(submission);
+    }
 
 
     document.getElementById(
@@ -3946,7 +3959,7 @@ function scoreRowHtml(item, index, locked = false) {
                 aria-label="Activity ${index + 1} score" placeholder="0"
                 value="${value(item.score)}">
             <span class="score-over" aria-hidden="true">/</span>
-            <input type="number" class="score-max" min="0.01" step="0.01"
+            <input type="number" class="score-max" min="1" step="1" inputmode="numeric"
                 aria-label="Activity ${index + 1} is scored over" placeholder="100"
                 value="${value(item.max_score)}">
             <button type="button" class="score-remove" data-remove-score-row
@@ -3968,6 +3981,60 @@ function setScoreRows(items, lockedCount = 0) {
     document.getElementById("scoreRows").innerHTML =
         items.map((item, index) => scoreRowHtml(item, index, index < lockedCount)).join("");
     updateScoreTotal();
+}
+
+function setScoreSource(message) {
+    const box = document.getElementById("scoreSource");
+    box.textContent = message;
+    box.hidden = !message;
+}
+
+// Fill an empty card with the module's activity list (saved from an
+// earlier card) or the activities found in the module's file.
+async function loadModuleActivities(submission) {
+    const moduleId = submission.module_id || submission.module?.id;
+
+    if (!moduleId) return;
+
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/instructor/modules/${encodeURIComponent(moduleId)}/activities`,
+            { headers: getAuthHeaders() }
+        );
+
+        if (response.status === 401) {
+            handleUnauthorized();
+            return;
+        }
+
+        const data = await parseJsonResponse(response);
+        const activities = Array.isArray(data.activities) ? data.activities : [];
+
+        // The window was closed or another submission opened meanwhile,
+        // or the instructor already started typing.
+        if (!response.ok || !data.success || activities.length === 0) return;
+        if (!currentSubmission || currentSubmission.id !== submission.id) return;
+        const typed = [...document.querySelectorAll("#scoreRows .score-value, #scoreRows .score-max")]
+            .some(input => input.value.trim() !== "");
+        if (typed) return;
+
+        setScoreRows(
+            activities.slice(0, MAX_SCORE_ROWS).map(activity => ({
+                title: activity.title,
+                score: "",
+                max_score: activity.max_score ?? ""
+            })),
+            0
+        );
+        setGradeEditable(true);
+        setScoreSource(
+            data.source === "saved"
+                ? `${activities.length} activit${activities.length === 1 ? "y" : "ies"} of this module.`
+                : `${activities.length} activit${activities.length === 1 ? "y" : "ies"} found in the module file. Check the titles and Over before saving.`
+        );
+    } catch (error) {
+        console.error("Unable to load the module's activities:", error);
+    }
 }
 
 function addScoreRow() {
@@ -4005,6 +4072,7 @@ function readScoreRows() {
         if (!title) return { error: `Please enter a title for activity ${index + 1}.` };
         if (scoreText === "" || Number.isNaN(score) || score < 0) return { error: `Please enter a valid score for "${name}".` };
         if (maxText === "" || Number.isNaN(max) || max <= 0) return { error: `Please enter what "${name}" is scored over (more than 0).` };
+        if (!Number.isInteger(max)) return { error: `"${name}": the Over must be a whole number (e.g. 20, not ${max}).` };
         if (score > max) return { error: `"${name}": the score (${score}) is higher than its total (${max}). A score cannot be more than the total it is scored over. Please check for a typo.` };
 
         items.push({ title, score, max_score: max });
@@ -4227,6 +4295,8 @@ function checkScoreRowsLive() {
             problem = `"${name}": the score cannot be negative. Please check the score you typed.`;
         } else if (maxText !== "" && (Number.isNaN(max) || max <= 0)) {
             problem = `"${name}": the "Over" total must be more than 0. Please check the total you typed.`;
+        } else if (maxText !== "" && !Number.isInteger(max)) {
+            problem = `"${name}": the "Over" total must be a whole number (e.g. 20, not ${max}).`;
         } else if (scoreText !== "" && maxText !== "" && score > max) {
             problem = `"${name}": the score (${score}) is higher than its total (${max}). ` +
                 `A score cannot be more than the total it is scored over. Please check for a typo.`;
@@ -4350,6 +4420,8 @@ async function saveGrade() {
         if (!response.ok && data.password_required) {
             gradeEditPass = null;
             openConfirmEdit(
+                // The message for an Over change that reaches other learners.
+                (/already graded in this module/.test(data.message || "") ? data.message : "") ||
                 "Please confirm with your password again to save changes to scores already given."
             );
             return;

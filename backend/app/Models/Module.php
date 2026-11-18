@@ -89,4 +89,10 @@ class Module extends Model
     {
         return $this->hasMany(Progress::class);
     }
+
+    /** The module's activity list, shared by every learner's scoring card. */
+    public function activities(): HasMany
+    {
+        return $this->hasMany(ModuleActivity::class)->orderBy('position')->orderBy('id');
+    }
 }

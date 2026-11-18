@@ -198,6 +198,8 @@ Route::middleware([
         Route::post('/instructor/classes/{courseId}/modules', [InstructorModuleController::class, 'store']);
         Route::put('/instructor/modules/{moduleId}', [InstructorModuleController::class, 'update']);
         Route::get('/instructor/modules/{moduleId}/material', [InstructorModuleController::class, 'material']);
+        // The activity list a module's scoring cards start with
+        Route::get('/instructor/modules/{moduleId}/activities', [InstructorModuleController::class, 'activities']);
 
         // Lesson resources: links, PPT, videos and other files for a class
         Route::get('/instructor/classes/{courseId}/resources', [LessonResourceController::class, 'index']);

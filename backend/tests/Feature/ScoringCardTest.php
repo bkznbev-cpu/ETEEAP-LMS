@@ -213,6 +213,123 @@ class ScoringCardTest extends TestCase
         $this->confirmEdit('password')->assertStatus(429);
     }
 
+    /** A second learner in the class with a submission for the same module. */
+    private function secondSubmission(): Submission
+    {
+        $learner = User::factory()->create(['role' => 'learner', 'school_id' => '24-SC002', 'is_active' => true]);
+        $this->class->learners()->attach($learner->id);
+
+        $this->actingAs($learner)->post('/api/student/submissions', [
+            'module_id' => $this->module->id,
+            'file' => UploadedFile::fake()->createWithContent('compiled2.pdf', '%PDF-1.4 all activities'),
+        ], ['Accept' => 'application/json'])->assertCreated();
+
+        return Submission::where('learner_id', $learner->id)->firstOrFail();
+    }
+
+    public function test_the_over_of_an_activity_must_be_a_whole_number(): void
+    {
+        $this->grade(['items' => [['title' => 'A', 'score' => 5, 'max_score' => 12.5]]])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('items.0.max_score');
+
+        $this->grade(['items' => [['title' => 'A', 'score' => 5.5, 'max_score' => 12]]])->assertOk();
+    }
+
+    public function test_a_saved_card_becomes_the_module_activity_list(): void
+    {
+        $this->grade(['items' => [
+            ['title' => 'Activity 1', 'score' => 8, 'max_score' => 10],
+            ['title' => 'Activity 2', 'score' => 15, 'max_score' => 20],
+        ]])->assertOk();
+
+        $this->actingAs($this->instructor)
+            ->getJson("/api/instructor/modules/{$this->module->id}/activities")
+            ->assertOk()
+            ->assertJsonPath('source', 'saved')
+            ->assertJsonPath('activities', [
+                ['title' => 'Activity 1', 'max_score' => 10],
+                ['title' => 'Activity 2', 'max_score' => 20],
+            ]);
+
+        $other = User::factory()->create(['role' => 'instructor', 'school_id' => 'INS-SC4', 'is_active' => true]);
+        $this->actingAs($other)
+            ->getJson("/api/instructor/modules/{$this->module->id}/activities")
+            ->assertNotFound();
+    }
+
+    public function test_activities_are_found_in_the_module_word_file(): void
+    {
+        if (!class_exists(\ZipArchive::class)) {
+            $this->markTestSkipped('The zip extension is not loaded.');
+        }
+
+        $path = Module::MATERIAL_FOLDER . 'lesson.docx';
+        $file = tempnam(sys_get_temp_dir(), 'docx');
+        $zip = new \ZipArchive();
+        $zip->open($file, \ZipArchive::OVERWRITE);
+        $zip->addFromString('word/document.xml', '<w:document xmlns:w="w"><w:body>'
+            . '<w:p><w:r><w:t>Activity 1: Balance Sheet (15 points)</w:t></w:r></w:p>'
+            . '<w:p><w:r><w:t>Read the case below.</w:t></w:r></w:p>'
+            . '<w:p><w:r><w:t>Quiz 2</w:t></w:r></w:p>'
+            . '</w:body></w:document>');
+        $zip->close();
+        Storage::disk('local')->put($path, file_get_contents($file));
+        $this->module->update(['material_path' => $path, 'material_name' => 'lesson.docx']);
+
+        $this->actingAs($this->instructor)
+            ->getJson("/api/instructor/modules/{$this->module->id}/activities")
+            ->assertOk()
+            ->assertJsonPath('source', 'detected')
+            ->assertJsonPath('activities', [
+                ['title' => 'Activity 1: Balance Sheet', 'max_score' => 15],
+                ['title' => 'Quiz 2', 'max_score' => null],
+            ]);
+    }
+
+    public function test_a_changed_over_applies_to_every_learner_of_the_module(): void
+    {
+        $this->grade(['items' => [['title' => 'Activity 1', 'score' => 8, 'max_score' => 10]]])->assertOk();
+        $second = $this->secondSubmission();
+        $url = "/api/instructor/submissions/{$second->id}/grade";
+        $card = ['items' => [['title' => 'activity 1', 'score' => 15, 'max_score' => 20]]];
+
+        // It changes a score already given, so the password is asked first.
+        $this->actingAs($this->instructor)->postJson($url, $card)
+            ->assertStatus(422)
+            ->assertJsonPath('password_required', true);
+        $this->assertSame('10.00', (string) $this->submission->fresh()->grade->max_score);
+
+        $pass = $this->actingAs($this->instructor)
+            ->postJson("{$url}/confirm-edit", ['password' => 'password'])
+            ->assertOk()
+            ->json('edit_pass');
+
+        $this->actingAs($this->instructor)->postJson($url, $card + ['edit_pass' => $pass])->assertOk();
+
+        $first = $this->submission->fresh()->grade;
+        $this->assertSame('8.00', (string) $first->score);
+        $this->assertSame('20.00', (string) $first->max_score);
+        $this->assertEquals(20, $first->items()->first()->max_score);
+        $this->assertDatabaseHas('notifications', ['user_id' => $this->learner->id, 'title' => 'Grade Updated']);
+    }
+
+    public function test_an_over_lower_than_a_score_already_given_is_refused(): void
+    {
+        $this->grade(['items' => [['title' => 'Activity 1', 'score' => 8, 'max_score' => 10]]])->assertOk();
+        $second = $this->secondSubmission();
+
+        $this->actingAs($this->instructor)
+            ->postJson("/api/instructor/submissions/{$second->id}/grade", [
+                'items' => [['title' => 'Activity 1', 'score' => 3, 'max_score' => 5]],
+            ])
+            ->assertStatus(422)
+            ->assertJsonMissingPath('password_required');
+
+        $this->assertNull($second->fresh()->grade);
+        $this->assertSame('10.00', (string) $this->submission->fresh()->grade->max_score);
+    }
+
     #[Group('FR-GF'), Group('NFR-S'), Group('FR-GF-01'), Group('NFR-S-02')]
     public function test_other_instructors_cannot_grade(): void
     {
