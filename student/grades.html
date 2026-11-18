@@ -485,7 +485,10 @@
                                     ? `<strong>${escape(Number(grade.score))} / ${escape(Number(grade.max_score))}</strong><div style="margin-top: 4px">${percentBadge(percentOf(module))}</div>${
                                         Array.isArray(grade.items) && grade.items.length > 1
                                             ? `<ul class="score-items">${grade.items.map(item =>
-                                                `<li>${escape(item.title)}: ${escape(Number(item.score))}/${escape(Number(item.max_score))}</li>`).join("")}</ul>`
+                                                `<li>${escape(item.title)}: ${escape(Number(item.score))}/${escape(Number(item.max_score))}${
+                                                    Number(item.max_score) > 0
+                                                        ? ` (${escape(Math.round(Number(item.score) / Number(item.max_score) * 10000) / 100)}%)`
+                                                        : ""}</li>`).join("")}</ul>`
                                             : ""}`
                                     : '<span class="muted">—</span>'}</td>
                                 <td>${grade ? escape(formatDate(grade.graded_at, false)) : '<span class="muted">—</span>'}</td>

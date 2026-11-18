@@ -14,6 +14,7 @@ class ModuleActivity extends Model
     protected $fillable = [
         'module_id',
         'title',
+        'description',
         'max_score',
         'position',
     ];

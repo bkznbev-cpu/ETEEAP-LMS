@@ -1041,8 +1041,8 @@ public function destroyClass(Request $request, int $id): JsonResponse
         ], 404);
     }
 
-    // Only an inactive class with no enrolled learners and no modules
-    // can be deleted.
+    // Only an inactive class with no enrolled learners can be deleted.
+    // Its modules are deleted with it.
     if ($class->is_active) {
         return response()->json([
             'success' => false,
@@ -1050,10 +1050,10 @@ public function destroyClass(Request $request, int $id): JsonResponse
         ], 409);
     }
 
-    if ($class->learners()->exists() || $class->modules()->exists()) {
+    if ($class->learners()->exists()) {
         return response()->json([
             'success' => false,
-            'message' => 'This class still has enrolled learners or modules and cannot be deleted. Remove them first.',
+            'message' => 'This class still has enrolled learners and cannot be deleted. Remove the learners first.',
         ], 409);
     }
 
@@ -1486,6 +1486,13 @@ public function replaceLibraryMaterial(Request $request, string $libraryKey): Js
             'material_name' => $validated['material_name'] ?? null,
             'updated_at' => now(),
         ]);
+
+    // A bulk update skips the model events: find the activities in the
+    // new file for each class here.
+    Module::where('library_key', $libraryKey)
+        ->whereHas('course')
+        ->get()
+        ->each(fn (Module $module) => \App\Support\ActivityDetector::assignToModule($module));
 
     AuditLogger::log('replace', AuditLogger::MODULES, [
         'target_type' => 'library_module',

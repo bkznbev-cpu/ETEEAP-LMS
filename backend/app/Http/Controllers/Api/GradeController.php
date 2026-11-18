@@ -203,6 +203,112 @@ class GradeController extends Controller
     }
 
 
+    /**
+     * Save a module's activity list (titles, descriptions and Overs) from
+     * the scoring card without grading anyone. The list is shared by every
+     * learner of the module in this class; a changed Over is applied to
+     * the learners already graded, after the password confirmation.
+     */
+    public function saveActivities(Request $request, $submissionId): JsonResponse
+    {
+        $validated = $request->validate([
+            'activities' => ['required', 'array', 'min:1', 'max:30'],
+            'activities.*.title' => ['required', 'string', 'max:150'],
+            'activities.*.description' => ['nullable', 'string', 'max:500'],
+            'activities.*.max_score' => ['nullable', 'integer', 'min:1', 'max:100000'],
+        ], [
+            'activities.required' => 'Add at least one activity.',
+            'activities.max' => 'A module can have up to 30 activities.',
+            'activities.*.title.required' => 'Every activity needs a title.',
+            'activities.*.max_score.integer' => 'The total (Over) of every activity must be a whole number.',
+            'activities.*.max_score.min' => 'The total (Over) of an activity must be at least 1.',
+        ]);
+
+        $instructor = $request->user();
+        $submission = Submission::with('module.course')->find($submissionId);
+
+        if (!$submission) {
+            return response()->json(['success' => false, 'message' => 'Submission not found.'], 404);
+        }
+
+        if ((int) $submission->module?->course?->instructor_id !== (int) $instructor->id) {
+            return response()->json(['success' => false, 'message' => 'You are not assigned to this course.'], 403);
+        }
+
+        $rows = collect($validated['activities'])->values()->map(fn ($row) => [
+            'title' => trim($row['title']),
+            'description' => array_key_exists('description', $row) ? $row['description'] : false,
+            'max_score' => isset($row['max_score']) ? (int) $row['max_score'] : null,
+        ]);
+
+        if ($rows->contains(fn ($row) => $row['title'] === '')) {
+            return response()->json(['success' => false, 'message' => 'Every activity needs a title.'], 422);
+        }
+
+        if ($duplicate = self::duplicateTitle($rows)) {
+            return response()->json([
+                'success' => false,
+                'message' => "\"{$duplicate}\" is in the list more than once. Each activity can appear only once.",
+            ], 422);
+        }
+
+        $editPass = is_string($request->input('edit_pass')) ? $request->input('edit_pass') : '';
+        $editPassData = $editPass !== '' ? Cache::get(self::editPassKey($editPass)) : null;
+        $passIsValid = is_array($editPassData)
+            && (int) ($editPassData['instructor_id'] ?? 0) === (int) $instructor->id
+            && (int) ($editPassData['submission_id'] ?? 0) === (int) $submission->id;
+
+        $result = DB::transaction(function () use ($submission, $rows, $passIsValid, $instructor) {
+            // Every learner of the module, this one included.
+            $changes = self::overChanges($submission->module_id, $rows);
+
+            if ($problem = self::overChangeProblem($changes, $passIsValid)) {
+                return $problem;
+            }
+
+            self::saveModuleActivities($submission->module_id, $rows);
+            self::applyOverChanges($changes, $instructor, $submission);
+
+            \App\Support\AuditLogger::log('update', \App\Support\AuditLogger::MODULES, [
+                'actor' => $instructor,
+                'target' => $submission->module,
+                'details' => 'Saved the activity list of "' . $submission->module->title . '": '
+                    . $rows->map(fn ($row) => $row['title'] . ' (' . ($row['max_score'] ?? 'no Over') . ')')->implode(', '),
+            ]);
+
+            return ['changed_learners' => $changes->pluck('item.grade_id')->unique()->count()];
+        });
+
+        if (isset($result['error'])) {
+            return response()->json(['success' => false, 'message' => $result['error']], 422);
+        }
+
+        if (isset($result['locked'])) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['locked'],
+                'password_required' => true,
+            ], 422);
+        }
+
+        if ($result['changed_learners'] > 0 && $editPass !== '') {
+            Cache::forget(self::editPassKey($editPass));
+        }
+
+        $activities = ModuleActivity::where('module_id', $submission->module_id)
+            ->orderBy('position')
+            ->get(['title', 'description', 'max_score']);
+
+        return response()->json([
+            'success' => true,
+            'message' => $result['changed_learners'] > 0
+                ? "Activity list saved. The new Over was applied to {$result['changed_learners']} learner"
+                    . ($result['changed_learners'] === 1 ? '' : 's') . ' already graded.'
+                : 'Activity list saved for every learner of this module.',
+            'activities' => $activities,
+        ]);
+    }
+
     public function store(
         Request $request,
         $submissionId
@@ -228,6 +334,7 @@ class GradeController extends Controller
                 'items.*.title' => ['required', 'string', 'max:150'],
                 'items.*.score' => ['required', 'numeric', 'min:0', 'max:100000'],
                 'items.*.max_score' => ['required', 'integer', 'min:1', 'max:100000'],
+                'items.*.description' => ['nullable', 'string', 'max:500'],
                 'feedback' => ['nullable', 'string', 'max:2000'],
             ], [
                 'items.required' => 'Add at least one activity to the scoring card.',
@@ -240,6 +347,17 @@ class GradeController extends Controller
             ]);
 
             $items = collect(ScoreCalculator::normalizeItems($validated['items']));
+
+            if ($duplicate = self::duplicateTitle($items)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "\"{$duplicate}\" is on the scoring card more than once. Each activity can appear only once.",
+                ], 422);
+            }
+
+            // Descriptions go to the module's activity list, not the grade.
+            $descriptions = collect(array_values($validated['items']))
+                ->map(fn ($row) => array_key_exists('description', $row) ? $row['description'] : false);
 
             foreach ($items as $item) {
                 if ($error = ScoreCalculator::itemError($item)) {
@@ -416,31 +534,11 @@ class GradeController extends Controller
             | higher than the new Over.
             */
             $otherChanges = $items
-                ? self::otherLearnersOverChanges($submission, $items)
+                ? self::overChanges($submission->module_id, $items, $submission->id)
                 : collect();
 
-            if ($otherChanges->isNotEmpty()) {
-                $tooHigh = $otherChanges->first(fn ($change) => $change['item']->score > $change['max_score']);
-
-                if ($tooHigh) {
-                    return ['error' => sprintf(
-                        '"%s" cannot be scored over %d: %s already has a score of %s on it. Change that learner\'s score first.',
-                        $tooHigh['item']->title,
-                        $tooHigh['max_score'],
-                        $tooHigh['learner'],
-                        rtrim(rtrim(number_format((float) $tooHigh['item']->score, 2, '.', ''), '0'), '.')
-                    )];
-                }
-
-                if (!$passIsValid) {
-                    $count = $otherChanges->pluck('item.grade_id')->unique()->count();
-
-                    return ['locked' => sprintf(
-                        'Changing the Over of an activity also changes it for %d learner%s already graded in this module. Please confirm with your password.',
-                        $count,
-                        $count === 1 ? '' : 's'
-                    )];
-                }
+            if ($problem = self::overChangeProblem($otherChanges, $passIsValid)) {
+                return $problem;
             }
 
 
@@ -472,16 +570,10 @@ class GradeController extends Controller
                 $grade->items()->createMany($items->all());
 
                 // This card's activities become the module's activity list.
-                ModuleActivity::where('module_id', $submission->module_id)->delete();
-
-                foreach ($items as $item) {
-                    ModuleActivity::create([
-                        'module_id' => $submission->module_id,
-                        'title' => $item['title'],
-                        'max_score' => (int) $item['max_score'],
-                        'position' => $item['position'],
-                    ]);
-                }
+                self::saveModuleActivities(
+                    $submission->module_id,
+                    $items->map(fn ($item, $index) => $item + ['description' => $descriptions[$index] ?? false])
+                );
 
                 self::applyOverChanges($otherChanges, $instructor, $submission);
             }
@@ -689,26 +781,32 @@ class GradeController extends Controller
 
 
     /**
-     * The activity rows of other learners' grades in the same module whose
-     * Over differs from the Over sent on this card for the same activity
-     * (matched by title, ignoring case). Each change holds the row, the
-     * new Over and the learner's name.
+     * The saved activity rows of learners' grades in a module whose Over
+     * differs from the Over given here for the same activity (matched by
+     * title, ignoring case). Rows given without an Over change nothing.
+     * Each change holds the row, the new Over and the learner's name.
      *
      * @return Collection<int, array{item: GradeItem, max_score: int, learner: string}>
      */
-    private static function otherLearnersOverChanges(Submission $submission, Collection $items): Collection
+    private static function overChanges(int $moduleId, Collection $rows, ?int $exceptSubmissionId = null): Collection
     {
         $overs = [];
 
-        foreach ($items as $item) {
-            $overs[mb_strtolower(trim($item['title']))] ??= (int) $item['max_score'];
+        foreach ($rows as $row) {
+            if (($row['max_score'] ?? null) !== null) {
+                $overs[mb_strtolower(trim($row['title']))] ??= (int) $row['max_score'];
+            }
+        }
+
+        if ($overs === []) {
+            return collect();
         }
 
         return GradeItem::query()
             ->with('grade.submission.learner:id,name')
             ->whereHas('grade.submission', fn ($query) => $query
-                ->where('module_id', $submission->module_id)
-                ->where('id', '!=', $submission->id))
+                ->where('module_id', $moduleId)
+                ->when($exceptSubmissionId, fn ($query) => $query->where('id', '!=', $exceptSubmissionId)))
             ->lockForUpdate()
             ->get()
             ->filter(function (GradeItem $item) use ($overs) {
@@ -722,6 +820,90 @@ class GradeController extends Controller
                 'learner' => $item->grade?->submission?->learner?->name ?? 'a learner',
             ])
             ->values();
+    }
+
+    /**
+     * Why Over changes for learners already graded cannot be saved:
+     * ['error' => ...] when a score given would be higher than its new
+     * Over (never changed silently), ['locked' => ...] when the password
+     * confirmation is still needed. Null when they can be saved.
+     */
+    private static function overChangeProblem(Collection $changes, bool $passIsValid): ?array
+    {
+        if ($changes->isEmpty()) {
+            return null;
+        }
+
+        $tooHigh = $changes->first(fn ($change) => $change['item']->score > $change['max_score']);
+
+        if ($tooHigh) {
+            return ['error' => sprintf(
+                '"%s" cannot be scored over %d: %s already has a score of %s on it. Change that learner\'s score first.',
+                $tooHigh['item']->title,
+                $tooHigh['max_score'],
+                $tooHigh['learner'],
+                rtrim(rtrim(number_format((float) $tooHigh['item']->score, 2, '.', ''), '0'), '.')
+            )];
+        }
+
+        if (!$passIsValid) {
+            $count = $changes->pluck('item.grade_id')->unique()->count();
+
+            return ['locked' => sprintf(
+                'Changing the Over of an activity also changes it for %d learner%s already graded in this module. Please confirm with your password.',
+                $count,
+                $count === 1 ? '' : 's'
+            )];
+        }
+
+        return null;
+    }
+
+    /**
+     * Replace a module's activity list. A row whose description is false
+     * (not sent) keeps the description saved for the same title.
+     */
+    private static function saveModuleActivities(int $moduleId, Collection $rows): void
+    {
+        $oldDescriptions = ModuleActivity::where('module_id', $moduleId)
+            ->get(['title', 'description'])
+            ->mapWithKeys(fn ($activity) => [mb_strtolower(trim($activity->title)) => $activity->description]);
+
+        ModuleActivity::where('module_id', $moduleId)->delete();
+
+        foreach ($rows->values() as $position => $row) {
+            $description = $row['description'] ?? false;
+
+            if ($description === false) {
+                $description = $oldDescriptions[mb_strtolower(trim($row['title']))] ?? null;
+            }
+
+            ModuleActivity::create([
+                'module_id' => $moduleId,
+                'title' => $row['title'],
+                'description' => is_string($description) && trim($description) !== '' ? trim($description) : null,
+                'max_score' => $row['max_score'] === null ? null : (int) $row['max_score'],
+                'position' => $position,
+            ]);
+        }
+    }
+
+    /** The first title that appears twice (ignoring case), or null. */
+    private static function duplicateTitle(Collection $rows): ?string
+    {
+        $seen = [];
+
+        foreach ($rows as $row) {
+            $key = mb_strtolower(trim($row['title']));
+
+            if (isset($seen[$key])) {
+                return $row['title'];
+            }
+
+            $seen[$key] = true;
+        }
+
+        return null;
     }
 
     /**

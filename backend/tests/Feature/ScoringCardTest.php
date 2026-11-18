@@ -248,8 +248,8 @@ class ScoringCardTest extends TestCase
             ->assertOk()
             ->assertJsonPath('source', 'saved')
             ->assertJsonPath('activities', [
-                ['title' => 'Activity 1', 'max_score' => 10],
-                ['title' => 'Activity 2', 'max_score' => 20],
+                ['title' => 'Activity 1', 'description' => null, 'max_score' => 10],
+                ['title' => 'Activity 2', 'description' => null, 'max_score' => 20],
             ]);
 
         $other = User::factory()->create(['role' => 'instructor', 'school_id' => 'INS-SC4', 'is_active' => true]);
@@ -269,9 +269,12 @@ class ScoringCardTest extends TestCase
         $zip = new \ZipArchive();
         $zip->open($file, \ZipArchive::OVERWRITE);
         $zip->addFromString('word/document.xml', '<w:document xmlns:w="w"><w:body>'
-            . '<w:p><w:r><w:t>Activity 1: Balance Sheet (15 points)</w:t></w:r></w:p>'
-            . '<w:p><w:r><w:t>Read the case below.</w:t></w:r></w:p>'
-            . '<w:p><w:r><w:t>Quiz 2</w:t></w:r></w:p>'
+            . '<w:p><w:r><w:t>Activity 1 – Introduction to Programming (20 points)</w:t></w:r></w:p>'
+            . '<w:p><w:r><w:t>Write a short essay on what programming is.</w:t></w:r></w:p>'
+            . '<w:p><w:r><w:t>Activity 2</w:t></w:r></w:p>'
+            . '<w:p><w:r><w:t>Variables and Data Types</w:t></w:r></w:p>'
+            . '<w:p><w:r><w:t>Declare five variables.</w:t></w:r></w:p>'
+            . '<w:p><w:r><w:t>Quiz 3</w:t></w:r></w:p>'
             . '</w:body></w:document>');
         $zip->close();
         Storage::disk('local')->put($path, file_get_contents($file));
@@ -282,9 +285,116 @@ class ScoringCardTest extends TestCase
             ->assertOk()
             ->assertJsonPath('source', 'detected')
             ->assertJsonPath('activities', [
-                ['title' => 'Activity 1: Balance Sheet', 'max_score' => 15],
-                ['title' => 'Quiz 2', 'max_score' => null],
+                // The real names are kept, and no Over is taken from the file.
+                ['title' => 'Introduction to Programming (20 points)', 'description' => 'Write a short essay on what programming is.', 'max_score' => null],
+                ['title' => 'Variables and Data Types', 'description' => 'Declare five variables.', 'max_score' => null],
+                ['title' => 'Quiz 3', 'description' => null, 'max_score' => null],
             ]);
+    }
+
+    private function saveActivities(Submission $submission, array $body)
+    {
+        return $this->actingAs($this->instructor)
+            ->postJson("/api/instructor/submissions/{$submission->id}/activities", $body);
+    }
+
+    public function test_the_activity_list_can_be_saved_for_every_learner_before_grading(): void
+    {
+        $this->saveActivities($this->submission, ['activities' => [
+            ['title' => 'Introduction to Programming', 'description' => 'Short essay', 'max_score' => 20],
+            ['title' => 'Variables and Data Types', 'max_score' => 30],
+            ['title' => 'Basic Programming Exercises', 'max_score' => null],
+        ]])->assertOk();
+
+        // Nobody was graded; another learner's card gets the same list.
+        $this->assertNull($this->submission->fresh()->grade);
+        $this->actingAs($this->instructor)
+            ->getJson("/api/instructor/modules/{$this->module->id}/activities")
+            ->assertJsonPath('source', 'saved')
+            ->assertJsonPath('activities', [
+                ['title' => 'Introduction to Programming', 'description' => 'Short essay', 'max_score' => 20],
+                ['title' => 'Variables and Data Types', 'description' => null, 'max_score' => 30],
+                ['title' => 'Basic Programming Exercises', 'description' => null, 'max_score' => null],
+            ]);
+
+        // Grading keeps the descriptions of the list.
+        $this->grade(['items' => [
+            ['title' => 'Introduction to Programming', 'score' => 18, 'max_score' => 20],
+            ['title' => 'Variables and Data Types', 'score' => 25, 'max_score' => 30],
+            ['title' => 'Basic Programming Exercises', 'score' => 45, 'max_score' => 50],
+        ]])->assertOk();
+        $this->assertDatabaseHas('module_activities', [
+            'module_id' => $this->module->id, 'title' => 'Introduction to Programming', 'description' => 'Short essay',
+        ]);
+        $this->assertDatabaseHas('module_activities', [
+            'module_id' => $this->module->id, 'title' => 'Basic Programming Exercises', 'max_score' => 50,
+        ]);
+    }
+
+    public function test_saving_the_activity_list_with_a_new_over_updates_graded_learners_after_the_password(): void
+    {
+        $this->grade(['items' => [['title' => 'Activity 1', 'score' => 8, 'max_score' => 10]]])->assertOk();
+        $second = $this->secondSubmission();
+        $list = ['activities' => [['title' => 'Activity 1', 'max_score' => 25]]];
+
+        $this->saveActivities($second, $list)->assertStatus(422)->assertJsonPath('password_required', true);
+        $this->assertSame('10.00', (string) $this->submission->fresh()->grade->max_score);
+
+        $pass = $this->actingAs($this->instructor)
+            ->postJson("/api/instructor/submissions/{$second->id}/grade/confirm-edit", ['password' => 'password'])
+            ->json('edit_pass');
+
+        $this->saveActivities($second, $list + ['edit_pass' => $pass])->assertOk();
+        $this->assertSame('8.00', (string) $this->submission->fresh()->grade->score);
+        $this->assertSame('25.00', (string) $this->submission->fresh()->grade->max_score);
+
+        // A score already given is never cut down to a lower Over.
+        $this->saveActivities($second, ['activities' => [['title' => 'Activity 1', 'max_score' => 5]]])
+            ->assertStatus(422)
+            ->assertJsonMissingPath('password_required');
+    }
+
+    public function test_each_class_keeps_its_own_activity_list(): void
+    {
+        $this->saveActivities($this->submission, ['activities' => [['title' => 'Activity 1', 'max_score' => 20]]])->assertOk();
+
+        // The same module assigned to another class is another module row.
+        $otherClass = Course::create([
+            'name' => 'Web Development B', 'code' => 'WEB-102', 'is_active' => true,
+            'instructor_id' => $this->instructor->id, 'owner_admin_id' => $this->class->owner_admin_id,
+        ]);
+        $otherModule = Module::create(['course_id' => $otherClass->id, 'title' => 'Module 1', 'is_published' => true, 'module_order' => 1]);
+
+        $this->actingAs($this->instructor)
+            ->getJson("/api/instructor/modules/{$otherModule->id}/activities")
+            ->assertOk()
+            ->assertJsonPath('source', 'none')
+            ->assertJsonPath('activities', []);
+    }
+
+    public function test_an_activity_cannot_be_listed_twice(): void
+    {
+        $this->saveActivities($this->submission, ['activities' => [
+            ['title' => 'Activity 1', 'max_score' => 10],
+            ['title' => 'activity 1 ', 'max_score' => 10],
+        ]])->assertStatus(422);
+
+        $this->grade(['items' => [
+            ['title' => 'Activity 1', 'score' => 1, 'max_score' => 10],
+            ['title' => 'ACTIVITY 1', 'score' => 1, 'max_score' => 10],
+        ]])->assertStatus(422);
+
+        $this->saveActivities($this->submission, ['activities' => [['title' => 'A', 'max_score' => 7.5]]])
+            ->assertStatus(422);
+    }
+
+    public function test_other_instructors_cannot_save_the_activity_list(): void
+    {
+        $other = User::factory()->create(['role' => 'instructor', 'school_id' => 'INS-SC5', 'is_active' => true]);
+
+        $this->actingAs($other)
+            ->postJson("/api/instructor/submissions/{$this->submission->id}/activities", ['activities' => [['title' => 'A', 'max_score' => 10]]])
+            ->assertForbidden();
     }
 
     public function test_a_changed_over_applies_to_every_learner_of_the_module(): void

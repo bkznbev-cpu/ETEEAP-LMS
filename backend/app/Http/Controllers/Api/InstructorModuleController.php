@@ -55,19 +55,22 @@ class InstructorModuleController extends Controller
             ], 404);
         }
 
-        $saved = $module->activities()->get(['title', 'max_score']);
+        $saved = $module->activities()->get(['title', 'description', 'max_score']);
 
         if ($saved->isNotEmpty()) {
             return response()->json([
                 'success' => true,
-                'source' => 'saved',
+                // Found in the file at assignment and no Over set yet.
+                'source' => $saved->every(fn ($activity) => $activity->max_score === null) ? 'detected' : 'saved',
                 'activities' => $saved->map(fn ($activity) => [
                     'title' => $activity->title,
+                    'description' => $activity->description,
                     'max_score' => $activity->max_score,
                 ])->values(),
             ]);
         }
 
+        // Modules assigned before detection ran at assignment.
         $detected = ActivityDetector::detect($module);
 
         return response()->json([

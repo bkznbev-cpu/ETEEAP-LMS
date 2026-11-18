@@ -1580,8 +1580,35 @@ body {
 
 .score-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 84px 12px 84px 34px;
+    grid-template-columns: minmax(0, 1fr) 84px 12px 84px 52px 34px;
     align-items: center;
+    gap: 8px;
+}
+
+/* Percentage of one activity (shown once its score and Over are in) */
+.score-row-percent {
+    color: #086b3c;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+}
+
+/* The activity's description from the module file */
+.score-desc {
+    grid-column: 1 / -1;
+    margin: -2px 0 2px;
+    color: #66736c;
+    font-size: 11.5px;
+    line-height: 1.4;
+}
+
+.score-desc[hidden] {
+    display: none;
+}
+
+.score-actions {
+    display: flex;
+    flex-wrap: wrap;
     gap: 8px;
 }
 
@@ -1916,8 +1943,12 @@ body {
 
 @media (max-width: 560px) {
     .score-row {
-        grid-template-columns: minmax(0, 1fr) 64px 10px 64px 30px;
+        grid-template-columns: minmax(0, 1fr) 58px 8px 58px 38px 28px;
         gap: 5px;
+    }
+
+    .score-row-percent {
+        font-size: 11px;
     }
 
     .score-row input {
@@ -2739,10 +2770,13 @@ body {
                     <span>Score</span>
                     <span></span>
                     <span>Over</span>
+                    <span>%</span>
                     <span></span>
                 </div>
 
                 <div id="scoreRows" class="score-rows"></div>
+
+                <p class="score-total" id="scoreTotal" aria-live="polite"></p>
 
                 <div class="score-lock-note" id="scoreLockNote" hidden>
                     <i class="fa-solid fa-lock" aria-hidden="true"></i>
@@ -2753,10 +2787,18 @@ body {
                     </button>
                 </div>
 
-                <button type="button" class="score-add" id="addScoreRow">
-                    <i class="fa-solid fa-plus" aria-hidden="true"></i>
-                    Add activity
-                </button>
+                <div class="score-actions">
+                    <button type="button" class="score-add" id="addScoreRow">
+                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                        Add activity
+                    </button>
+
+                    <button type="button" class="score-add" id="saveActivityList"
+                        title="Save the activity titles and Overs for every learner of this module">
+                        <i class="fa-solid fa-users" aria-hidden="true"></i>
+                        Save activities for all learners
+                    </button>
+                </div>
 
                 <p class="score-error" id="scoreError" role="alert" hidden></p>
 
@@ -3695,8 +3737,9 @@ function openGradingModal(
     setScoreRows(savedItems, grade ? savedItems.length : 0);
     setScoreSource("");
 
-    // A card not graded yet starts with the module's activities.
-    if (!grade && !viewOnly) {
+    // The card shows the module's activities: an empty card starts with
+    // them, a graded card gets the ones it does not have yet.
+    if (!viewOnly) {
         loadModuleActivities(submission);
     }
 
@@ -3950,7 +3993,8 @@ const MAX_SCORE_ROWS = 30;
 function scoreRowHtml(item, index, locked = false) {
     const value = v => (v === null || v === undefined || v === "" ? "" : escapeHtml(String(Number(v))));
     return `
-        <div class="score-row${locked ? " locked" : ""}" data-score-row${locked ? " data-locked" : ""}>
+        <div class="score-row${locked ? " locked" : ""}" data-score-row${locked ? " data-locked" : ""}
+            data-description="${escapeHtml(item.description || "")}">
             <input type="text" class="score-title" maxlength="150"
                 aria-label="Activity ${index + 1} title"
                 placeholder="e.g. Activity ${index + 1}"
@@ -3960,12 +4004,14 @@ function scoreRowHtml(item, index, locked = false) {
                 value="${value(item.score)}">
             <span class="score-over" aria-hidden="true">/</span>
             <input type="number" class="score-max" min="1" step="1" inputmode="numeric"
-                aria-label="Activity ${index + 1} is scored over" placeholder="100"
+                aria-label="Activity ${index + 1} is scored over" placeholder="Over"
                 value="${value(item.max_score)}">
+            <span class="score-row-percent" data-row-percent></span>
             <button type="button" class="score-remove" data-remove-score-row
                 title="Remove activity" aria-label="Remove activity ${index + 1}">
                 <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
+            <p class="score-desc"${item.description ? "" : " hidden"}>${escapeHtml(item.description || "")}</p>
         </div>`;
 }
 
@@ -3989,8 +4035,14 @@ function setScoreSource(message) {
     box.hidden = !message;
 }
 
-// Fill an empty card with the module's activity list (saved from an
-// earlier card) or the activities found in the module's file.
+const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
+
+// The module's activity list (saved from an earlier card or with "Save
+// activities for all learners"), else the activities found in the
+// module's file. An empty card is filled with them; a graded card gets
+// the activities it does not have yet, with an empty score, and the
+// descriptions of the ones it has. The Over comes only from the list
+// the instructor saved, never from the file.
 async function loadModuleActivities(submission) {
     const moduleId = submission.module_id || submission.module?.id;
 
@@ -4010,30 +4062,156 @@ async function loadModuleActivities(submission) {
         const data = await parseJsonResponse(response);
         const activities = Array.isArray(data.activities) ? data.activities : [];
 
-        // The window was closed or another submission opened meanwhile,
-        // or the instructor already started typing.
+        // The window was closed or another submission opened meanwhile.
         if (!response.ok || !data.success || activities.length === 0) return;
         if (!currentSubmission || currentSubmission.id !== submission.id) return;
-        const typed = [...document.querySelectorAll("#scoreRows .score-value, #scoreRows .score-max")]
-            .some(input => input.value.trim() !== "");
-        if (typed) return;
 
-        setScoreRows(
-            activities.slice(0, MAX_SCORE_ROWS).map(activity => ({
-                title: activity.title,
-                score: "",
-                max_score: activity.max_score ?? ""
-            })),
-            0
-        );
-        setGradeEditable(true);
+        const container = document.getElementById("scoreRows");
+        const rows = [...container.querySelectorAll("[data-score-row]")];
+        const key = title => String(title || "").trim().toLowerCase();
+
+        if (!submission.grade) {
+            // Leave the card alone once the instructor started typing.
+            const typed = rows.some(row =>
+                row.querySelector(".score-value").value.trim() !== "" ||
+                row.querySelector(".score-max").value.trim() !== "");
+            if (typed) return;
+
+            setScoreRows(
+                activities.slice(0, MAX_SCORE_ROWS).map(activity => ({
+                    title: activity.title,
+                    description: activity.description || "",
+                    score: "",
+                    max_score: activity.max_score ?? ""
+                })),
+                0
+            );
+            setGradeEditable(true);
+            setScoreSource(
+                data.source === "saved"
+                    ? `${plural(activities.length, "activity", "activities")} of this module. The Over is the same for every learner.`
+                    : `${plural(activities.length, "activity", "activities")} found in the module file. Enter the Over of each activity.`
+            );
+            return;
+        }
+
+        // Graded card: add the missing activities, fill in descriptions.
+        const byTitle = new Map(activities.map(activity => [key(activity.title), activity]));
+        rows.forEach(row => {
+            const activity = byTitle.get(key(row.querySelector(".score-title").value));
+            if (activity?.description && !row.dataset.description) {
+                row.dataset.description = activity.description;
+                const desc = row.querySelector(".score-desc");
+                desc.textContent = activity.description;
+                desc.hidden = false;
+            }
+        });
+
+        const have = new Set(rows.map(row => key(row.querySelector(".score-title").value)));
+        const missing = activities
+            .filter(activity => !have.has(key(activity.title)))
+            .slice(0, Math.max(0, MAX_SCORE_ROWS - rows.length));
+
+        if (missing.length === 0) return;
+
+        container.insertAdjacentHTML("beforeend", missing.map((activity, index) => scoreRowHtml({
+            title: activity.title,
+            description: activity.description || "",
+            score: "",
+            max_score: activity.max_score ?? ""
+        }, rows.length + index)).join(""));
+
+        setGradeEditable(container.dataset.readonly !== "true");
         setScoreSource(
-            data.source === "saved"
-                ? `${activities.length} activit${activities.length === 1 ? "y" : "ies"} of this module.`
-                : `${activities.length} activit${activities.length === 1 ? "y" : "ies"} found in the module file. Check the titles and Over before saving.`
+            `${plural(missing.length, "activity", "activities")} of this module ${missing.length === 1 ? "is" : "are"} not scored yet on this card. Enter the score, or remove the row.`
         );
     } catch (error) {
         console.error("Unable to load the module's activities:", error);
+    }
+}
+
+// Save the titles, descriptions and Overs on the card as the module's
+// activity list, for every learner, without grading this learner.
+async function saveActivityList() {
+    if (!currentSubmission) return;
+
+    const rows = [...document.querySelectorAll("#scoreRows [data-score-row]")];
+    const activities = [];
+
+    for (const [index, row] of rows.entries()) {
+        const title = row.querySelector(".score-title").value.trim();
+        const maxText = row.querySelector(".score-max").value.trim();
+        const max = Number(maxText);
+
+        if (!title) return showScoreError(`Please enter a title for activity ${index + 1}.`);
+        if (maxText !== "" && (!Number.isInteger(max) || max < 1)) {
+            return showScoreError(`"${title}": the Over must be a whole number of at least 1.`);
+        }
+        if (activities.some(activity => activity.title.toLowerCase() === title.toLowerCase())) {
+            return showScoreError(`"${title}" is on the card more than once. Each activity can appear only once.`);
+        }
+
+        activities.push({
+            title,
+            description: row.dataset.description || null,
+            max_score: maxText === "" ? null : max
+        });
+    }
+
+    if (activities.length === 0) return showScoreError("Add at least one activity.");
+    showScoreError("");
+
+    const button = document.getElementById("saveActivityList");
+    button.disabled = true;
+
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/instructor/submissions/${encodeURIComponent(currentSubmission.id)}/activities`,
+            {
+                method: "POST",
+                headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    activities,
+                    ...(gradeEditPass ? { edit_pass: gradeEditPass } : {})
+                })
+            }
+        );
+
+        if (response.status === 401) {
+            handleUnauthorized();
+            return;
+        }
+
+        const data = await parseJsonResponse(response);
+
+        // The new Overs reach learners already graded: password first.
+        if (!response.ok && data.password_required) {
+            gradeEditPass = null;
+            openConfirmEdit(data.message);
+            return;
+        }
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || "Unable to save the activity list.");
+        }
+
+        showToast(data.message || "Activity list saved.", "success");
+        setScoreSource("Activity list saved. Every learner's card for this module uses these titles and Overs.");
+
+        // Other learners' grades may have changed: refresh the list. A
+        // graded card is reopened so its locked rows show the saved Overs.
+        const wasGraded = Boolean(currentSubmission.grade);
+        const submissionId = currentSubmission.id;
+        gradeEditPass = null;
+        await loadSubmissions();
+        if (wasGraded && currentSubmission && currentSubmission.id === submissionId) {
+            openGradingModal(submissionId, false);
+        }
+    } catch (error) {
+        console.error("Save activity list error:", error);
+        showScoreError(error.message || "Unable to save the activity list.");
+    } finally {
+        button.disabled = false;
     }
 }
 
@@ -4075,7 +4253,9 @@ function readScoreRows() {
         if (!Number.isInteger(max)) return { error: `"${name}": the Over must be a whole number (e.g. 20, not ${max}).` };
         if (score > max) return { error: `"${name}": the score (${score}) is higher than its total (${max}). A score cannot be more than the total it is scored over. Please check for a typo.` };
 
-        items.push({ title, score, max_score: max });
+        if (items.some(item => item.title.toLowerCase() === title.toLowerCase())) return { error: `"${title}" is on the card more than once. Each activity can appear only once.` };
+
+        items.push({ title, score, max_score: max, description: row.dataset.description || null });
     }
 
     return { items };
@@ -4085,17 +4265,35 @@ function updateScoreTotal() {
     let score = 0;
     let max = 0;
 
+    let complete = true;
+    const round = n => Math.round(n * 100) / 100;
+
+    // Percentage = score / Over x 100, only once both are entered.
     document.querySelectorAll("#scoreRows [data-score-row]").forEach(row => {
-        const value = Number(row.querySelector(".score-value").value);
-        const over = Number(row.querySelector(".score-max").value);
-        if (!Number.isNaN(value)) score += value;
-        if (!Number.isNaN(over)) max += over;
+        const scoreText = row.querySelector(".score-value").value.trim();
+        const overText = row.querySelector(".score-max").value.trim();
+        const value = Number(scoreText);
+        const over = Number(overText);
+        const valid = scoreText !== "" && overText !== "" &&
+            !Number.isNaN(value) && Number.isInteger(over) && over > 0 && value >= 0 && value <= over;
+
+        row.querySelector("[data-row-percent]").textContent = valid ? `${round(value / over * 100)}%` : "";
+
+        if (valid) {
+            score += value;
+            max += over;
+        } else {
+            complete = false;
+        }
     });
 
-    // No overall total or percentage is shown on the card.
-    const round = n => Math.round(n * 100) / 100;
+    // The total and its percentage need every score and every Over.
     const totalBox = document.getElementById("scoreTotal");
-    if (totalBox) totalBox.textContent = `${round(score)} / ${round(max)}`;
+    if (totalBox) {
+        totalBox.innerHTML = complete && max > 0
+            ? `Total <strong>${escapeHtml(String(round(score)))} / ${escapeHtml(String(round(max)))}</strong> <span class="score-percent">${escapeHtml(String(round(score / max * 100)))}%</span>`
+            : "Enter the score and the Over of every activity to see the total and percentage.";
+    }
 
     // The last remaining row stays (a card needs at least one).
     const container = document.getElementById("scoreRows");
@@ -4129,6 +4327,7 @@ function setGradeEditable(editable) {
         : "These scores are locked because the learner has already received them. This protects grades from accidental or unauthorized changes. To edit a score, click “Change saved scores” and enter your password.";
     document.getElementById("unlockScoresButton").hidden = Boolean(gradeEditPass);
     document.getElementById("addScoreRow").hidden = !editable;
+    document.getElementById("saveActivityList").hidden = !editable;
     document.getElementById("modalFeedback").disabled = !editable;
     document.getElementById("saveGradeButton").style.display = editable ? "inline-block" : "none";
     document.getElementById("editGradeButton").style.display = editable ? "none" : "inline-block";
@@ -4143,6 +4342,7 @@ function setGradeEditable(editable) {
 // Graded work opens read-only; this switches it to editing.
 function enableGradeEditing() {
     setGradeEditable(true);
+    if (currentSubmission) loadModuleActivities(currentSubmission);
     const first = document.querySelector("#scoreRows [data-score-row]:not([data-locked]) .score-value");
     if (first) first.focus();
     else document.getElementById("addScoreRow").focus();
@@ -4275,6 +4475,7 @@ confirmEditForm.addEventListener("submit", async event => {
 });
 
 document.getElementById("addScoreRow").addEventListener("click", addScoreRow);
+document.getElementById("saveActivityList").addEventListener("click", saveActivityList);
 
 /* Checks the scores while the instructor types, so a typo such as a
    score higher than its "Over" total is pointed out right away. The

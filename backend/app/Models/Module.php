@@ -40,6 +40,32 @@ class Module extends Model
      */
     public const MATERIAL_FOLDER = 'module-materials/';
 
+    /**
+     * A module assigned to a class with a file, or given a new file: find
+     * the activities in that file for the scoring cards.
+     */
+    protected static function booted(): void
+    {
+        static::created(function (Module $module) {
+            if ($module->course_id && $module->material_path) {
+                \App\Support\ActivityDetector::assignToModule($module);
+            }
+        });
+
+        static::updated(function (Module $module) {
+            if ($module->course_id && $module->wasChanged(['material_path', 'course_id'])) {
+                \App\Support\ActivityDetector::assignToModule($module);
+            }
+        });
+
+        // A removed module assigned to the class again.
+        static::restored(function (Module $module) {
+            if ($module->course_id && $module->material_path && !$module->activities()->exists()) {
+                \App\Support\ActivityDetector::assignToModule($module);
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [

@@ -2888,11 +2888,6 @@ const payload = {
             getActualLearnerCount(classItem)
         );
 
-        const moduleCount = Math.max(
-            Number(classItem.modules) || 0,
-            getActualModuleCount(classItem)
-        );
-
         const isActive =
             classItem.status !== "inactive";
 
@@ -2905,12 +2900,6 @@ const payload = {
         if (learnerCount > 0) {
             blockReasons.push(
                 `it has ${learnerCount} enrolled learner${learnerCount === 1 ? "" : "s"}`
-            );
-        }
-
-        if (moduleCount > 0) {
-            blockReasons.push(
-                `it has ${moduleCount} module${moduleCount === 1 ? "" : "s"}`
             );
         }
 
@@ -2962,9 +2951,8 @@ const payload = {
                         : `
                             <div class="field-help">
                                 Only an inactive class with no enrolled
-                                learners and no modules can be deleted.
-                                Mark the class inactive and remove its
-                                learners and modules first.
+                                learners can be deleted. Mark the class
+                                inactive and remove its learners first.
                             </div>
                           `
                 }
