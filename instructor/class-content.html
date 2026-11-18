@@ -2005,6 +2005,51 @@
         }
 
         /* ---------- Learner pop-up ---------- */
+        /* The scoring card, shown over this page (the page stays
+           where it was, darkened and blurred behind it). */
+        .scoring-frame-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 2700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(10, 25, 15, 0.45);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .scoring-frame-overlay iframe {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            background: transparent;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+
+        .scoring-frame-overlay.ready iframe {
+            opacity: 1;
+        }
+
+        .scoring-frame-loading {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 18px;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #1f2a24;
+            font-size: 14px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+        }
+
+        .scoring-frame-overlay.ready .scoring-frame-loading {
+            display: none;
+        }
+
         .learner-panel-overlay {
             position: fixed;
             inset: 0;
@@ -3733,7 +3778,7 @@
            LEARNER ACTIVITIES
            Clicking a learner shows this class's modules with their
            submitted activity: view or download it, and score it (the
-           scoring card on the Submissions page, which returns here).
+           scoring card opens over this page; see openScoringCard).
         ========================================================= */
 
         let classSubmissions = null;
@@ -3806,10 +3851,89 @@
 
         }
 
-        function scoreLink(submission, learnerId) {
-            const back = `class-content.html?course_id=${encodeURIComponent(courseId)}&learner=${encodeURIComponent(learnerId)}`;
-            return `submissions.html?submission=${encodeURIComponent(submission.id)}&return=${encodeURIComponent(back)}`;
+        /* SCORING CARD OVER THIS PAGE
+           The Submissions page's scoring card is shown in a frame over
+           the class page (embed=1), so the instructor stays here: the
+           learner panel stays open behind it, blurred. Closing or saving
+           the card closes the frame; after a save the learner's
+           activities are loaded again. */
+        let scoringFrame = null;
+
+        function openScoringCard(submissionId, returnFocus) {
+            if (scoringFrame) return;
+
+            const overlay = document.createElement("div");
+            overlay.className = "scoring-frame-overlay";
+            overlay.innerHTML = `
+                <span class="scoring-frame-loading" role="status">
+                    <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+                    Opening the scoring card...
+                </span>
+                <iframe title="Scoring card"
+                    src="submissions.html?submission=${encodeURIComponent(submissionId)}&embed=1"></iframe>`;
+            document.body.appendChild(overlay);
+
+            const frame = overlay.querySelector("iframe");
+
+            // If the card never opens (e.g. the connection dropped), give up.
+            const timer = setTimeout(() => {
+                closeScoringCard();
+                showToast("The scoring card could not be opened. Please try again.", "error");
+            }, 30000);
+
+            scoringFrame = { overlay, frame, timer, returnFocus };
         }
+
+        function closeScoringCard() {
+            if (!scoringFrame) return;
+
+            clearTimeout(scoringFrame.timer);
+            scoringFrame.overlay.remove();
+            scoringFrame.returnFocus?.focus?.();
+            scoringFrame = null;
+        }
+
+        window.addEventListener("message", async event => {
+            const data = event.data;
+
+            if (
+                !scoringFrame ||
+                event.origin !== window.location.origin ||
+                event.source !== scoringFrame.frame.contentWindow ||
+                !data || data.source !== "siknayan-grading"
+            ) {
+                return;
+            }
+
+            if (data.type === "opened") {
+                clearTimeout(scoringFrame.timer);
+                scoringFrame.overlay.classList.add("ready");
+                scoringFrame.frame.focus();
+                return;
+            }
+
+            if (data.type === "error") {
+                closeScoringCard();
+                showToast(data.message || "The scoring card could not be opened.", "error");
+                return;
+            }
+
+            if (data.type === "closed") {
+                closeScoringCard();
+
+                if (!data.saved) return;
+
+                showToast(data.message || "Grade saved successfully.", "success");
+
+                // Show the new score in the learner panel and the counts.
+                classSubmissionsRequest = null;
+                if (currentPanelLearner && $("learnerPanelOverlay")?.classList.contains("active")) {
+                    openLearnerPanel(currentPanelLearner);
+                } else {
+                    loadClassSubmissions().catch(error => console.error("Submissions:", error));
+                }
+            }
+        });
 
         function learnerModuleRow(module, submission, learnerId) {
             const title = module.name || module.title || "Untitled Module";
@@ -3841,9 +3965,9 @@
                         <button type="button" class="lp-btn" data-submission-file="download" data-submission-id="${escapeHtml(submission.id)}" data-file-name="${escapeHtml(submission.file_name || "submission")}">
                             <i class="fa-solid fa-download" aria-hidden="true"></i> Download
                         </button>
-                        <a class="lp-btn primary" href="${scoreLink(submission, learnerId)}">
+                        <button type="button" class="lp-btn primary" data-score-submission="${escapeHtml(submission.id)}">
                             <i class="fa-solid ${grade ? "fa-pen" : "fa-star"}" aria-hidden="true"></i> ${grade ? "Edit score" : "Score"}
-                        </a>
+                        </button>
                     </div>`;
             }
 
@@ -3895,7 +4019,13 @@
                 if (event.target === overlay) close();
             });
             document.addEventListener("keydown", event => {
-                if (event.key === "Escape" && overlay.classList.contains("active")) close();
+                if (event.key === "Escape" && overlay.classList.contains("active") && !scoringFrame) close();
+            });
+
+            // Score / Edit score: the scoring card over this page.
+            overlay.addEventListener("click", event => {
+                const button = event.target.closest("[data-score-submission]");
+                if (button) openScoringCard(button.dataset.scoreSubmission, button);
             });
 
             // View / Download a submitted file.
@@ -3948,8 +4078,12 @@
             return overlay;
         }
 
+        // The learner shown in the panel, to show it again after scoring.
+        let currentPanelLearner = null;
+
         async function openLearnerPanel(learner) {
             const overlay = learnerPanel();
+            currentPanelLearner = learner;
             const name = learner.name || "Unknown Learner";
 
             overlay._returnFocus = document.activeElement;

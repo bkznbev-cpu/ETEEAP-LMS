@@ -6,6 +6,33 @@
     <meta charset="UTF-8">
     <!-- In-page messages and questions instead of the browser's own boxes -->
     <script src="../shared/dialogs.js"></script>
+    <script>
+        // Opened inside the class page (submissions.html?submission=ID&embed=1):
+        // only the scoring card is shown, over the class page.
+        if (new URLSearchParams(location.search).get("embed") === "1" && window.parent !== window) {
+            document.documentElement.classList.add("embedded");
+        }
+    </script>
+    <style>
+        html.embedded,
+        html.embedded body {
+            background: transparent !important;
+        }
+
+        html.embedded .header,
+        html.embedded .sidebar,
+        html.embedded .sidebar-overlay,
+        html.embedded main {
+            display: none !important;
+        }
+
+        /* The class page behind already darkens and blurs. */
+        html.embedded .grading-modal-overlay {
+            background-color: transparent;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+    </style>
 
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
@@ -3765,6 +3792,16 @@ function closeGradingModal() {
         null;
 
 
+    // Shown inside the class page: tell it, so it closes this frame.
+    if (wasOpen && GRADING_EMBEDDED) {
+        tellClassPage("closed", {
+            saved: Boolean(gradingSavedMessage),
+            message: gradingSavedMessage
+        });
+        gradingSavedMessage = "";
+        return;
+    }
+
     // Opened from a learner on the class page: go back there.
     if (wasOpen && GRADING_RETURN_URL) {
         window.location.href = GRADING_RETURN_URL;
@@ -3784,6 +3821,18 @@ function closeGradingModal() {
 const GRADING_PARAMS =
     new URLSearchParams(window.location.search);
 
+// Shown in a frame on the class page (embed=1) instead of on its own.
+const GRADING_EMBEDDED =
+    document.documentElement.classList.contains("embedded");
+
+// Set when a grade was saved, for the message the class page shows.
+let gradingSavedMessage = "";
+
+function tellClassPage(type, details = {}) {
+    if (!GRADING_EMBEDDED) return;
+    window.parent.postMessage({ source: "siknayan-grading", type, ...details }, window.location.origin);
+}
+
 const GRADING_RETURN_URL = (() => {
     const value = GRADING_PARAMS.get("return") || "";
 
@@ -3802,6 +3851,11 @@ function openGradingFromLink() {
 
     if (findSubmissionById(submissionId)) {
         openGradingModal(submissionId);
+        tellClassPage("opened");
+    } else if (GRADING_EMBEDDED) {
+        tellClassPage("error", {
+            message: "That activity could not be found. It may have been unsubmitted."
+        });
     } else {
         showToast(
             "That activity could not be found. It may have been unsubmitted.",
@@ -4539,6 +4593,9 @@ async function saveGrade() {
             "Grade saved successfully.",
             "success"
         );
+
+        gradingSavedMessage =
+            data.message || "Grade saved successfully.";
 
 
         closeGradingModal();
