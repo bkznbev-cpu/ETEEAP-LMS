@@ -1041,19 +1041,21 @@ public function destroyClass(Request $request, int $id): JsonResponse
         ], 404);
     }
 
-    // Only an inactive class with no enrolled learners can be deleted.
+    // A class with enrolled learners cannot be deleted. Without learners,
+    // an empty class (no modules) can be deleted right away, even while
+    // active; a class that has modules must be marked inactive first.
     // Its modules are deleted with it.
-    if ($class->is_active) {
-        return response()->json([
-            'success' => false,
-            'message' => 'This class is still active and cannot be deleted. Mark the class inactive first.',
-        ], 409);
-    }
-
     if ($class->learners()->exists()) {
         return response()->json([
             'success' => false,
             'message' => 'This class still has enrolled learners and cannot be deleted. Remove the learners first.',
+        ], 409);
+    }
+
+    if ($class->is_active && $class->modules()->exists()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'This class is still active and has modules, so it cannot be deleted. Mark the class inactive first.',
         ], 409);
     }
 

@@ -282,7 +282,7 @@ class AcademicAdminSafeDeleteTest extends TestCase
     }
 
     #[Group('FR-CM'), Group('FR-CM-01')]
-    public function test_only_an_inactive_class_without_learners_can_be_deleted(): void
+    public function test_class_deletion_needs_no_learners_and_an_inactive_status_when_it_has_modules(): void
     {
         $learner = $this->user('learner');
         [$course, $module] = $this->classWithModule();
@@ -299,7 +299,7 @@ class AcademicAdminSafeDeleteTest extends TestCase
             ->deleteJson("/api/admin/classes/{$course->id}")
             ->assertStatus(409);
 
-        // Active again with no learners: still refused.
+        // Active again with no learners but a module: still refused.
         $course->learners()->detach($learner->id);
         $course->update(['is_active' => true]);
         $this->actingAs($this->admin())
@@ -313,6 +313,14 @@ class AcademicAdminSafeDeleteTest extends TestCase
             ->assertOk();
 
         $this->assertDatabaseMissing('modules', ['id' => $module->id]);
+
+        // Active, no learners and no modules: deleted right away.
+        [$empty, $emptyModule] = $this->classWithModule();
+        $emptyModule->forceDelete();
+        $this->actingAs($this->admin())
+            ->deleteJson("/api/admin/classes/{$empty->id}")
+            ->assertOk();
+        $this->assertDatabaseMissing('courses', ['id' => $empty->id]);
         $this->assertDatabaseMissing('courses', ['id' => $course->id]);
     }
 }
