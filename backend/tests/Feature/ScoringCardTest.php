@@ -292,71 +292,29 @@ class ScoringCardTest extends TestCase
             ]);
     }
 
-    private function saveActivities(Submission $submission, array $body)
+    public function test_grading_sets_the_overs_and_keeps_the_descriptions_found_in_the_file(): void
     {
-        return $this->actingAs($this->instructor)
-            ->postJson("/api/instructor/submissions/{$submission->id}/activities", $body);
-    }
+        // As saved when the module was assigned: titles and descriptions, no Over.
+        \App\Models\ModuleActivity::create(['module_id' => $this->module->id, 'title' => 'Introduction to Programming', 'description' => 'Short essay', 'max_score' => null, 'position' => 0]);
+        \App\Models\ModuleActivity::create(['module_id' => $this->module->id, 'title' => 'Variables and Data Types', 'description' => null, 'max_score' => null, 'position' => 1]);
 
-    public function test_the_activity_list_can_be_saved_for_every_learner_before_grading(): void
-    {
-        $this->saveActivities($this->submission, ['activities' => [
-            ['title' => 'Introduction to Programming', 'description' => 'Short essay', 'max_score' => 20],
-            ['title' => 'Variables and Data Types', 'max_score' => 30],
-            ['title' => 'Basic Programming Exercises', 'max_score' => null],
+        $this->grade(['items' => [
+            ['title' => 'Introduction to Programming', 'score' => 18, 'max_score' => 20],
+            ['title' => 'Variables and Data Types', 'score' => 25, 'max_score' => 30],
         ]])->assertOk();
 
-        // Nobody was graded; another learner's card gets the same list.
-        $this->assertNull($this->submission->fresh()->grade);
         $this->actingAs($this->instructor)
             ->getJson("/api/instructor/modules/{$this->module->id}/activities")
             ->assertJsonPath('source', 'saved')
             ->assertJsonPath('activities', [
                 ['title' => 'Introduction to Programming', 'description' => 'Short essay', 'max_score' => 20],
                 ['title' => 'Variables and Data Types', 'description' => null, 'max_score' => 30],
-                ['title' => 'Basic Programming Exercises', 'description' => null, 'max_score' => null],
             ]);
-
-        // Grading keeps the descriptions of the list.
-        $this->grade(['items' => [
-            ['title' => 'Introduction to Programming', 'score' => 18, 'max_score' => 20],
-            ['title' => 'Variables and Data Types', 'score' => 25, 'max_score' => 30],
-            ['title' => 'Basic Programming Exercises', 'score' => 45, 'max_score' => 50],
-        ]])->assertOk();
-        $this->assertDatabaseHas('module_activities', [
-            'module_id' => $this->module->id, 'title' => 'Introduction to Programming', 'description' => 'Short essay',
-        ]);
-        $this->assertDatabaseHas('module_activities', [
-            'module_id' => $this->module->id, 'title' => 'Basic Programming Exercises', 'max_score' => 50,
-        ]);
-    }
-
-    public function test_saving_the_activity_list_with_a_new_over_updates_graded_learners_after_the_password(): void
-    {
-        $this->grade(['items' => [['title' => 'Activity 1', 'score' => 8, 'max_score' => 10]]])->assertOk();
-        $second = $this->secondSubmission();
-        $list = ['activities' => [['title' => 'Activity 1', 'max_score' => 25]]];
-
-        $this->saveActivities($second, $list)->assertStatus(422)->assertJsonPath('password_required', true);
-        $this->assertSame('10.00', (string) $this->submission->fresh()->grade->max_score);
-
-        $pass = $this->actingAs($this->instructor)
-            ->postJson("/api/instructor/submissions/{$second->id}/grade/confirm-edit", ['password' => 'password'])
-            ->json('edit_pass');
-
-        $this->saveActivities($second, $list + ['edit_pass' => $pass])->assertOk();
-        $this->assertSame('8.00', (string) $this->submission->fresh()->grade->score);
-        $this->assertSame('25.00', (string) $this->submission->fresh()->grade->max_score);
-
-        // A score already given is never cut down to a lower Over.
-        $this->saveActivities($second, ['activities' => [['title' => 'Activity 1', 'max_score' => 5]]])
-            ->assertStatus(422)
-            ->assertJsonMissingPath('password_required');
     }
 
     public function test_each_class_keeps_its_own_activity_list(): void
     {
-        $this->saveActivities($this->submission, ['activities' => [['title' => 'Activity 1', 'max_score' => 20]]])->assertOk();
+        $this->grade(['items' => [['title' => 'Activity 1', 'score' => 5, 'max_score' => 20]]])->assertOk();
 
         // The same module assigned to another class is another module row.
         $otherClass = Course::create([
@@ -372,29 +330,14 @@ class ScoringCardTest extends TestCase
             ->assertJsonPath('activities', []);
     }
 
-    public function test_an_activity_cannot_be_listed_twice(): void
+    public function test_an_activity_cannot_be_on_a_card_twice(): void
     {
-        $this->saveActivities($this->submission, ['activities' => [
-            ['title' => 'Activity 1', 'max_score' => 10],
-            ['title' => 'activity 1 ', 'max_score' => 10],
-        ]])->assertStatus(422);
-
         $this->grade(['items' => [
             ['title' => 'Activity 1', 'score' => 1, 'max_score' => 10],
             ['title' => 'ACTIVITY 1', 'score' => 1, 'max_score' => 10],
         ]])->assertStatus(422);
 
-        $this->saveActivities($this->submission, ['activities' => [['title' => 'A', 'max_score' => 7.5]]])
-            ->assertStatus(422);
-    }
-
-    public function test_other_instructors_cannot_save_the_activity_list(): void
-    {
-        $other = User::factory()->create(['role' => 'instructor', 'school_id' => 'INS-SC5', 'is_active' => true]);
-
-        $this->actingAs($other)
-            ->postJson("/api/instructor/submissions/{$this->submission->id}/activities", ['activities' => [['title' => 'A', 'max_score' => 10]]])
-            ->assertForbidden();
+        $this->assertNull($this->submission->fresh()->grade);
     }
 
     public function test_a_changed_over_applies_to_every_learner_of_the_module(): void

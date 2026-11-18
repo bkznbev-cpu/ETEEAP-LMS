@@ -221,8 +221,6 @@ Route::middleware([
         Route::post('/instructor/submissions/{submissionId}/grade', [GradeController::class, 'store']);
         // Password check before changing scores already given.
         Route::post('/instructor/submissions/{submissionId}/grade/confirm-edit', [GradeController::class, 'confirmEdit']);
-        // Save the module's activity list (titles and Overs) for every learner
-        Route::post('/instructor/submissions/{submissionId}/activities', [GradeController::class, 'saveActivities']);
 
         // Notifications
         Route::get('/instructor/notifications', [InstructorNotificationController::class, 'index']);

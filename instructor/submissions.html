@@ -2792,12 +2792,6 @@ body {
                         <i class="fa-solid fa-plus" aria-hidden="true"></i>
                         Add activity
                     </button>
-
-                    <button type="button" class="score-add" id="saveActivityList"
-                        title="Save the activity titles and Overs for every learner of this module">
-                        <i class="fa-solid fa-users" aria-hidden="true"></i>
-                        Save activities for all learners
-                    </button>
                 </div>
 
                 <p class="score-error" id="scoreError" role="alert" hidden></p>
@@ -4037,12 +4031,11 @@ function setScoreSource(message) {
 
 const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
 
-// The module's activity list (saved from an earlier card or with "Save
-// activities for all learners"), else the activities found in the
-// module's file. An empty card is filled with them; a graded card gets
-// the activities it does not have yet, with an empty score, and the
-// descriptions of the ones it has. The Over comes only from the list
-// the instructor saved, never from the file.
+// The module's activity list: found in the module file when the module
+// was assigned, with the Overs saved from earlier cards. An empty card
+// is filled with it; a graded card gets the activities it does not have
+// yet, with an empty score, and the descriptions of the ones it has.
+// The Over comes only from cards the instructor saved, never the file.
 async function loadModuleActivities(submission) {
     const moduleId = submission.module_id || submission.module?.id;
 
@@ -4127,91 +4120,6 @@ async function loadModuleActivities(submission) {
         );
     } catch (error) {
         console.error("Unable to load the module's activities:", error);
-    }
-}
-
-// Save the titles, descriptions and Overs on the card as the module's
-// activity list, for every learner, without grading this learner.
-async function saveActivityList() {
-    if (!currentSubmission) return;
-
-    const rows = [...document.querySelectorAll("#scoreRows [data-score-row]")];
-    const activities = [];
-
-    for (const [index, row] of rows.entries()) {
-        const title = row.querySelector(".score-title").value.trim();
-        const maxText = row.querySelector(".score-max").value.trim();
-        const max = Number(maxText);
-
-        if (!title) return showScoreError(`Please enter a title for activity ${index + 1}.`);
-        if (maxText !== "" && (!Number.isInteger(max) || max < 1)) {
-            return showScoreError(`"${title}": the Over must be a whole number of at least 1.`);
-        }
-        if (activities.some(activity => activity.title.toLowerCase() === title.toLowerCase())) {
-            return showScoreError(`"${title}" is on the card more than once. Each activity can appear only once.`);
-        }
-
-        activities.push({
-            title,
-            description: row.dataset.description || null,
-            max_score: maxText === "" ? null : max
-        });
-    }
-
-    if (activities.length === 0) return showScoreError("Add at least one activity.");
-    showScoreError("");
-
-    const button = document.getElementById("saveActivityList");
-    button.disabled = true;
-
-    try {
-        const response = await fetch(
-            `${API_BASE_URL}/instructor/submissions/${encodeURIComponent(currentSubmission.id)}/activities`,
-            {
-                method: "POST",
-                headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    activities,
-                    ...(gradeEditPass ? { edit_pass: gradeEditPass } : {})
-                })
-            }
-        );
-
-        if (response.status === 401) {
-            handleUnauthorized();
-            return;
-        }
-
-        const data = await parseJsonResponse(response);
-
-        // The new Overs reach learners already graded: password first.
-        if (!response.ok && data.password_required) {
-            gradeEditPass = null;
-            openConfirmEdit(data.message);
-            return;
-        }
-
-        if (!response.ok || !data.success) {
-            throw new Error(data.message || "Unable to save the activity list.");
-        }
-
-        showToast(data.message || "Activity list saved.", "success");
-        setScoreSource("Activity list saved. Every learner's card for this module uses these titles and Overs.");
-
-        // Other learners' grades may have changed: refresh the list. A
-        // graded card is reopened so its locked rows show the saved Overs.
-        const wasGraded = Boolean(currentSubmission.grade);
-        const submissionId = currentSubmission.id;
-        gradeEditPass = null;
-        await loadSubmissions();
-        if (wasGraded && currentSubmission && currentSubmission.id === submissionId) {
-            openGradingModal(submissionId, false);
-        }
-    } catch (error) {
-        console.error("Save activity list error:", error);
-        showScoreError(error.message || "Unable to save the activity list.");
-    } finally {
-        button.disabled = false;
     }
 }
 
@@ -4327,7 +4235,6 @@ function setGradeEditable(editable) {
         : "These scores are locked because the learner has already received them. This protects grades from accidental or unauthorized changes. To edit a score, click “Change saved scores” and enter your password.";
     document.getElementById("unlockScoresButton").hidden = Boolean(gradeEditPass);
     document.getElementById("addScoreRow").hidden = !editable;
-    document.getElementById("saveActivityList").hidden = !editable;
     document.getElementById("modalFeedback").disabled = !editable;
     document.getElementById("saveGradeButton").style.display = editable ? "inline-block" : "none";
     document.getElementById("editGradeButton").style.display = editable ? "none" : "inline-block";
@@ -4475,7 +4382,6 @@ confirmEditForm.addEventListener("submit", async event => {
 });
 
 document.getElementById("addScoreRow").addEventListener("click", addScoreRow);
-document.getElementById("saveActivityList").addEventListener("click", saveActivityList);
 
 /* Checks the scores while the instructor types, so a typo such as a
    score higher than its "Over" total is pointed out right away. The
