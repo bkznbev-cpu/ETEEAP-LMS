@@ -1580,17 +1580,9 @@ body {
 
 .score-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 84px 12px 84px 52px 34px;
+    grid-template-columns: minmax(0, 1fr) 84px 12px 84px 34px;
     align-items: center;
     gap: 8px;
-}
-
-/* Percentage of one activity (shown once its score and Over are in) */
-.score-row-percent {
-    color: #086b3c;
-    font-size: 12px;
-    font-weight: 700;
-    text-align: center;
 }
 
 /* The activity's description from the module file */
@@ -1943,12 +1935,8 @@ body {
 
 @media (max-width: 560px) {
     .score-row {
-        grid-template-columns: minmax(0, 1fr) 58px 8px 58px 38px 28px;
+        grid-template-columns: minmax(0, 1fr) 64px 10px 64px 30px;
         gap: 5px;
-    }
-
-    .score-row-percent {
-        font-size: 11px;
     }
 
     .score-row input {
@@ -2770,7 +2758,6 @@ body {
                     <span>Score</span>
                     <span></span>
                     <span>Over</span>
-                    <span>%</span>
                     <span></span>
                 </div>
 
@@ -4000,7 +3987,6 @@ function scoreRowHtml(item, index, locked = false) {
             <input type="number" class="score-max" min="1" step="1" inputmode="numeric"
                 aria-label="Activity ${index + 1} is scored over" placeholder="Over"
                 value="${value(item.max_score)}">
-            <span class="score-row-percent" data-row-percent></span>
             <button type="button" class="score-remove" data-remove-score-row
                 title="Remove activity" aria-label="Remove activity ${index + 1}">
                 <i class="fa-solid fa-xmark" aria-hidden="true"></i>
@@ -4176,7 +4162,7 @@ function updateScoreTotal() {
     let complete = true;
     const round = n => Math.round(n * 100) / 100;
 
-    // Percentage = score / Over x 100, only once both are entered.
+    // Only rows with both a score and an Over count toward the total.
     document.querySelectorAll("#scoreRows [data-score-row]").forEach(row => {
         const scoreText = row.querySelector(".score-value").value.trim();
         const overText = row.querySelector(".score-max").value.trim();
@@ -4184,8 +4170,6 @@ function updateScoreTotal() {
         const over = Number(overText);
         const valid = scoreText !== "" && overText !== "" &&
             !Number.isNaN(value) && Number.isInteger(over) && over > 0 && value >= 0 && value <= over;
-
-        row.querySelector("[data-row-percent]").textContent = valid ? `${round(value / over * 100)}%` : "";
 
         if (valid) {
             score += value;
@@ -4195,12 +4179,12 @@ function updateScoreTotal() {
         }
     });
 
-    // The total and its percentage need every score and every Over.
+    // The total needs every score and every Over.
     const totalBox = document.getElementById("scoreTotal");
     if (totalBox) {
         totalBox.innerHTML = complete && max > 0
-            ? `Total <strong>${escapeHtml(String(round(score)))} / ${escapeHtml(String(round(max)))}</strong> <span class="score-percent">${escapeHtml(String(round(score / max * 100)))}%</span>`
-            : "Enter the score and the Over of every activity to see the total and percentage.";
+            ? `Total <strong>${escapeHtml(String(round(score)))} / ${escapeHtml(String(round(max)))}</strong>`
+            : "Enter the score and the Over of every activity to see the total.";
     }
 
     // The last remaining row stays (a card needs at least one).
