@@ -1041,6 +1041,22 @@ public function destroyClass(Request $request, int $id): JsonResponse
         ], 404);
     }
 
+    // Only an inactive class with no enrolled learners and no modules
+    // can be deleted.
+    if ($class->is_active) {
+        return response()->json([
+            'success' => false,
+            'message' => 'This class is still active and cannot be deleted. Mark the class inactive first.',
+        ], 409);
+    }
+
+    if ($class->learners()->exists() || $class->modules()->exists()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'This class still has enrolled learners or modules and cannot be deleted. Remove them first.',
+        ], 409);
+    }
+
     // Deleting a class cascades to its modules (including soft-deleted ones)
     // and from there to submissions, grades and progress.
     $moduleIds = Module::withTrashed()

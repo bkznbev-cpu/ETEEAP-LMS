@@ -2883,16 +2883,39 @@ const payload = {
         closeDynamicModal();
 
 
-        const learnerCount =
-            getActualLearnerCount(
-                classItem
-            );
+        const learnerCount = Math.max(
+            Number(classItem.learners) || 0,
+            getActualLearnerCount(classItem)
+        );
 
+        const moduleCount = Math.max(
+            Number(classItem.modules) || 0,
+            getActualModuleCount(classItem)
+        );
 
-        const moduleCount =
-            getActualModuleCount(
-                classItem
+        const isActive =
+            classItem.status !== "inactive";
+
+        const blockReasons = [];
+
+        if (isActive) {
+            blockReasons.push("it is still active");
+        }
+
+        if (learnerCount > 0) {
+            blockReasons.push(
+                `it has ${learnerCount} enrolled learner${learnerCount === 1 ? "" : "s"}`
             );
+        }
+
+        if (moduleCount > 0) {
+            blockReasons.push(
+                `it has ${moduleCount} module${moduleCount === 1 ? "" : "s"}`
+            );
+        }
+
+        const canDelete =
+            blockReasons.length === 0;
 
 
         const overlay =
@@ -2924,62 +2947,26 @@ const payload = {
                     </h3>
 
                     <p>
-                        Are you sure you want to delete
-                        <strong>
-                            ${escapeHtml(
-                                classItem.classCode
-                            )}
-                        </strong>?
+                        ${
+                            canDelete
+                                ? `Are you sure you want to delete <strong>${escapeHtml(classItem.classCode)}</strong>? This cannot be undone.`
+                                : `<strong>${escapeHtml(classItem.classCode)}</strong> cannot be deleted because ${escapeHtml(blockReasons.join(" and "))}.`
+                        }
                     </p>
 
                 </div>
 
-
                 ${
-                    learnerCount > 0
-                        ? `
+                    canDelete
+                        ? ""
+                        : `
                             <div class="field-help">
-
-                                This class currently has
-                                ${learnerCount}
-                                enrolled learner${
-                                    learnerCount === 1
-                                        ? ""
-                                        : "s"
-                                }.
-
-                                Removing the class will remove
-                                the class record, but learner
-                                records will not be deleted.
-
+                                Only an inactive class with no enrolled
+                                learners and no modules can be deleted.
+                                Mark the class inactive and remove its
+                                learners and modules first.
                             </div>
                           `
-                        : ""
-                }
-
-
-                ${
-                    moduleCount > 0
-                        ? `
-                            <div class="field-help">
-
-                                This class currently has
-                                ${moduleCount}
-                                assigned module${
-                                    moduleCount === 1
-                                        ? ""
-                                        : "s"
-                                }.
-
-                                Removing the class will remove
-                                the class record and its
-                                class-module assignments,
-                                but will not delete the modules
-                                from the Module Library.
-
-                            </div>
-                          `
-                        : ""
                 }
 
                 <div
@@ -2999,6 +2986,9 @@ const payload = {
                     </button>
 
 
+                    ${
+                        canDelete
+                            ? `
                     <button
                         type="button"
                         class="modal-button delete-confirm-button"
@@ -3006,6 +2996,9 @@ const payload = {
                     >
                         Delete
                     </button>
+                              `
+                            : ""
+                    }
 
                 </div>
 
@@ -3029,7 +3022,7 @@ const payload = {
 
         overlay.querySelector(
             "#dynamicDeleteConfirm"
-        ).addEventListener(
+        )?.addEventListener(
             "click",
             () => {
 
