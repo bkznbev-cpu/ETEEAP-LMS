@@ -5622,6 +5622,14 @@ body:has(.program-library-page) {
     font-size: 15px;
 }
 
+/* The server's reason when the delete is refused (e.g. the class has
+   learner submissions or progress records). */
+#dynamicDeleteClassModal .form-error {
+    margin: 4px 0 14px;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
 .delete-confirm-button {
     border: 1px solid #b42318;
     background: #c62828;
