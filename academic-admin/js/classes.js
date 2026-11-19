@@ -2888,21 +2888,9 @@ const payload = {
             getActualLearnerCount(classItem)
         );
 
-        const moduleCount =
-            Number(classItem.modules) || 0;
-
-        const isActive =
-            classItem.status !== "inactive";
-
-        // No learners: an empty class (no modules) can be deleted even
-        // while active; with modules it must be inactive first.
+        // Only enrolled learners block deletion; a class without
+        // learners can be deleted (with its modules), active or not.
         const blockReasons = [];
-
-        if (isActive && moduleCount > 0) {
-            blockReasons.push(
-                `it is still active and has ${moduleCount} module${moduleCount === 1 ? "" : "s"}`
-            );
-        }
 
         if (learnerCount > 0) {
             blockReasons.push(
@@ -2958,10 +2946,7 @@ const payload = {
                         : `
                             <div class="field-help">
                                 A class with enrolled learners cannot be
-                                deleted; remove its learners first. A class
-                                with modules must also be marked inactive
-                                first. An empty class can be deleted
-                                right away.
+                                deleted; remove its learners first.
                             </div>
                           `
                 }
