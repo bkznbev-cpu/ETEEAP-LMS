@@ -1501,6 +1501,43 @@ public function replaceLibraryMaterial(Request $request, string $libraryKey): Js
     ]);
 }
 
+/**
+ * A library module is being deleted: remove it from every class that
+ * has it. The class modules are soft-deleted, so learners' submissions,
+ * grades and progress stay on record.
+ */
+public function removeLibraryModuleFromClasses(Request $request, string $libraryKey): JsonResponse
+{
+    if ($response = $this->checkAdmin($request)) {
+        return $response;
+    }
+
+    $modules = Module::where('library_key', $libraryKey)
+        ->whereHas('course')
+        ->with('course:id,code')
+        ->get();
+
+    $modules->each(fn (Module $module) => $module->delete());
+
+    if ($modules->isNotEmpty()) {
+        AuditLogger::log('delete', AuditLogger::MODULES, [
+            'target_type' => 'library_module',
+            'target_id' => $libraryKey,
+            'old' => [
+                'title' => $modules->first()->title,
+                'classes' => $modules->pluck('course.code')->filter()->unique()->implode(', '),
+            ],
+            'details' => 'Deleted library module "' . $modules->first()->title . '" and removed it from '
+                . $modules->count() . ' class(es)',
+        ]);
+    }
+
+    return response()->json([
+        'success' => true,
+        'removed_from_classes' => $modules->count(),
+    ]);
+}
+
 public function syncClassModules(Request $request, int $id): JsonResponse
 {
     if ($response = $this->checkAdmin($request)) {

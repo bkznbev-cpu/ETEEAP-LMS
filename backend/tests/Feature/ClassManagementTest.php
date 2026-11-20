@@ -95,6 +95,21 @@ class ClassManagementTest extends TestCase
     }
 
     #[Group('FR-CM'), Group('FR-CM-04')]
+    public function test_deleting_a_library_module_removes_it_from_its_classes(): void
+    {
+        $this->libraryCourseFor($this->class, ['BSCRIM-LAW1-M2'], 'LAW1');
+        $this->actingAs($this->admin)->putJson("/api/admin/classes/{$this->class->id}/modules/sync", [
+            'modules' => [['library_key' => 'BSCRIM-LAW1-M2', 'title' => 'Module 2', 'is_published' => true]],
+        ])->assertOk();
+
+        $this->actingAs($this->admin)->deleteJson('/api/admin/module-library/BSCRIM-LAW1-M2/classes')
+            ->assertOk()
+            ->assertJsonPath('removed_from_classes', 1);
+
+        $this->assertSoftDeleted('modules', ['course_id' => $this->class->id, 'library_key' => 'BSCRIM-LAW1-M2']);
+    }
+
+    #[Group('FR-CM'), Group('FR-CM-04')]
     public function test_module_from_another_course_cannot_be_assigned(): void
     {
         // This Class's Course is LAW1; BSIT-WEBDEV-M1 belongs to another Course.

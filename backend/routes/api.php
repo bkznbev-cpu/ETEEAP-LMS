@@ -295,6 +295,7 @@ Route::middleware([
         Route::get('/module-library', [ModuleLibraryController::class, 'show']);
         Route::put('/module-library', [ModuleLibraryController::class, 'update'])->middleware('throttle:60,1');
         Route::put('/module-library/{libraryKey}/material', [AcademicAdminController::class, 'replaceLibraryMaterial']);
+        Route::delete('/module-library/{libraryKey}/classes', [AcademicAdminController::class, 'removeLibraryModuleFromClasses']);
         Route::post('/module-files', [AcademicAdminController::class, 'uploadModuleFile']);
         Route::get('/module-files', [AcademicAdminController::class, 'showModuleFile']);
     });

@@ -11474,3 +11474,11 @@ body:has(.instructor-accounts-page) .instructor-accounts-page .learner-accounts-
 .module-assign-modal .assign-learner-search {
     margin-bottom: 6px;
 }
+
+
+/* Class Details: row number column in Enrolled Learners. */
+.class-roster-table .class-roster-number {
+    width: 56px;
+    color: #666;
+    text-align: center;
+}

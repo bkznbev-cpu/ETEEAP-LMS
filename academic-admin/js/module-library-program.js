@@ -788,8 +788,9 @@
         module,
         button
     ) {
-        // Modules are not archived or deleted here. A module archived
-        // before keeps Restore, so it can still be made active again.
+        // Modules are not archived here. A module archived before keeps
+        // Restore, so it can still be made active again. Delete works even
+        // when the module is assigned: it is removed from those classes too.
         const actions = [
             {
                 label: "Edit",
@@ -797,6 +798,19 @@
                 handler:
                     () =>
                         openEditModule(
+                            module.id
+                        )
+            },
+
+            {
+                label: "Delete",
+
+                danger: true,
+
+                handler:
+                    () =>
+                        openDelete(
+                            "module",
                             module.id
                         )
             }
@@ -2816,19 +2830,6 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
             return;
         }
 
-        if (
-            type === "module" &&
-            Number(
-                item.assigned ||
-                0
-            ) > 0
-        ) {
-            alert(
-                "Cannot delete a module while it is assigned to learners."
-            );
-            return;
-        }
-
         deleteType = type;
         deleteId = id;
 
@@ -2849,7 +2850,8 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
                 "Delete Module";
 
             deleteModalText.textContent =
-                `Delete the module "${item.title}"? This action cannot be undone.`;
+                `Delete the module "${item.title}"? It is also removed from every class it is assigned to. ` +
+                "Learners' submissions and grades stay on record. This action cannot be undone.";
 
             confirmDeleteButton.textContent =
                 "Delete Module";
@@ -2877,7 +2879,7 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
 
     confirmDeleteButton?.addEventListener(
         "click",
-        () => {
+        async () => {
 
             if (
                 !deleteType ||
@@ -2940,18 +2942,25 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
                     return;
                 }
 
-                if (
-                    Number(
-                        module.assigned ||
-                        0
-                    ) > 0
-                ) {
+                // Take it out of the classes first, so no class keeps a
+                // module that is no longer in the library.
+                confirmDeleteButton.disabled = true;
+
+                try {
+                    await assignApiRequest(
+                        `/admin/module-library/${encodeURIComponent(module.id)}/classes`,
+                        { method: "DELETE" }
+                    );
+                } catch (error) {
                     alert(
-                        "Cannot delete a module while it is assigned to learners."
+                        "The module could not be removed from its classes, so it was not deleted: " +
+                        (error.message || "Please try again.")
                     );
 
                     closeDeleteModal();
                     return;
+                } finally {
+                    confirmDeleteButton.disabled = false;
                 }
 
                 program.modules =

@@ -1645,7 +1645,7 @@ function renderLearnerRoster() {
 
 
     filteredLearners.forEach(
-        learner => {
+        (learner, index) => {
 
             const row =
                 document.createElement(
@@ -1653,13 +1653,11 @@ function renderLearnerRoster() {
                 );
 
 
-            const status =
-                getLearnerStatus(
-                    learner
-                );
-
-
             row.innerHTML = `
+                <td class="class-roster-number">
+                    ${index + 1}
+                </td>
+
                 <td>
                     ${escapeHtml(
                         getLearnerSchoolId(
@@ -1674,18 +1672,6 @@ function renderLearnerRoster() {
                             learner
                         )
                     )}
-                </td>
-
-                <td>
-                    <span
-                        class="class-roster-status ${status}"
-                    >
-                        ${escapeHtml(
-                            formatLearnerStatus(
-                                status
-                            )
-                        )}
-                    </span>
                 </td>
             `;
 
@@ -2484,23 +2470,8 @@ function renderAssignedModules() {
                 );
 
 
-            const status =
-                document.createElement(
-                    "span"
-                );
-
-
-            status.textContent =
-                formatModuleStatus(
-                    getModuleStatus(
-                        module
-                    )
-                );
-
-
             info.append(
-                title,
-                status
+                title
             );
 
 
