@@ -788,52 +788,35 @@
         module,
         button
     ) {
+        // Modules are not archived or deleted here. A module archived
+        // before keeps Restore, so it can still be made active again.
+        const actions = [
+            {
+                label: "Edit",
+
+                handler:
+                    () =>
+                        openEditModule(
+                            module.id
+                        )
+            }
+        ];
+
+        if (module.status === "archived") {
+            actions.unshift({
+                label: "Restore",
+
+                handler:
+                    () =>
+                        toggleArchive(
+                            module.id
+                        )
+            });
+        }
+
         openFloatingMenu(
             button,
-            [
-                {
-                    label:
-                        module.status ===
-                        "archived"
-                            ? "Restore"
-                            : "Archive",
-
-                    handler:
-                        () =>
-                            toggleArchive(
-                                module.id
-                            )
-                },
-
-                {
-                    label: "Edit",
-
-                    handler:
-                        () =>
-                            openEditModule(
-                                module.id
-                            )
-                },
-
-                {
-                    label: "Delete",
-
-                    danger: true,
-
-                    disabled:
-                        Number(
-                            module.assigned ||
-                            0
-                        ) > 0,
-
-                    handler:
-                        () =>
-                            openDelete(
-                                "module",
-                                module.id
-                            )
-                }
-            ]
+            actions
         );
     }
 
