@@ -79,6 +79,22 @@ class ClassManagementTest extends TestCase
     }
 
     #[Group('FR-CM'), Group('FR-CM-04')]
+    public function test_class_modules_can_be_emptied(): void
+    {
+        $this->libraryCourseFor($this->class, ['BSCRIM-LAW1-M2'], 'LAW1');
+        $sync = fn (array $modules) => $this->actingAs($this->admin)->putJson("/api/admin/classes/{$this->class->id}/modules/sync", [
+            'modules' => $modules,
+        ]);
+
+        $sync([['library_key' => 'BSCRIM-LAW1-M2', 'title' => 'Module 2', 'is_published' => true]])->assertOk();
+
+        // A class does not need a module: an empty list removes them all.
+        $sync([])->assertOk();
+
+        $this->assertSoftDeleted('modules', ['course_id' => $this->class->id, 'library_key' => 'BSCRIM-LAW1-M2']);
+    }
+
+    #[Group('FR-CM'), Group('FR-CM-04')]
     public function test_module_from_another_course_cannot_be_assigned(): void
     {
         // This Class's Course is LAW1; BSIT-WEBDEV-M1 belongs to another Course.

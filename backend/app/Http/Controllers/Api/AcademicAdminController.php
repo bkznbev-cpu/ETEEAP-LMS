@@ -1517,7 +1517,8 @@ public function syncClassModules(Request $request, int $id): JsonResponse
     }
 
     $validated = $request->validate([
-        'modules' => ['required', 'array'],
+        // A class may have no modules: an empty list removes them all.
+        'modules' => ['present', 'array'],
         'modules.*.library_key' => ['required', 'string', 'max:255'],
         'modules.*.title' => ['required', 'string', 'max:255'],
         'modules.*.description' => ['nullable', 'string'],
