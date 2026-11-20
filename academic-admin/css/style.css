@@ -11323,3 +11323,115 @@ body:has(.instructor-accounts-page) .instructor-accounts-page .learner-accounts-
         word-break: normal;
     }
 }
+
+
+/* =========================================================
+   MODULE CARD: View Module + Assign, and the Assign window
+   ========================================================= */
+
+.module-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.module-card .module-assign-button {
+    background: #08733d;
+    color: #ffffff;
+}
+
+.module-card .module-assign-button:hover {
+    background: #065c31;
+}
+
+.module-card .module-assign-button:disabled {
+    border-color: #c9d2cd;
+    background: #eef1ef;
+    color: #8a948e;
+    cursor: not-allowed;
+}
+
+.modal-card.module-assign-modal {
+    width: min(560px, 100%);
+}
+
+.module-assign-modal .assign-pick-list {
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid #dcdcdc;
+    border-radius: 6px;
+}
+
+.module-assign-modal .form-group label.assign-pick-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 9px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.module-assign-modal .assign-pick-list .assign-pick-item:last-child {
+    border-bottom: none;
+}
+
+.module-assign-modal .assign-pick-item:hover {
+    background: #f3f8f5;
+}
+
+.module-assign-modal .assign-pick-item input {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: #08733d;
+}
+
+.module-assign-modal .assign-pick-item span {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.module-assign-modal .assign-pick-item strong {
+    color: #222;
+    font-size: 13px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.module-assign-modal .assign-pick-item small {
+    color: #888;
+    font-size: 11px;
+}
+
+.module-assign-modal .form-group label.assign-select-all {
+    padding: 6px 12px;
+    border-bottom: none;
+    font-size: 12px;
+}
+
+.module-assign-modal .assign-pick-empty {
+    margin: 0;
+    padding: 14px 12px;
+    color: #777;
+    font-size: 12px;
+}
+
+.module-assign-modal .assign-learner-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.module-assign-modal .assign-learner-count {
+    color: #666;
+    font-size: 11px;
+}
+
+.module-assign-modal .assign-learner-search {
+    margin-bottom: 6px;
+}

@@ -884,6 +884,7 @@
                        </span>`
                     : ""}
 
+                <div class="module-card-actions">
                     <button
                         type="button"
                         class="module-view-button"
@@ -896,7 +897,36 @@
                             View Module
                         </span>
                     </button>
+
+                    <button
+                        type="button"
+                        class="module-view-button module-assign-button"
+                        ${module.status === "archived"
+                            ? `disabled title="Restore this module before assigning it."`
+                            : `title="Create a class for this module and choose its instructor and learners."`}
+                    >
+                        <i
+                            data-lucide="user-plus"
+                        ></i>
+
+                        <span>
+                            Assign
+                        </span>
+                    </button>
+                </div>
                 `;
+
+            card
+                .querySelector(
+                    ".module-assign-button"
+                )
+                .addEventListener(
+                    "click",
+                    () =>
+                        openAssignModule(
+                            module.id
+                        )
+                );
 
             card
                 .querySelector(
@@ -2331,6 +2361,425 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
         );
 
         refreshIcons();
+    }
+
+    /* =====================================================
+       ASSIGN MODULE
+       -----------------------------------------------------
+       One module in one subject: Assign creates a class for
+       the module's course, with one instructor, the ticked
+       learners of this program, and only this module.
+    ===================================================== */
+
+    async function assignApiRequest(path, options = {}) {
+        const token = getModuleFileApiToken();
+
+        if (!token) {
+            window.handleAdminSessionExpired?.();
+            throw new Error("Your session has ended. Please log in again.");
+        }
+
+        const response = await fetch(
+            `${MODULE_FILE_API_BASE_URL}${path}`,
+            {
+                ...options,
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        );
+
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok || payload?.success === false) {
+            const error = new Error(
+                payload?.message || `Request failed (${response.status}).`
+            );
+            error.status = response.status;
+            error.errors = payload?.errors || {};
+            throw error;
+        }
+
+        return payload;
+    }
+
+    function inThisProgram(person) {
+        return data.normalizeCode(person?.program || "") === programCode;
+    }
+
+    function isActiveAccount(person) {
+        return person?.is_active !== false && person?.is_active !== 0;
+    }
+
+    async function openAssignModule(moduleId) {
+        const module = getModule(moduleId);
+
+        if (!module || module.status === "archived") {
+            return;
+        }
+
+        const course = getCourse(module.courseId);
+
+        if (!course?.code) {
+            alert("This module's course has no course code, so it cannot be assigned.");
+            return;
+        }
+
+        const overlay = document.createElement("div");
+        overlay.className = "modal-overlay active";
+        overlay.setAttribute("aria-hidden", "false");
+
+        overlay.innerHTML = `
+            <div class="modal-card module-assign-modal" role="dialog" aria-modal="true" aria-labelledby="assignModuleTitle">
+                <div class="modal-header">
+                    <h3 id="assignModuleTitle">Assign Module</h3>
+                    <p>
+                        ${escapeHtml(module.title)} ·
+                        ${escapeHtml(course.name)} (${escapeHtml(course.code)})
+                    </p>
+                </div>
+
+                <form id="assignModuleForm" novalidate>
+                    <div class="form-group">
+                        <label for="assignClassName">Name of Class</label>
+                        <input
+                            type="text"
+                            id="assignClassName"
+                            class="form-input"
+                            maxlength="100"
+                            placeholder="e.g. ${escapeHtml(course.code)}-A"
+                            autocomplete="off"
+                            required
+                        >
+                        <div class="field-help">
+                            A new class is created for ${escapeHtml(course.code)} with this module only.
+                        </div>
+                        <div class="form-error" id="assignClassNameError">
+                            Please enter the name of the class.
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Instructor</label>
+                        <div class="assign-pick-list" id="assignInstructorList">
+                            <p class="assign-pick-empty">Loading instructors…</p>
+                        </div>
+                        <div class="form-error" id="assignInstructorError">
+                            Please choose the instructor for this class.
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="assign-learner-heading">
+                            <label>Learners enrolled in ${escapeHtml(programCode)}</label>
+                            <span class="assign-learner-count" id="assignLearnerCount"></span>
+                        </div>
+                        <input
+                            type="search"
+                            id="assignLearnerSearch"
+                            class="form-input assign-learner-search"
+                            placeholder="Search learners by name or ID"
+                            autocomplete="off"
+                        >
+                        <label class="assign-pick-item assign-select-all">
+                            <input type="checkbox" id="assignSelectAll">
+                            <span>Select all</span>
+                        </label>
+                        <div class="assign-pick-list" id="assignLearnerList">
+                            <p class="assign-pick-empty">Loading learners…</p>
+                        </div>
+                        <div class="form-error" id="assignLearnerError">
+                            Please tick at least one learner.
+                        </div>
+                    </div>
+
+                    <div class="form-error" id="assignGeneralError"></div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="modal-button cancel" id="assignCancel">
+                            Cancel
+                        </button>
+                        <button type="submit" class="modal-button primary" id="assignSubmit" disabled>
+                            Assign
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        const form = overlay.querySelector("#assignModuleForm");
+        const nameInput = overlay.querySelector("#assignClassName");
+        const instructorList = overlay.querySelector("#assignInstructorList");
+        const learnerList = overlay.querySelector("#assignLearnerList");
+        const learnerSearch = overlay.querySelector("#assignLearnerSearch");
+        const learnerCount = overlay.querySelector("#assignLearnerCount");
+        const selectAll = overlay.querySelector("#assignSelectAll");
+        const submitButton = overlay.querySelector("#assignSubmit");
+        const generalError = overlay.querySelector("#assignGeneralError");
+
+        let saving = false;
+
+        const close = () => {
+            if (!saving) {
+                overlay.remove();
+            }
+        };
+
+        overlay.querySelector("#assignCancel").addEventListener("click", close);
+        overlay.addEventListener("click", event => {
+            if (event.target === overlay) {
+                close();
+            }
+        });
+
+        const showError = (id, message) => {
+            const element = overlay.querySelector(`#${id}`);
+            if (!element) return;
+            if (message) element.textContent = message;
+            element.classList.add("visible");
+        };
+
+        const clearErrors = () => {
+            overlay.querySelectorAll(".form-error").forEach(element => {
+                element.classList.remove("visible");
+            });
+        };
+
+        setTimeout(() => nameInput.focus(), 40);
+
+        /* Load instructors and learners */
+
+        let instructors = [];
+        let learners = [];
+
+        try {
+            const [instructorResult, learnerResult] = await Promise.all([
+                assignApiRequest("/admin/instructors"),
+                assignApiRequest("/admin/learners")
+            ]);
+
+            const allInstructors = (instructorResult.instructors || []).filter(isActiveAccount);
+            const programInstructors = allInstructors.filter(inThisProgram);
+
+            // Instructors of this program first; if none are set to it, all of them.
+            instructors = programInstructors.length ? programInstructors : allInstructors;
+
+            learners = (learnerResult.learners || [])
+                .filter(isActiveAccount)
+                .filter(inThisProgram)
+                .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+        } catch (error) {
+            instructorList.innerHTML = "";
+            learnerList.innerHTML = "";
+            showError("assignGeneralError", error.message || "Unable to load instructors and learners.");
+            return;
+        }
+
+        if (!document.body.contains(overlay)) {
+            return;
+        }
+
+        instructorList.innerHTML = instructors.length
+            ? instructors.map(instructor => `
+                <label class="assign-pick-item">
+                    <input type="radio" name="assignInstructor" value="${escapeHtml(instructor.id)}">
+                    <span>
+                        <strong>${escapeHtml(instructor.name)}</strong>
+                        <small>${escapeHtml(instructor.school_id || instructor.email || "")}</small>
+                    </span>
+                </label>
+            `).join("")
+            : `<p class="assign-pick-empty">No active instructors yet. Add one under Accounts first.</p>`;
+
+        learnerList.innerHTML = learners.length
+            ? learners.map(learner => `
+                <label class="assign-pick-item" data-search="${escapeHtml(
+                    `${learner.name || ""} ${learner.school_id || ""} ${learner.email || ""}`.toLowerCase()
+                )}">
+                    <input type="checkbox" name="assignLearner" value="${escapeHtml(learner.id)}">
+                    <span>
+                        <strong>${escapeHtml(learner.name)}</strong>
+                        <small>${escapeHtml(learner.school_id || learner.email || "")}</small>
+                    </span>
+                </label>
+            `).join("")
+            : `<p class="assign-pick-empty">No active learners are enrolled in ${escapeHtml(programCode)} yet.</p>`;
+
+        const learnerBoxes = () =>
+            Array.from(learnerList.querySelectorAll('input[name="assignLearner"]'));
+
+        const visibleBoxes = () =>
+            learnerBoxes().filter(box => box.closest(".assign-pick-item").style.display !== "none");
+
+        const updateLearnerState = () => {
+            const boxes = visibleBoxes();
+            const checkedVisible = boxes.filter(box => box.checked).length;
+            const checkedAll = learnerBoxes().filter(box => box.checked).length;
+
+            selectAll.checked = boxes.length > 0 && checkedVisible === boxes.length;
+            selectAll.indeterminate = checkedVisible > 0 && checkedVisible < boxes.length;
+            selectAll.disabled = boxes.length === 0;
+
+            learnerCount.textContent = `${checkedAll} of ${learners.length} selected`;
+        };
+
+        learnerList.addEventListener("change", updateLearnerState);
+
+        selectAll.addEventListener("change", () => {
+            visibleBoxes().forEach(box => {
+                box.checked = selectAll.checked;
+            });
+            updateLearnerState();
+        });
+
+        learnerSearch.addEventListener("input", () => {
+            const query = learnerSearch.value.trim().toLowerCase();
+
+            learnerList.querySelectorAll(".assign-pick-item").forEach(item => {
+                item.style.display =
+                    !query || String(item.dataset.search || "").includes(query) ? "" : "none";
+            });
+
+            updateLearnerState();
+        });
+
+        updateLearnerState();
+        submitButton.disabled = false;
+
+        /* Save */
+
+        form.addEventListener("submit", async event => {
+            event.preventDefault();
+
+            if (saving) return;
+
+            clearErrors();
+
+            const className = nameInput.value.trim();
+            const instructorId =
+                overlay.querySelector('input[name="assignInstructor"]:checked')?.value || "";
+            const learnerIds = learnerBoxes()
+                .filter(box => box.checked)
+                .map(box => Number(box.value));
+
+            let valid = true;
+
+            if (!className) {
+                showError("assignClassNameError");
+                valid = false;
+            }
+
+            if (!instructorId) {
+                showError("assignInstructorError");
+                valid = false;
+            }
+
+            if (learnerIds.length === 0) {
+                showError("assignLearnerError");
+                valid = false;
+            }
+
+            if (!valid) return;
+
+            saving = true;
+            submitButton.disabled = true;
+            submitButton.textContent = "Assigning…";
+
+            let createdClass = null;
+
+            try {
+                // 1. The class for this module's course, with its instructor.
+                const classResult = await assignApiRequest("/admin/classes", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        name: course.name,
+                        code: className,
+                        subject_code: course.code,
+                        program: programCode,
+                        description: "",
+                        instructor_id: Number(instructorId),
+                        is_active: true
+                    })
+                });
+
+                createdClass = classResult.class;
+
+                // 2. This module only.
+                await assignApiRequest(
+                    `/admin/classes/${encodeURIComponent(createdClass.id)}/modules/sync`,
+                    {
+                        method: "PUT",
+                        body: JSON.stringify({
+                            modules: [{
+                                library_key: String(module.id),
+                                title: String(module.title || "Untitled Module"),
+                                description: null,
+                                material_path: module.filePath || null,
+                                material_name: module.fileName || null,
+                                module_order: 1,
+                                is_published: module.status === "active"
+                            }]
+                        })
+                    }
+                );
+            } catch (error) {
+                // Don't leave an empty class behind when the module could not be added.
+                if (createdClass) {
+                    await assignApiRequest(
+                        `/admin/classes/${encodeURIComponent(createdClass.id)}`,
+                        { method: "DELETE" }
+                    ).catch(() => null);
+                }
+
+                saving = false;
+                submitButton.disabled = false;
+                submitButton.textContent = "Assign";
+
+                if (error.errors?.code) {
+                    showError("assignClassNameError", "A class with this name already exists. Use a different name.");
+                } else {
+                    showError("assignGeneralError", error.message || "Unable to assign this module.");
+                }
+                return;
+            }
+
+            // 3. The ticked learners.
+            const failed = [];
+
+            for (const learnerId of learnerIds) {
+                try {
+                    await assignApiRequest(
+                        `/admin/classes/${encodeURIComponent(createdClass.id)}/learners`,
+                        {
+                            method: "POST",
+                            body: JSON.stringify({ learner_id: learnerId })
+                        }
+                    );
+                } catch (error) {
+                    const learner = learners.find(item => Number(item.id) === learnerId);
+                    failed.push(`${learner?.name || learnerId}: ${error.message}`);
+                }
+            }
+
+            saving = false;
+            overlay.remove();
+
+            const enrolled = learnerIds.length - failed.length;
+
+            alert(
+                `"${module.title}" is assigned to class ${className} ` +
+                `with ${enrolled} learner${enrolled === 1 ? "" : "s"}.` +
+                (failed.length
+                    ? `\n\nThese learners could not be enrolled:\n${failed.join("\n")}`
+                    : "")
+            );
+
+            renderAll();
+        });
     }
 
     /* =====================================================
