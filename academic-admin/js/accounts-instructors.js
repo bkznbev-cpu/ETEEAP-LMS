@@ -205,13 +205,27 @@ let instructorCredentialsExpiryTimer = null;
             "instructorAccountName"
         );
 
-    // The form has no email field (people add their own after first
-    // login); this blank stand-in keeps the old form code working.
+    // Email is required when creating an account;
+    // when editing, only the instructor can change it.
     const emailInput =
         document.getElementById(
             "instructorAccountEmail"
         ) ||
         document.createElement("input");
+
+    const emailGroup =
+        document.getElementById(
+            "instructorAccountEmailGroup"
+        );
+
+    function showEmailField(show) {
+        if (emailGroup) {
+            emailGroup.hidden = !show;
+        }
+
+        // A hidden required field would block saving an edit.
+        emailInput.required = show;
+    }
 
     const passwordInput =
         document.getElementById(
@@ -1066,6 +1080,8 @@ let instructorCredentialsExpiryTimer = null;
         emailInput.value =
             "";
 
+        showEmailField(true);
+
 
         passwordInput.value =
             generateTemporaryPassword();
@@ -1171,6 +1187,8 @@ let instructorCredentialsExpiryTimer = null;
         emailInput.value =
             "";
 
+        showEmailField(true);
+
 
         passwordInput.value =
             generateTemporaryPassword();
@@ -1268,6 +1286,9 @@ let instructorCredentialsExpiryTimer = null;
         emailInput.value =
             account.email ||
             "";
+
+        // Editing: only the instructor can change their email.
+        showEmailField(false);
 
 
         passwordInput.value = "";
@@ -1393,8 +1414,14 @@ let instructorCredentialsExpiryTimer = null;
         }
 
 
-        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            alert("Please enter a valid email address, or leave it blank.");
+        if (!isEditing && !email) {
+            alert("Please enter the instructor's email address.");
+            return;
+        }
+
+
+        if (!isEditing && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            alert("Please enter a valid email address.");
             return;
         }
 
@@ -1576,6 +1603,9 @@ let instructorCredentialsExpiryTimer = null;
 
                                 school_id:
                                     instructorId,
+
+                                email:
+                                    email,
 
                                 password:
                                     password,
@@ -2583,6 +2613,12 @@ let instructorCredentialsExpiryTimer = null;
             false;
 
 
+        // Password box above Cancel / Delete Instructor.
+        window.SiknayanDialog.passwordField(
+            confirmDeleteButton
+        ).reset();
+
+
         refreshPageIcons();
 
     }
@@ -2670,6 +2706,18 @@ async function confirmDeleteAccount() {
     confirmDeleteButton.disabled =
         true;
 
+    // The admin must enter their password before the instructor is deleted.
+    const passwordField =
+        window.SiknayanDialog.passwordField(confirmDeleteButton);
+
+    const deletePassword =
+        await passwordField.verify();
+
+    if (!deletePassword) {
+        confirmDeleteButton.disabled = false;
+        return;
+    }
+
     confirmDeleteButton.innerHTML =
         `
         <i data-lucide="loader-circle"></i>
@@ -2692,7 +2740,11 @@ async function confirmDeleteAccount() {
                 `/admin/instructors/${backendId}`,
                 {
                     method:
-                        "DELETE"
+                        "DELETE",
+
+                    headers: {
+                        "X-Confirm-Password": deletePassword
+                    }
                 }
             );
 

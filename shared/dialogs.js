@@ -49,6 +49,21 @@
             .sik-dialog input { width: 100%; box-sizing: border-box; height: 42px; margin: -6px 0 18px;
                 padding: 0 12px; border: 1px solid #cfd8d3; border-radius: 9px; font: inherit; font-size: 16px; }
             .sik-dialog input:focus { outline: 2px solid #087443; outline-offset: 1px; }
+            .sik-dialog-label { display: block; margin: 0 0 12px; color: #3b463f; font-size: 13.5px;
+                font-weight: 600; text-align: left; }
+            .sik-dialog .sik-dialog-error { margin: -10px 0 14px; color: #b42318; font-size: 13.5px;
+                text-align: left; }
+            .sik-dialog .sik-dialog-error[hidden] { display: none; }
+            .sik-dialog button:disabled { opacity: 0.65; cursor: default; }
+            .sik-password-field { margin: 14px 0 16px; text-align: left; }
+            .sik-password-field label { display: block; margin: 0 0 6px; color: #3b463f;
+                font-size: 13.5px; font-weight: 600; }
+            .sik-password-field input { width: 100%; box-sizing: border-box; height: 42px; padding: 0 12px;
+                border: 1px solid #cfd8d3; border-radius: 9px; background: #ffffff; color: #1f2a24;
+                font: inherit; font-size: 16px; }
+            .sik-password-field input:focus { outline: 2px solid #087443; outline-offset: 1px; }
+            .sik-password-error { margin-top: 6px; color: #b42318; font-size: 13px; }
+            .sik-password-error[hidden] { display: none; }
             .sik-dialog-actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
             .sik-dialog button { min-width: 110px; min-height: 44px; padding: 0 20px; border-radius: 10px;
                 font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
@@ -169,10 +184,255 @@
         return result;
     }
 
+    /* -----------------------------------------------------
+       DELETE CONFIRMATION WITH PASSWORD (admin portals)
+
+       const password = await SiknayanDialog.confirmPassword(text, {
+           title, confirmText });
+       Resolves the admin's password once the server has checked it,
+       or null when cancelled. The box stays open on a wrong password.
+       Send it with the delete:  headers: { "X-Confirm-Password": password }
+       (the server checks it again before deleting).
+    ----------------------------------------------------- */
+    function apiToken() {
+        try {
+            return window.SIKNAYAN_API_TOKEN ||
+                sessionStorage.getItem("authToken") ||
+                localStorage.getItem("siknayan_api_token") ||
+                localStorage.getItem("token") ||
+                "";
+        } catch (error) {
+            return window.SIKNAYAN_API_TOKEN || "";
+        }
+    }
+
+    async function checkPassword(password) {
+        const root = window.SIKNAYAN_API_ROOT || "/api";
+        let response;
+
+        try {
+            response = await fetch(`${root}/account/confirm-password`, {
+                method: "POST",
+                headers: {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${apiToken()}`
+                },
+                body: JSON.stringify({ password })
+            });
+        } catch (error) {
+            return "Unable to reach the server. Check your connection and try again.";
+        }
+
+        if (response.ok) return "";
+        if (response.status === 429) return "Too many tries. Please wait a minute and try again.";
+        if (response.status === 401) return "Your session has ended. Please log in again.";
+
+        try {
+            const payload = await response.json();
+            return payload.message || "Your password is incorrect.";
+        } catch (error) {
+            return "Your password is incorrect.";
+        }
+    }
+
+    function confirmPassword(message, options) {
+        const run = () => whenBodyReady().then(() => new Promise(resolve => {
+            addStyle();
+
+            const opts = options || {};
+            const title = opts.title || "Confirm delete";
+            const okText = opts.confirmText || "Delete";
+
+            const overlay = document.createElement("div");
+            overlay.className = "sik-dialog-overlay";
+            overlay.innerHTML = `
+                <form class="sik-dialog danger" role="dialog" aria-modal="true"
+                      aria-labelledby="sikDialogText" novalidate>
+                    <div class="sik-dialog-icon" aria-hidden="true">${ICON_PROBLEM}</div>
+                    <h3>${escapeHtml(title)}</h3>
+                    <p id="sikDialogText">${escapeHtml(String(message || ""))}</p>
+                    <label class="sik-dialog-label" for="sikDialogPassword">
+                        Enter your password to continue
+                    </label>
+                    <input type="password" id="sikDialogPassword" class="sik-dialog-input"
+                           autocomplete="current-password" required>
+                    <div class="sik-dialog-error" role="alert" hidden></div>
+                    <div class="sik-dialog-actions">
+                        <button type="button" class="sik-dialog-cancel">Cancel</button>
+                        <button type="submit" class="sik-dialog-ok">${escapeHtml(okText)}</button>
+                    </div>
+                </form>`;
+
+            const form = overlay.querySelector("form");
+            const input = overlay.querySelector("input");
+            const error = overlay.querySelector(".sik-dialog-error");
+            const ok = overlay.querySelector(".sik-dialog-ok");
+            const cancel = overlay.querySelector(".sik-dialog-cancel");
+            const lastFocus = document.activeElement;
+            let busy = false;
+
+            function showError(text) {
+                error.textContent = text;
+                error.hidden = !text;
+            }
+
+            function finish(answer) {
+                document.removeEventListener("keydown", onKey, true);
+                overlay.remove();
+                if (lastFocus && typeof lastFocus.focus === "function" && document.contains(lastFocus)) {
+                    lastFocus.focus();
+                }
+                resolve(answer);
+            }
+
+            function onKey(event) {
+                if (event.key === "Escape" && !busy) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    finish(null);
+                }
+            }
+
+            form.addEventListener("submit", async event => {
+                event.preventDefault();
+                if (busy) return;
+
+                const password = input.value;
+                if (!password) {
+                    showError("Please enter your password.");
+                    input.focus();
+                    return;
+                }
+
+                busy = true;
+                ok.disabled = true;
+                cancel.disabled = true;
+                ok.textContent = "Checking...";
+                showError("");
+
+                const problem = await checkPassword(password);
+
+                if (!problem) {
+                    finish(password);
+                    return;
+                }
+
+                busy = false;
+                ok.disabled = false;
+                cancel.disabled = false;
+                ok.textContent = okText;
+                showError(problem);
+                input.select();
+                input.focus();
+            });
+
+            cancel.addEventListener("click", () => finish(null));
+            document.addEventListener("keydown", onKey, true);
+
+            document.body.appendChild(overlay);
+            input.focus();
+        }));
+
+        const result = chain.then(run, run);
+        chain = result.catch(() => {});
+        return result;
+    }
+
+    /* -----------------------------------------------------
+       PASSWORD FIELD INSIDE A PAGE'S OWN DELETE BOX
+
+       const field = SiknayanDialog.passwordField(confirmButton);
+         Puts "Enter your password" above the row holding confirmButton.
+       field.reset()             empty it and hide the error (on open)
+       await field.verify()      the checked password, or null (the
+                                 error is shown in the box)
+       field.showError(text)     e.g. the server's message after a delete
+    ----------------------------------------------------- */
+    function passwordField(confirmButton) {
+        addStyle();
+
+        const row = confirmButton && confirmButton.parentElement;
+        if (!row) {
+            return { reset() {}, verify: async () => null, showError() {}, focus() {} };
+        }
+
+        const existing = row.previousElementSibling;
+        if (existing && existing.classList.contains("sik-password-field")) {
+            return existing.sikField;
+        }
+
+        const id = `sikDeletePassword${Math.random().toString(36).slice(2, 8)}`;
+        const wrap = document.createElement("div");
+        wrap.className = "sik-password-field";
+        wrap.innerHTML = `
+            <label for="${id}">Enter your password to confirm</label>
+            <input type="password" id="${id}" autocomplete="current-password">
+            <div class="sik-password-error" role="alert" hidden></div>`;
+
+        row.parentElement.insertBefore(wrap, row);
+
+        const input = wrap.querySelector("input");
+        const error = wrap.querySelector(".sik-password-error");
+
+        // Enter in the field works like clicking the delete button.
+        input.addEventListener("keydown", event => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                if (!confirmButton.disabled) confirmButton.click();
+            }
+        });
+
+        input.addEventListener("input", () => {
+            error.hidden = true;
+        });
+
+        const field = {
+            reset() {
+                input.value = "";
+                error.textContent = "";
+                error.hidden = true;
+            },
+            focus() {
+                input.focus();
+            },
+            showError(text) {
+                error.textContent = text || "";
+                error.hidden = !text;
+            },
+            async verify() {
+                const password = input.value;
+
+                if (!password) {
+                    field.showError("Please enter your password.");
+                    input.focus();
+                    return null;
+                }
+
+                const problem = await checkPassword(password);
+
+                if (problem) {
+                    field.showError(problem);
+                    input.select();
+                    input.focus();
+                    return null;
+                }
+
+                field.showError("");
+                return password;
+            }
+        };
+
+        wrap.sikField = field;
+        return field;
+    }
+
     const SiknayanDialog = {
         alert: (message, options) => open("alert", message, options),
         confirm: (message, options) => open("confirm", message, options),
-        prompt: (message, options) => open("prompt", message, options)
+        prompt: (message, options) => open("prompt", message, options),
+        confirmPassword,
+        passwordField
     };
 
     window.SiknayanDialog = SiknayanDialog;

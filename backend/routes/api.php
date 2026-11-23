@@ -88,6 +88,9 @@ Route::middleware([
     // Change your own password (all roles; needs the current password)
     Route::put('/account/password', [PasswordController::class, 'changeOwnPassword']);
 
+    // Check your own password (delete confirmation box in the admin portals)
+    Route::post('/account/confirm-password', [PasswordController::class, 'confirmOwnPassword'])->middleware('throttle:10,1');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -122,7 +125,7 @@ Route::middleware([
             Route::get('/academic-administrators', [SystemAdminAcademicAdminController::class, 'index']);
             Route::post('/academic-administrators', [SystemAdminAcademicAdminController::class, 'store']);
             Route::put('/academic-administrators/{id}', [SystemAdminAcademicAdminController::class, 'update']);
-            Route::delete('/academic-administrators/{id}', [SystemAdminAcademicAdminController::class, 'destroy']);
+            Route::delete('/academic-administrators/{id}', [SystemAdminAcademicAdminController::class, 'destroy'])->middleware('throttle:10,1');
             Route::post('/academic-administrators/{id}/reset-password', [SystemAdminAcademicAdminController::class, 'resetPassword']);
 
             // Data Backup: database + uploaded files in one zip
@@ -131,6 +134,7 @@ Route::middleware([
             Route::get('/backups/{name}/download', [SystemAdminBackupController::class, 'download'])
                 ->where('name', 'siknayan-backup-[0-9]{8}-[0-9]{6}\.zip');
             Route::delete('/backups/{name}', [SystemAdminBackupController::class, 'destroy'])
+                ->middleware('throttle:10,1')
                 ->where('name', 'siknayan-backup-[0-9]{8}-[0-9]{6}\.zip');
             // Restore (replaces all data; password + typing RESTORE) and upload a backup zip
             Route::post('/backups/upload', [SystemAdminBackupController::class, 'upload'])->middleware('throttle:5,10');
@@ -267,20 +271,20 @@ Route::middleware([
         Route::post('/learners', [AcademicAdminController::class, 'storeLearner']);
         Route::post('/learners/import', [AcademicAdminController::class, 'importLearners']);
         Route::put('/learners/{id}', [AcademicAdminController::class, 'updateLearner']);
-        Route::delete('/learners/{id}', [AcademicAdminController::class, 'destroyLearner']);
+        Route::delete('/learners/{id}', [AcademicAdminController::class, 'destroyLearner'])->middleware('throttle:10,1');
 
         // Instructors
         Route::get('/instructors', [AcademicAdminController::class, 'instructors']);
         Route::post('/instructors', [AcademicAdminController::class, 'storeInstructor']);
         Route::post('/instructors/import', [AcademicAdminController::class, 'importInstructors']);
         Route::put('/instructors/{id}', [AcademicAdminController::class, 'updateInstructor']);
-        Route::delete('/instructors/{id}', [AcademicAdminController::class, 'destroyInstructor']);
+        Route::delete('/instructors/{id}', [AcademicAdminController::class, 'destroyInstructor'])->middleware('throttle:10,1');
 
         // Classes
         Route::get('/classes', [AcademicAdminController::class, 'classes']);
         Route::post('/classes', [AcademicAdminController::class, 'storeClass']);
         Route::put('/classes/{id}', [AcademicAdminController::class, 'updateClass']);
-        Route::delete('/classes/{id}', [AcademicAdminController::class, 'destroyClass']);
+        Route::delete('/classes/{id}', [AcademicAdminController::class, 'destroyClass'])->middleware('throttle:10,1');
 
         // Class enrollment
         Route::get('/classes/{id}/learners', [AcademicAdminController::class, 'classLearners']);
@@ -295,7 +299,7 @@ Route::middleware([
         Route::get('/module-library', [ModuleLibraryController::class, 'show']);
         Route::put('/module-library', [ModuleLibraryController::class, 'update'])->middleware('throttle:60,1');
         Route::put('/module-library/{libraryKey}/material', [AcademicAdminController::class, 'replaceLibraryMaterial']);
-        Route::delete('/module-library/{libraryKey}/classes', [AcademicAdminController::class, 'removeLibraryModuleFromClasses']);
+        Route::delete('/module-library/{libraryKey}/classes', [AcademicAdminController::class, 'removeLibraryModuleFromClasses'])->middleware('throttle:10,1');
         Route::post('/module-files', [AcademicAdminController::class, 'uploadModuleFile']);
         Route::get('/module-files', [AcademicAdminController::class, 'showModuleFile']);
     });

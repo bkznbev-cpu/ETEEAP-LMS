@@ -432,17 +432,30 @@
         pendingDeleteAdministrator = administrator;
         pendingDeleteName.textContent = administrator.name || "—";
         pendingDeleteEmail.textContent = administrator.email || administrator.school_id || "—";
+        // Password box above Cancel / Delete (needed to delete).
+        const passwordField = window.SiknayanDialog.passwordField(deleteButton);
+        passwordField.reset();
         openModal(deleteOverlay, document.getElementById("cancelDeleteAdministratorButton"));
+        passwordField.focus();
     }
 
     async function deleteAdministrator() {
         if (!pendingDeleteAdministrator || requestInProgress) return;
         requestInProgress = true;
         deleteButton.disabled = true;
+
+        // The System Admin must enter their password before deleting.
+        const password = await window.SiknayanDialog.passwordField(deleteButton).verify();
+        if (!password) {
+            requestInProgress = false;
+            deleteButton.disabled = false;
+            return;
+        }
+
         try {
             await apiRequest(
                 `/system-admin/academic-administrators/${encodeURIComponent(pendingDeleteAdministrator.id)}`,
-                { method: "DELETE" }
+                { method: "DELETE", headers: { "X-Confirm-Password": password } }
             );
             deleteOverlay.hidden = true;
             pendingDeleteAdministrator = null;

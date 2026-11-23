@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Support\AuditLogger;
+use App\Support\DeletePassword;
 use App\Rules\EmailDomainExists;
 use App\Rules\UniqueEmail;
 use Illuminate\Support\Facades\Hash;
@@ -625,6 +626,10 @@ $learner = User::create([
             return $response;
         }
 
+        if ($response = DeletePassword::check($request)) {
+            return $response;
+        }
+
         $learner = $this->ownedUsers($request, 'learner')->find($id);
 
         if (!$learner) {
@@ -714,7 +719,9 @@ $learner = User::create([
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            // No email: instructors add and confirm their own after first login.
+            // Required when the admin creates the account; afterwards only
+            // the instructor can change it (Change Email).
+            'email' => ['required', 'email', 'max:255', new EmailDomainExists(), new UniqueEmail()],
             'school_id' => ['required', 'string', 'max:255', 'unique:users,school_id'],
             'program' => ['nullable', 'string', 'max:255'],
             'contact' => ['nullable', 'string', 'max:255'],
@@ -725,7 +732,7 @@ $learner = User::create([
         $instructor = User::create([
             'owner_admin_id' => $this->adminId($request),
             'name' => $validated['name'],
-            'email' => null,
+            'email' => strtolower(trim($validated['email'])),
             'school_id' => $validated['school_id'],
             'program' => $validated['program'] ?? null,
             'contact' => $validated['contact'] ?? null,
@@ -845,6 +852,10 @@ $learner = User::create([
     public function destroyInstructor(Request $request, int $id): JsonResponse
     {
         if ($response = $this->checkAdmin($request)) {
+            return $response;
+        }
+
+        if ($response = DeletePassword::check($request)) {
             return $response;
         }
 
@@ -1039,6 +1050,19 @@ public function destroyClass(Request $request, int $id): JsonResponse
             'success' => false,
             'message' => 'Class not found.',
         ], 404);
+    }
+
+    // Deleting needs the admin's password. The one exception: the Module
+    // Library undoing a class it created moments ago when adding its
+    // module failed (no learners, no modules yet), so nothing is lost.
+    $justCreatedAndEmpty =
+        $class->created_at
+        && $class->created_at->gt(now()->subMinutes(10))
+        && !$class->learners()->exists()
+        && !Module::withTrashed()->where('course_id', $class->id)->exists();
+
+    if (!$justCreatedAndEmpty && ($response = DeletePassword::check($request))) {
+        return $response;
     }
 
     // A class can be deleted even with enrolled learners. The database
@@ -1492,6 +1516,10 @@ public function replaceLibraryMaterial(Request $request, string $libraryKey): Js
 public function removeLibraryModuleFromClasses(Request $request, string $libraryKey): JsonResponse
 {
     if ($response = $this->checkAdmin($request)) {
+        return $response;
+    }
+
+    if ($response = DeletePassword::check($request)) {
         return $response;
     }
 

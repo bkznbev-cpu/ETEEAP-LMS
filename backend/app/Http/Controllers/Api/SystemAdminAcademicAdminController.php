@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\AdminNotifier;
 use App\Support\AuditLogger;
+use App\Support\DeletePassword;
 use App\Rules\EmailDomainExists;
 use App\Rules\UniqueEmail;
 use Illuminate\Http\JsonResponse;
@@ -292,6 +293,10 @@ class SystemAdminAcademicAdminController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse
     {
+        if ($response = DeletePassword::check($request)) {
+            return $response;
+        }
+
         $administrator = $this->findAcademicAdmin($id);
 
         if ($administrator->is($request->user())) {

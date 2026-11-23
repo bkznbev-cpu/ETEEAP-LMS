@@ -3007,6 +3007,12 @@ const payload = {
         );
 
 
+        // Password box above Cancel / Delete.
+        window.SiknayanDialog.passwordField(
+            overlay.querySelector("#dynamicDeleteConfirm")
+        ).focus();
+
+
         refreshIcons();
     }
 
@@ -3029,7 +3035,21 @@ const payload = {
             return;
         }
 
+        // The admin must enter their password before the class is deleted.
+        const passwordField =
+            window.SiknayanDialog.passwordField(confirmButton);
+
         confirmButton.disabled = true;
+        confirmButton.textContent = "Checking...";
+
+        const password = await passwordField.verify();
+
+        if (!password) {
+            confirmButton.disabled = false;
+            confirmButton.textContent = "Delete";
+            return;
+        }
+
         confirmButton.textContent = "Deleting...";
         overlay.querySelector("#dynamicDeleteCancel").disabled = true;
 
@@ -3037,7 +3057,10 @@ const payload = {
             const payload = await apiRequest(
                 `/admin/classes/${encodeURIComponent(classId)}`,
                 {
-                    method: "DELETE"
+                    method: "DELETE",
+                    headers: {
+                        "X-Confirm-Password": password
+                    }
                 }
             );
 

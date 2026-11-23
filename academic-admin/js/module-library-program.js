@@ -2383,6 +2383,7 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
                 headers: {
                     Accept: "application/json",
                     "Content-Type": "application/json",
+                    ...(options.headers || {}),
                     Authorization: `Bearer ${token}`
                 }
             }
@@ -2860,6 +2861,13 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
         openModal(
             deleteModal
         );
+
+        // Password box above Cancel / Delete.
+        const passwordField =
+            window.SiknayanDialog.passwordField(confirmDeleteButton);
+
+        passwordField.reset();
+        passwordField.focus();
     }
 
     function closeDeleteModal() {
@@ -2885,6 +2893,18 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
                 !deleteType ||
                 !deleteId
             ) {
+                return;
+            }
+
+            // The admin must enter their password before anything is deleted.
+            const passwordField =
+                window.SiknayanDialog.passwordField(confirmDeleteButton);
+
+            confirmDeleteButton.disabled = true;
+            const deletePassword = await passwordField.verify();
+            confirmDeleteButton.disabled = false;
+
+            if (!deletePassword) {
                 return;
             }
 
@@ -2949,7 +2969,10 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
                 try {
                     await assignApiRequest(
                         `/admin/module-library/${encodeURIComponent(module.id)}/classes`,
-                        { method: "DELETE" }
+                        {
+                            method: "DELETE",
+                            headers: { "X-Confirm-Password": deletePassword }
+                        }
                     );
                 } catch (error) {
                     alert(

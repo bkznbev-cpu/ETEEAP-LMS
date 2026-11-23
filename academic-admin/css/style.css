@@ -3868,6 +3868,10 @@ select:focus-visible {
     margin-bottom: 16px;
 }
 
+.account-form-group[hidden] {
+    display: none;
+}
+
 
 .account-form-group label,
 .reset-password-content label {

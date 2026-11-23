@@ -105,6 +105,27 @@ class PasswordController extends Controller
         return $this->changeOwnPassword($request);
     }
 
+    // Check the signed-in user's password (the delete confirmation box
+    // uses it so a typo can be fixed before anything is deleted; the
+    // delete itself checks the password again).
+    public function confirmOwnPassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'password' => ['required', 'string', 'max:255'],
+        ], [
+            'password.required' => 'Please enter your password.',
+        ]);
+
+        if (!Hash::check($validated['password'], $request->user()->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your password is incorrect.',
+            ], 422);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
     // Change password for any logged-in user (all roles)
     public function changeOwnPassword(Request $request): JsonResponse
     {

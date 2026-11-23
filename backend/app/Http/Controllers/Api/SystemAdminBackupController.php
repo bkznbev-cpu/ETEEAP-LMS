@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Support\AuditLogger;
+use App\Support\DeletePassword;
 use App\Support\Backup\BackupManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -258,6 +259,10 @@ class SystemAdminBackupController extends Controller
 
     public function destroy(Request $request, string $name): JsonResponse
     {
+        if ($response = DeletePassword::check($request)) {
+            return $response;
+        }
+
         if (!$this->backups->delete($name)) {
             return response()->json(['success' => false, 'message' => 'Backup not found.'], 404);
         }

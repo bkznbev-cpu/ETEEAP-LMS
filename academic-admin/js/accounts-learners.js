@@ -1666,6 +1666,11 @@ if (account) {
         deleteAccountModal.hidden =
             false;
 
+        // Password box above Cancel / Delete Learner.
+        window.SiknayanDialog.passwordField(
+            confirmDeleteButton
+        ).reset();
+
         refreshIcons();
     }
 
@@ -1686,6 +1691,18 @@ if (account) {
 
         const learnerId =
             deleteLearnerId;
+
+        // The admin must enter their password before anything is deleted.
+        const passwordField =
+            window.SiknayanDialog.passwordField(confirmDeleteButton);
+
+        confirmDeleteButton.disabled = true;
+        const deletePassword = await passwordField.verify();
+        confirmDeleteButton.disabled = false;
+
+        if (!deletePassword) {
+            return;
+        }
 
         const learner =
             getLearnerById(
@@ -1737,7 +1754,8 @@ if (account) {
                         method: "DELETE",
                         headers: {
                             "Accept": "application/json",
-                            "Authorization": `Bearer ${token}`
+                            "Authorization": `Bearer ${token}`,
+                            "X-Confirm-Password": deletePassword
                         }
                     }
                 );
@@ -1747,6 +1765,11 @@ if (account) {
                     payload = await response.json();
                 } catch {
                     payload = null;
+                }
+
+                if (payload?.password_required) {
+                    passwordField.showError(payload.message);
+                    return;
                 }
 
                 if (!response.ok || payload?.success === false) {

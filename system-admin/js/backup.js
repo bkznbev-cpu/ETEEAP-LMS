@@ -25,7 +25,11 @@
     }
 
     async function api(path, options = {}) {
-        const headers = { Accept: "application/json", Authorization: `Bearer ${token()}` };
+        const headers = {
+            ...(options.headers || {}),
+            Accept: "application/json",
+            Authorization: `Bearer ${token()}`
+        };
         if (options.body) headers["Content-Type"] = "application/json";
 
         let response;
@@ -208,14 +212,18 @@
 
         const remove = event.target.closest("[data-backup-delete]");
         if (remove) {
-            const confirmed = await window.SiknayanDialog.confirm(
+            // Confirmation box with the System Admin's password.
+            const password = await window.SiknayanDialog.confirmPassword(
                 `Delete the backup ${name}?\n\nOnly do this if you have a copy elsewhere. This can't be undone.`,
-                { title: "Delete backup", confirmText: "Delete", danger: true }
+                { title: "Delete backup", confirmText: "Delete" }
             );
-            if (!confirmed) return;
+            if (!password) return;
             remove.disabled = true;
             try {
-                await api(`/backups/${encodeURIComponent(name)}`, { method: "DELETE" });
+                await api(`/backups/${encodeURIComponent(name)}`, {
+                    method: "DELETE",
+                    headers: { "X-Confirm-Password": password }
+                });
                 message("Backup deleted.", "success");
                 alert(`The backup ${name} was deleted successfully.`);
                 await loadBackups();

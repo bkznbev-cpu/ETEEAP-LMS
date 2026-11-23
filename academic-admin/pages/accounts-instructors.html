@@ -598,8 +598,26 @@
                 </div>
 
 
-                <!-- No email field: instructors add and confirm their own
-                     email after their first login. -->
+                <!-- Email: shown only when creating an account. When
+                     editing, only the instructor can change it. -->
+                <div
+                    class="account-form-group"
+                    id="instructorAccountEmailGroup"
+                >
+
+                    <label for="instructorAccountEmail">
+                        Email
+                    </label>
+
+                    <input
+                        type="email"
+                        id="instructorAccountEmail"
+                        placeholder="name@example.com"
+                        autocomplete="off"
+                        required
+                    >
+
+                </div>
 
 
                 <div class="account-form-group">
