@@ -205,8 +205,8 @@ let instructorCredentialsExpiryTimer = null;
             "instructorAccountName"
         );
 
-    // Email is required when creating an account;
-    // when editing, only the instructor can change it.
+    // Email is required when creating an account; when editing, the
+    // admin may correct it.
     const emailInput =
         document.getElementById(
             "instructorAccountEmail"
@@ -1287,8 +1287,10 @@ let instructorCredentialsExpiryTimer = null;
             account.email ||
             "";
 
-        // Editing: only the instructor can change their email.
-        showEmailField(false);
+        // Editing: the admin may correct the email. Not required here, so
+        // older accounts without one can still be edited.
+        showEmailField(true);
+        emailInput.required = false;
 
 
         passwordInput.value = "";
@@ -1420,7 +1422,7 @@ let instructorCredentialsExpiryTimer = null;
         }
 
 
-        if (!isEditing && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             alert("Please enter a valid email address.");
             return;
         }
@@ -1515,10 +1517,15 @@ let instructorCredentialsExpiryTimer = null;
                     school_id:
                         instructorId,
 
-                    // No email: only the instructor can set it.
                     name:
                         instructorName
                 };
+
+                // A new email must be confirmed by the instructor with the
+                // code sent to it the next time they sign in.
+                if (email) {
+                    requestData.email = email;
+                }
 
 
                 /*

@@ -540,7 +540,9 @@ $learner = User::create([
         $validated = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
 
-            // No email: only the learner can change it (Change Email).
+            // The admin may set or correct it (blank removes it). A changed
+            // email is unconfirmed until the learner enters the code sent to it.
+            'email' => ['sometimes', 'nullable', 'email', 'max:255', new EmailDomainExists(), new UniqueEmail($learner->id)],
 
             'school_id' => [
                 'sometimes',
@@ -556,6 +558,12 @@ $learner = User::create([
             'password' => ['nullable', 'string', 'min:8'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
+
+        if (array_key_exists('email', $validated)) {
+            $validated['email'] = filled($validated['email'])
+                ? mb_strtolower(trim($validated['email']))
+                : null;
+        }
 
         $before = $this->accountSnapshot($learner);
         $passwordReset = !empty($validated['password']);
@@ -846,7 +854,9 @@ $learner = User::create([
         $validated = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
 
-            // No email: only the instructor can change it (Change Email).
+            // The admin may correct it (instructors must have one). A changed
+            // email is unconfirmed until the instructor enters the code sent to it.
+            'email' => ['sometimes', 'required', 'email', 'max:255', new EmailDomainExists(), new UniqueEmail($instructor->id)],
 
             'school_id' => [
                 'sometimes',
@@ -864,7 +874,9 @@ $learner = User::create([
 
         $updateData = [
             'name' => $validated['name'] ?? $instructor->name,
-            'email' => $instructor->email,
+            'email' => array_key_exists('email', $validated)
+                ? mb_strtolower(trim($validated['email']))
+                : $instructor->email,
             'school_id' => $validated['school_id'] ?? $instructor->school_id,
             'program' => array_key_exists('program', $validated)
                 ? $validated['program']

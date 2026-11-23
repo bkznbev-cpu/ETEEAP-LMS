@@ -51,11 +51,12 @@
         document.getElementById("accountFullName");
     const programInput =
         document.getElementById("accountProgram");
-    // The form has no email field (people add their own after first
-    // login); this blank stand-in keeps the old form code working.
+    // Email: shown only when editing (the admin may set or correct it).
     const emailInput =
         document.getElementById("accountEmail") ||
         document.createElement("input");
+    const emailGroup =
+        document.getElementById("accountEmailGroup");
     const passwordInput =
         document.getElementById("accountPassword");
     const generatePasswordButton =
@@ -459,6 +460,7 @@
         fullNameInput.readOnly = false;
         programInput.disabled = false;
         emailInput.readOnly = false;
+        if (emailGroup) emailGroup.hidden = true;
         passwordInput.readOnly = false;
         passwordInput.required = true;
         passwordInput.placeholder = "";
@@ -480,6 +482,7 @@
         fullNameInput.readOnly = false;
         programInput.disabled = true;
         emailInput.readOnly = false;
+        if (emailGroup) emailGroup.hidden = false;
         passwordInput.readOnly = false;
         passwordInput.required = false;
         passwordInput.placeholder = "Leave blank to keep the current password";
@@ -857,10 +860,13 @@
             saveLearnerAccountButton.textContent = "Saving changes...";
 
             try {
-                // No email: only the learner can set it.
+                // The admin may set, correct or remove (blank) the email.
+                // A new email must be confirmed by the learner with the code
+                // sent to it the next time they sign in.
                 const requestData = {
                     school_id: studentId,
-                    name: fullName
+                    name: fullName,
+                    email: email || null
                 };
 
                 if (password) {

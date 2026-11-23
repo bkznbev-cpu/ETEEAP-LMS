@@ -701,8 +701,27 @@
                 </div>
 
 
-                <!-- No email field: learners add and confirm their own email
-                     after their first login. -->
+                <!-- Email: shown only when editing, so the admin can set or
+                     correct it. (New learners add their own after first login.) -->
+                <div
+                    class="account-form-group"
+                    id="accountEmailGroup"
+                    hidden
+                >
+
+                    <label for="accountEmail">
+                        Email
+                    </label>
+
+                    <input
+                        type="email"
+                        id="accountEmail"
+                        name="email"
+                        placeholder="name@example.com"
+                        autocomplete="off"
+                    >
+
+                </div>
 
 
                 <!-- Password -->
