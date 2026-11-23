@@ -22,6 +22,8 @@ class User extends Authenticatable
         'program',
         'contact',
         'password_setup_complete',
+        // Encrypted copy of an admin-given password, until set up.
+        'temporary_password',
         'is_active',
         'profile_photo_path',
         // For learners and instructors: the Academic Admin who manages them.
@@ -30,6 +32,7 @@ class User extends Authenticatable
 
     protected $hidden = [
         'password',
+        'temporary_password',
         'remember_token',
     ];
 
@@ -38,6 +41,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'temporary_password' => 'encrypted',
             'password_setup_complete' => 'boolean',
             'is_active' => 'boolean',
         ];
@@ -73,6 +77,14 @@ class User extends Authenticatable
 
     protected static function booted(): void
     {
+        // Once the user has chosen their own password, the admin-given
+        // temporary password is no longer kept.
+        static::saving(function (User $user): void {
+            if ($user->password_setup_complete && $user->temporary_password !== null) {
+                $user->temporary_password = null;
+            }
+        });
+
         // Any other change of email (e.g. typed in by an admin) is
         // unconfirmed until its owner enters the code sent to it.
         static::updating(function (User $user): void {

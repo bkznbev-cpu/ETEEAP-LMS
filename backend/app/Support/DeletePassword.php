@@ -20,7 +20,7 @@ class DeletePassword
     /**
      * Null when the password is right; otherwise the error response.
      */
-    public static function check(Request $request): ?JsonResponse
+    public static function check(Request $request, string $action = 'delete'): ?JsonResponse
     {
         $password = (string) $request->header(self::HEADER, '');
         $user = $request->user();
@@ -29,7 +29,7 @@ class DeletePassword
             return response()->json([
                 'success' => false,
                 'password_required' => true,
-                'message' => 'Please enter your password to confirm the delete.',
+                'message' => "Please enter your password to confirm the {$action}.",
             ], 422);
         }
 
@@ -37,7 +37,9 @@ class DeletePassword
             return response()->json([
                 'success' => false,
                 'password_required' => true,
-                'message' => 'Your password is incorrect. Nothing was deleted.',
+                'message' => $action === 'delete'
+                    ? 'Your password is incorrect. Nothing was deleted.'
+                    : 'Your password is incorrect.',
             ], 422);
         }
 

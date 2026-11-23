@@ -2853,13 +2853,8 @@ function clearInstructorCredentialExports() {
 
     document.getElementById("credentialFormatMenu")?.setAttribute("hidden", "");
 
-    if (downloadInstructorCredentialsBtn) {
-        downloadInstructorCredentialsBtn.disabled = true;
-    }
-
-    if (downloadInstructorCredentialsPdfBtn) {
-        downloadInstructorCredentialsPdfBtn.disabled = true;
-    }
+    // The button stays on: without a fresh import it downloads the
+    // accounts that are not set up yet (see exportInstructorCredentials).
 }
 
 function enableInstructorCredentialExports(credentials) {
@@ -2875,14 +2870,92 @@ function enableInstructorCredentialExports(credentials) {
         downloadInstructorCredentialsPdfBtn.disabled = false;
     }
 
+    // After two minutes the button downloads every account that is not
+    // set up yet (it asks for the admin's password first).
     instructorCredentialsExpiryTimer = setTimeout(() => {
         clearInstructorCredentialExports();
-
-        alert(
-            "The temporary credential download period has expired. " +
-            "Import the instructor accounts again if you need a new credential export."
-        );
     }, 120000);
+}
+
+
+/* Credentials of the instructors who have not set up their account yet,
+   from the server. Asks for the admin's password first. Null when
+   cancelled or when there is nothing to download. */
+async function fetchPendingInstructorCredentials() {
+    const password = await window.SiknayanDialog.confirmPassword(
+        "Download the login credentials of every instructor who has not set up their account yet?",
+        { title: "Download Credentials", confirmText: "Download" }
+    );
+
+    if (!password) {
+        return null;
+    }
+
+    let payload;
+
+    try {
+        payload = await instructorApiRequest(
+            "/admin/instructors/credentials",
+            { headers: { "X-Confirm-Password": password } }
+        );
+    } catch (error) {
+        alert(error.message || "Unable to load the instructor credentials.");
+        return null;
+    }
+
+    const credentials = Array.isArray(payload?.credentials)
+        ? payload.credentials
+        : [];
+
+    const missing = Number(payload?.missing) || 0;
+
+    if (!credentials.length) {
+        alert(
+            missing
+                ? `${missing} instructor account(s) are not set up yet, but they were created before temporary passwords were kept. Edit each one and set a new temporary password, then download again.`
+                : "Every instructor account is already set up. There are no temporary credentials to download."
+        );
+        return null;
+    }
+
+    if (missing) {
+        alert(
+            `${missing} account(s) not set up yet are left out: they were created before temporary passwords were kept. Edit each one and set a new temporary password to include it.`
+        );
+    }
+
+    return credentials;
+}
+
+
+/* Download Credentials: right after an import, the imported accounts;
+   otherwise every account that is not set up yet. */
+async function exportInstructorCredentials(format) {
+    let fromServer = false;
+
+    if (!latestInstructorCredentials.length) {
+        const credentials = await fetchPendingInstructorCredentials();
+
+        if (!credentials) {
+            return;
+        }
+
+        latestInstructorCredentials = credentials;
+        fromServer = true;
+    }
+
+    try {
+        if (format === "pdf") {
+            await downloadInstructorCredentialsPdf();
+        } else {
+            await downloadInstructorCredentials();
+        }
+    } finally {
+        // Passwords from the server are not kept on the page.
+        if (fromServer) {
+            latestInstructorCredentials = [];
+        }
+    }
 }
 
 async function saveInstructorCredentialFile(
@@ -3157,7 +3230,6 @@ async function importInstructorsFromExcel() {
             credentials.length !== instructors.length
         ) {
             latestInstructorCredentials = [];
-            downloadInstructorCredentialsBtn.disabled = true;
 
             alert(
                 "The server response did not include complete temporary credentials. " +
@@ -3247,11 +3319,7 @@ if (downloadInstructorCredentialsBtn && credentialFormatMenu) {
         if (!option) return;
         setCredentialMenuOpen(false);
 
-        if (option.dataset.credentialFormat === "pdf") {
-            downloadInstructorCredentialsPdf();
-        } else {
-            downloadInstructorCredentials();
-        }
+        exportInstructorCredentials(option.dataset.credentialFormat);
     });
 
     document.addEventListener("click", event => {

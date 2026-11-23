@@ -494,6 +494,7 @@ $learner = User::create([
     'program' => $validated['program'] ?? null,
     'contact' => $validated['contact'] ?? null,
     'password' => Hash::make($validated['password']),
+    'temporary_password' => $validated['password'],
     'role' => 'learner',
     // The admin chose this password, so the learner must replace it.
     'password_setup_complete' => false,
@@ -560,6 +561,7 @@ $learner = User::create([
         $passwordReset = !empty($validated['password']);
 
         if ($passwordReset) {
+            $validated['temporary_password'] = $validated['password'];
             $validated['password'] = Hash::make($validated['password']);
             // Admin reset: the learner must choose a new password at next login.
             $validated['password_setup_complete'] = false;
@@ -620,6 +622,53 @@ $learner = User::create([
     /**
      * Delete a learner.
      */
+    /**
+     * Login credentials of the learners or instructors who have not set up
+     * their account yet (still on the temporary password the admin gave
+     * them), for "Download Credentials". Needs the admin's own password.
+     */
+    public function pendingCredentials(Request $request, string $role): JsonResponse
+    {
+        if ($response = $this->checkAdmin($request)) {
+            return $response;
+        }
+
+        if ($response = DeletePassword::check($request, 'download')) {
+            return $response;
+        }
+
+        $users = $this->ownedUsers($request, $role)
+            ->where('password_setup_complete', false)
+            ->orderBy('school_id')
+            ->get(['id', 'name', 'school_id', 'email', 'program', 'temporary_password']);
+
+        $credentials = $users
+            ->filter(fn (User $user) => filled($user->temporary_password))
+            ->map(fn (User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'school_id' => $user->school_id,
+                'email' => $user->email,
+                'program' => $user->program,
+                'temporary_password' => $user->temporary_password,
+            ])
+            ->values();
+
+        AuditLogger::log('credentials_downloaded', $role === 'learner' ? AuditLogger::LEARNERS : AuditLogger::INSTRUCTORS, [
+            'target_type' => $role,
+            'details' => "Downloaded the temporary credentials of {$credentials->count()} {$role} account(s) not yet set up",
+            'request' => $request,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'credentials' => $credentials,
+            // Not set up, but created before temporary passwords were kept:
+            // a new temporary password must be set for these (Edit).
+            'missing' => $users->count() - $credentials->count(),
+        ]);
+    }
+
     public function destroyLearner(Request $request, int $id): JsonResponse
     {
         if ($response = $this->checkAdmin($request)) {
@@ -737,6 +786,7 @@ $learner = User::create([
             'program' => $validated['program'] ?? null,
             'contact' => $validated['contact'] ?? null,
             'password' => Hash::make($validated['password']),
+            'temporary_password' => $validated['password'],
             'role' => 'instructor',
             // The admin chose this password, so the instructor must replace it.
             'password_setup_complete' => false,
@@ -817,6 +867,7 @@ $learner = User::create([
 
         if ($passwordReset) {
             $updateData['password'] = Hash::make($validated['password']);
+            $updateData['temporary_password'] = $validated['password'];
             // Admin reset: the instructor must choose a new password at next login.
             $updateData['password_setup_complete'] = false;
         }
@@ -2062,6 +2113,7 @@ public function syncClassModules(Request $request, int $id): JsonResponse
                         'program' => $row['program'],
                         'contact' => $row['contact'],
                         'password' => Hash::make($temporaryPassword),
+                        'temporary_password' => $temporaryPassword,
                         'role' => 'learner',
                         'password_setup_complete' => false,
                     ]);
@@ -2362,6 +2414,7 @@ public function importInstructors(Request $request): JsonResponse
                     'program' => $row['program'],
                     'contact' => $row['contact'],
                     'password' => Hash::make($temporaryPassword),
+                    'temporary_password' => $temporaryPassword,
                     'role' => 'instructor',
                     'password_setup_complete' => false,
                 ]);

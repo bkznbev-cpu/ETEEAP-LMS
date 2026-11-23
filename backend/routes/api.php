@@ -268,6 +268,8 @@ Route::middleware([
 
         // Learners
         Route::get('/learners', [AcademicAdminController::class, 'learners']);
+        Route::get('/learners/credentials', [AcademicAdminController::class, 'pendingCredentials'])
+            ->defaults('role', 'learner')->middleware('throttle:10,1');
         Route::post('/learners', [AcademicAdminController::class, 'storeLearner']);
         Route::post('/learners/import', [AcademicAdminController::class, 'importLearners']);
         Route::put('/learners/{id}', [AcademicAdminController::class, 'updateLearner']);
@@ -275,6 +277,8 @@ Route::middleware([
 
         // Instructors
         Route::get('/instructors', [AcademicAdminController::class, 'instructors']);
+        Route::get('/instructors/credentials', [AcademicAdminController::class, 'pendingCredentials'])
+            ->defaults('role', 'instructor')->middleware('throttle:10,1');
         Route::post('/instructors', [AcademicAdminController::class, 'storeInstructor']);
         Route::post('/instructors/import', [AcademicAdminController::class, 'importInstructors']);
         Route::put('/instructors/{id}', [AcademicAdminController::class, 'updateInstructor']);

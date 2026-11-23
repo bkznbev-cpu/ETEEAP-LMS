@@ -2058,9 +2058,10 @@ if (account) {
  let latestImportedLearners = [];
 let credentialButtonTimer = null;
 
-if (downloadLearnerCredentialsAgainButton) {
-    downloadLearnerCredentialsAgainButton.disabled = true;
-}
+// Download Credentials is always available: right after an import it
+// gives the imported learners; otherwise every learner whose account is
+// not set up yet (after the admin's password).
+let credentialsFromServer = false;
 
 function enableCredentialDownloadForTwoMinutes() {
     if (!downloadLearnerCredentialsAgainButton) return;
@@ -2070,7 +2071,6 @@ function enableCredentialDownloadForTwoMinutes() {
     downloadLearnerCredentialsAgainButton.disabled = false;
 
     credentialButtonTimer = setTimeout(() => {
-        downloadLearnerCredentialsAgainButton.disabled = true;
         latestImportedLearners = [];
     }, 2 * 60 * 1000);
 }
@@ -2217,7 +2217,72 @@ function setExcelImportStatus(message, isError = false) {
         if (learnerCredentialDownloadDialog) {
             learnerCredentialDownloadDialog.hidden = true;
         }
-        // Credentials remain in page memory until a new import or page reload.
+
+        // Passwords loaded from the server are not kept on the page.
+        // Imported ones stay for two minutes (or until a new import).
+        if (credentialsFromServer) {
+            latestImportedLearners = [];
+            credentialsFromServer = false;
+        }
+
+        // The next import shows its own title.
+        const title = document.getElementById("learnerCredentialDownloadTitle");
+        if (title) title.textContent = "Learners Imported Successfully";
+    }
+
+    function setCredentialDialogTitle(text) {
+        const title = document.getElementById("learnerCredentialDownloadTitle");
+        if (title) title.textContent = text;
+    }
+
+    /* Credentials of every learner who has not set up their account yet,
+       from the server, after the admin's password. */
+    async function loadPendingLearnerCredentials() {
+        const password = await window.SiknayanDialog.confirmPassword(
+            "Download the login credentials of every learner who has not set up their account yet?",
+            { title: "Download Credentials", confirmText: "Continue" }
+        );
+
+        if (!password) {
+            return false;
+        }
+
+        let payload;
+
+        try {
+            payload = await learnerAccountsApiRequest(
+                "/admin/learners/credentials",
+                { headers: { "X-Confirm-Password": password } }
+            );
+        } catch (error) {
+            alert(error.message || "Unable to load the learner credentials.");
+            return false;
+        }
+
+        const credentials = Array.isArray(payload?.credentials)
+            ? payload.credentials
+            : [];
+
+        const missing = Number(payload?.missing) || 0;
+
+        if (!credentials.length) {
+            alert(
+                missing
+                    ? `${missing} learner account(s) are not set up yet, but they were created before temporary passwords were kept. Edit each one and set a new temporary password, then download again.`
+                    : "Every learner account is already set up. There are no temporary credentials to download."
+            );
+            return false;
+        }
+
+        if (missing) {
+            alert(
+                `${missing} account(s) not set up yet are left out: they were created before temporary passwords were kept. Edit each one and set a new temporary password to include it.`
+            );
+        }
+
+        latestImportedLearners = credentials;
+        credentialsFromServer = true;
+        return true;
     }
 
     function openLearnerCredentialDownloadDialog() {
@@ -2421,13 +2486,16 @@ await saveCredentialFile(
         );
     }
 
-    downloadLearnerCredentialsAgainButton?.addEventListener("click", () => {
-        if (!latestImportedLearners.length) {
-            setExcelImportStatus(
-                "No credentials are available in this page session. Import learners again to generate new credentials.",
-                true
+    downloadLearnerCredentialsAgainButton?.addEventListener("click", async () => {
+        if (latestImportedLearners.length && !credentialsFromServer) {
+            setCredentialDialogTitle("Learners Imported Successfully");
+        } else {
+            if (!(await loadPendingLearnerCredentials())) {
+                return;
+            }
+            setCredentialDialogTitle(
+                `Accounts Not Set Up Yet (${latestImportedLearners.length})`
             );
-            return;
         }
         openLearnerCredentialDownloadDialog();
     });
@@ -2473,9 +2541,6 @@ await saveCredentialFile(
 
         closeLearnerCredentialDownloadDialog();
         latestImportedLearners = [];
-        if (downloadLearnerCredentialsAgainButton) {
-            downloadLearnerCredentialsAgainButton.disabled = true;
-        }
 
         if (!file.name.toLowerCase().endsWith(".xlsx")) {
             setExcelImportStatus(
@@ -2879,9 +2944,6 @@ await saveCredentialFile(
             } else {
                 latestImportedLearners = [];
 
-                if (downloadLearnerCredentialsAgainButton) {
-                    downloadLearnerCredentialsAgainButton.disabled = true;
-                }
 
                 setExcelImportStatus(
                     "The import response did not include complete temporary credentials. No credential download is available.",

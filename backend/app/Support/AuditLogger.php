@@ -112,6 +112,7 @@ class AuditLogger
         'backup_restore_refused' => 'Restore Refused',
         'backup_uploaded' => 'Backup Uploaded',
         'audit_log_exported' => 'Audit Log Exported',
+        'credentials_downloaded' => 'Credentials Downloaded',
     ];
 
     public static function label(string $action): string

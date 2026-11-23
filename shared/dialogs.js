@@ -55,12 +55,12 @@
                 text-align: left; }
             .sik-dialog .sik-dialog-error[hidden] { display: none; }
             .sik-dialog button:disabled { opacity: 0.65; cursor: default; }
-            .sik-password-field { margin: 14px 0 16px; text-align: left; }
-            .sik-password-field label { display: block; margin: 0 0 6px; color: #3b463f;
-                font-size: 13.5px; font-weight: 600; }
-            .sik-password-field input { width: 100%; box-sizing: border-box; height: 42px; padding: 0 12px;
-                border: 1px solid #cfd8d3; border-radius: 9px; background: #ffffff; color: #1f2a24;
-                font: inherit; font-size: 16px; }
+            .sik-password-field { box-sizing: border-box; margin: 4px 0 14px; text-align: left; }
+            .sik-password-field label { display: block; margin: 0 0 5px; color: #3b463f;
+                font-size: 12.5px; font-weight: 600; }
+            .sik-password-field input { display: block; width: 100%; max-width: 320px; box-sizing: border-box;
+                height: 34px; padding: 0 10px; border: 1px solid #cfd8d3; border-radius: 7px;
+                background: #ffffff; color: #1f2a24; font: inherit; font-size: 14px; }
             .sik-password-field input:focus { outline: 2px solid #087443; outline-offset: 1px; }
             .sik-password-error { margin-top: 6px; color: #b42318; font-size: 13px; }
             .sik-password-error[hidden] { display: none; }
@@ -371,6 +371,15 @@
             <div class="sik-password-error" role="alert" hidden></div>`;
 
         row.parentElement.insertBefore(wrap, row);
+
+        // Some boxes pad only their sections, not the box itself: line the
+        // field up with the button row's side padding so it isn't edge to edge.
+        const boxStyle = getComputedStyle(row.parentElement);
+        if (parseFloat(boxStyle.paddingLeft) === 0) {
+            const rowStyle = getComputedStyle(row);
+            wrap.style.paddingLeft = rowStyle.paddingLeft;
+            wrap.style.paddingRight = rowStyle.paddingRight;
+        }
 
         const input = wrap.querySelector("input");
         const error = wrap.querySelector(".sik-password-error");
