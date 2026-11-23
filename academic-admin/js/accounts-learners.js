@@ -2235,25 +2235,13 @@ function setExcelImportStatus(message, isError = false) {
         if (title) title.textContent = text;
     }
 
-    /* Credentials of every learner who has not set up their account yet,
-       from the server, after the admin's password. */
+    /* Credentials (temporary passwords) of every learner who has not
+       set up their account yet, from the server. */
     async function loadPendingLearnerCredentials() {
-        const password = await window.SiknayanDialog.confirmPassword(
-            "Download the login credentials of every learner who has not set up their account yet?",
-            { title: "Download Credentials", confirmText: "Continue" }
-        );
-
-        if (!password) {
-            return false;
-        }
-
         let payload;
 
         try {
-            payload = await learnerAccountsApiRequest(
-                "/admin/learners/credentials",
-                { headers: { "X-Confirm-Password": password } }
-            );
+            payload = await learnerAccountsApiRequest("/admin/learners/credentials");
         } catch (error) {
             alert(error.message || "Unable to load the learner credentials.");
             return false;
@@ -2263,21 +2251,9 @@ function setExcelImportStatus(message, isError = false) {
             ? payload.credentials
             : [];
 
-        const missing = Number(payload?.missing) || 0;
-
         if (!credentials.length) {
-            alert(
-                missing
-                    ? `${missing} learner account(s) are not set up yet, but they were created before temporary passwords were kept. Edit each one and set a new temporary password, then download again.`
-                    : "Every learner account is already set up. There are no temporary credentials to download."
-            );
+            alert("Every learner account is already set up. There are no temporary credentials to download.");
             return false;
-        }
-
-        if (missing) {
-            alert(
-                `${missing} account(s) not set up yet are left out: they were created before temporary passwords were kept. Edit each one and set a new temporary password to include it.`
-            );
         }
 
         latestImportedLearners = credentials;
@@ -2486,17 +2462,14 @@ await saveCredentialFile(
         );
     }
 
+    // Every learner account not set up yet (including any just imported).
     downloadLearnerCredentialsAgainButton?.addEventListener("click", async () => {
-        if (latestImportedLearners.length && !credentialsFromServer) {
-            setCredentialDialogTitle("Learners Imported Successfully");
-        } else {
-            if (!(await loadPendingLearnerCredentials())) {
-                return;
-            }
-            setCredentialDialogTitle(
-                `Accounts Not Set Up Yet (${latestImportedLearners.length})`
-            );
+        if (!(await loadPendingLearnerCredentials())) {
+            return;
         }
+        setCredentialDialogTitle(
+            `Accounts Not Set Up Yet (${latestImportedLearners.length})`
+        );
         openLearnerCredentialDownloadDialog();
     });
 

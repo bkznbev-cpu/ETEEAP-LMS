@@ -2878,26 +2878,14 @@ function enableInstructorCredentialExports(credentials) {
 }
 
 
-/* Credentials of the instructors who have not set up their account yet,
-   from the server. Asks for the admin's password first. Null when
-   cancelled or when there is nothing to download. */
+/* Credentials (temporary passwords) of every instructor who has not set
+   up their account yet, from the server. Null when there is nothing to
+   download. */
 async function fetchPendingInstructorCredentials() {
-    const password = await window.SiknayanDialog.confirmPassword(
-        "Download the login credentials of every instructor who has not set up their account yet?",
-        { title: "Download Credentials", confirmText: "Download" }
-    );
-
-    if (!password) {
-        return null;
-    }
-
     let payload;
 
     try {
-        payload = await instructorApiRequest(
-            "/admin/instructors/credentials",
-            { headers: { "X-Confirm-Password": password } }
-        );
+        payload = await instructorApiRequest("/admin/instructors/credentials");
     } catch (error) {
         alert(error.message || "Unable to load the instructor credentials.");
         return null;
@@ -2907,42 +2895,25 @@ async function fetchPendingInstructorCredentials() {
         ? payload.credentials
         : [];
 
-    const missing = Number(payload?.missing) || 0;
-
     if (!credentials.length) {
-        alert(
-            missing
-                ? `${missing} instructor account(s) are not set up yet, but they were created before temporary passwords were kept. Edit each one and set a new temporary password, then download again.`
-                : "Every instructor account is already set up. There are no temporary credentials to download."
-        );
+        alert("Every instructor account is already set up. There are no temporary credentials to download.");
         return null;
-    }
-
-    if (missing) {
-        alert(
-            `${missing} account(s) not set up yet are left out: they were created before temporary passwords were kept. Edit each one and set a new temporary password to include it.`
-        );
     }
 
     return credentials;
 }
 
 
-/* Download Credentials: right after an import, the imported accounts;
-   otherwise every account that is not set up yet. */
+/* Download Credentials: every instructor account that is not set up yet
+   (including any just imported), with its temporary password. */
 async function exportInstructorCredentials(format) {
-    let fromServer = false;
+    const credentials = await fetchPendingInstructorCredentials();
 
-    if (!latestInstructorCredentials.length) {
-        const credentials = await fetchPendingInstructorCredentials();
-
-        if (!credentials) {
-            return;
-        }
-
-        latestInstructorCredentials = credentials;
-        fromServer = true;
+    if (!credentials) {
+        return;
     }
+
+    latestInstructorCredentials = credentials;
 
     try {
         if (format === "pdf") {
@@ -2952,9 +2923,7 @@ async function exportInstructorCredentials(format) {
         }
     } finally {
         // Passwords from the server are not kept on the page.
-        if (fromServer) {
-            latestInstructorCredentials = [];
-        }
+        latestInstructorCredentials = [];
     }
 }
 

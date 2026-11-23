@@ -620,12 +620,9 @@ $learner = User::create([
     }
 
     /**
-     * Delete a learner.
-     */
-    /**
      * Login credentials of the learners or instructors who have not set up
      * their account yet (still on the temporary password the admin gave
-     * them), for "Download Credentials". Needs the admin's own password.
+     * them), for "Download Credentials".
      */
     public function pendingCredentials(Request $request, string $role): JsonResponse
     {
@@ -633,17 +630,33 @@ $learner = User::create([
             return $response;
         }
 
-        if ($response = DeletePassword::check($request, 'download')) {
-            return $response;
-        }
-
         $users = $this->ownedUsers($request, $role)
             ->where('password_setup_complete', false)
             ->orderBy('school_id')
-            ->get(['id', 'name', 'school_id', 'email', 'program', 'temporary_password']);
+            ->get(['id', 'name', 'school_id', 'email', 'program', 'role', 'temporary_password']);
+
+        // Accounts made before temporary passwords were kept get a new one
+        // the first time, so every account not set up is in the file. (Their
+        // old temporary password stops working; later downloads keep it.)
+        $module = $role === 'learner' ? AuditLogger::LEARNERS : AuditLogger::INSTRUCTORS;
+
+        $users
+            ->filter(fn (User $user) => blank($user->temporary_password))
+            ->each(function (User $user) use ($module) {
+                $temporaryPassword = self::temporaryPassword(8);
+
+                $user->forceFill([
+                    'password' => Hash::make($temporaryPassword),
+                    'temporary_password' => $temporaryPassword,
+                ])->save();
+
+                AuditLogger::log('reset_password', $module, [
+                    'target' => $user,
+                    'details' => "Gave {$user->role} account {$user->school_id} a new temporary password (for Download Credentials)",
+                ]);
+            });
 
         $credentials = $users
-            ->filter(fn (User $user) => filled($user->temporary_password))
             ->map(fn (User $user) => [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -654,7 +667,7 @@ $learner = User::create([
             ])
             ->values();
 
-        AuditLogger::log('credentials_downloaded', $role === 'learner' ? AuditLogger::LEARNERS : AuditLogger::INSTRUCTORS, [
+        AuditLogger::log('credentials_downloaded', $module, [
             'target_type' => $role,
             'details' => "Downloaded the temporary credentials of {$credentials->count()} {$role} account(s) not yet set up",
             'request' => $request,
@@ -663,12 +676,12 @@ $learner = User::create([
         return response()->json([
             'success' => true,
             'credentials' => $credentials,
-            // Not set up, but created before temporary passwords were kept:
-            // a new temporary password must be set for these (Edit).
-            'missing' => $users->count() - $credentials->count(),
         ]);
     }
 
+    /**
+     * Delete a learner.
+     */
     public function destroyLearner(Request $request, int $id): JsonResponse
     {
         if ($response = $this->checkAdmin($request)) {
