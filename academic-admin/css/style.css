@@ -7404,6 +7404,70 @@ body:has(.program-library-page) {
 
 
 /* =========================================================
+   MODULES (LEFT) AND LEARNERS (RIGHT)
+========================================================= */
+
+.class-details-columns {
+    display: grid;
+
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+
+    align-items: start;
+
+    gap: 24px;
+}
+
+.class-details-columns > .class-modules-card,
+.class-details-columns > .class-roster-card {
+    margin-bottom: 0;
+}
+
+@media (max-width: 900px) {
+    .class-details-columns {
+        grid-template-columns: minmax(0, 1fr);
+
+        gap: 12px;
+    }
+}
+
+/* Module rows are buttons: clicking one opens its file. */
+button.class-assigned-module-item {
+    width: 100%;
+
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+
+    font: inherit;
+
+    text-align: left;
+
+    cursor: pointer;
+}
+
+button.class-assigned-module-item:focus-visible {
+    outline: 2px solid #08733d;
+    outline-offset: -2px;
+}
+
+.class-assigned-module-info .class-module-file-type {
+    padding: 2px 8px;
+
+    border-radius: 999px;
+
+    background: #e8f3ec;
+
+    color: #08733d;
+
+    font-size: 10.5px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.3px;
+}
+
+
+/* =========================================================
    ASSIGNED MODULES
 ========================================================= */
 

@@ -1041,33 +1041,16 @@ public function destroyClass(Request $request, int $id): JsonResponse
         ], 404);
     }
 
-    // A class with enrolled learners cannot be deleted. Without learners
-    // it can be deleted, active or not; its modules are deleted with it.
-    if ($class->learners()->exists()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'This class still has enrolled learners and cannot be deleted. Remove the learners first.',
-        ], 409);
-    }
-
-    // Deleting a class cascades to its modules (including soft-deleted ones)
-    // and from there to submissions, grades and progress.
-    $moduleIds = Module::withTrashed()
-        ->where('course_id', $class->id)
-        ->select('id');
-
-    if (
-        Submission::whereIn('module_id', $moduleIds)->exists()
-        || Progress::whereIn('module_id', $moduleIds)->exists()
-    ) {
-        return response()->json([
-            'success' => false,
-            'message' => 'This class has learner submissions or progress records and cannot be deleted. Mark the class inactive instead.',
-        ], 409);
-    }
-
+    // A class can be deleted even with enrolled learners. The database
+    // removes its enrollments, modules (including soft-deleted ones) and,
+    // from there, submissions, grades and progress. The learner accounts
+    // themselves are kept.
     $snapshot = $this->classSnapshot($class);
-    $class->delete();
+
+    DB::transaction(function () use ($class) {
+        $class->learners()->detach();
+        $class->delete();
+    });
 
     AuditLogger::log('delete', AuditLogger::CLASSES, [
         'target' => $class,

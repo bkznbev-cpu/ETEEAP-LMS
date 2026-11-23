@@ -2339,12 +2339,27 @@ function getAssignedClassModules() {
             const fromLibrary =
                 libraryById.get(id);
 
-            if (fromLibrary) {
-                return fromLibrary;
-            }
-
             const fromServer =
                 serverByKey.get(id);
+
+            // The class's own copy of the file (database) comes first.
+            const filePath =
+                fromServer?.material_path ||
+                fromLibrary?.filePath ||
+                "";
+
+            const fileName =
+                fromServer?.material_name ||
+                fromLibrary?.fileName ||
+                "";
+
+            if (fromLibrary) {
+                return {
+                    ...fromLibrary,
+                    filePath,
+                    fileName
+                };
+            }
 
             if (fromServer) {
                 return {
@@ -2354,7 +2369,9 @@ function getAssignedClassModules() {
                     status:
                         fromServer.is_published === false
                             ? "inactive"
-                            : "active"
+                            : "active",
+                    filePath,
+                    fileName
                 };
             }
 
@@ -2438,21 +2455,42 @@ function renderAssignedModules() {
     modules.forEach(
         module => {
 
+            const fileType =
+                getModuleFileType(module);
+
+            // The whole row opens the module's file.
             const item =
                 document.createElement(
-                    "div"
+                    "button"
                 );
 
+            item.type =
+                "button";
 
             item.className =
                 "class-assigned-module-item";
+
+            item.title =
+                module.filePath
+                    ? `Open ${module.fileName || "the module file"}`
+                    : "This module has no file";
+
+
+            const icon =
+                document.createElement(
+                    "i"
+                );
+
+            icon.setAttribute(
+                "data-lucide",
+                getModuleFileIcon(fileType)
+            );
 
 
             const info =
                 document.createElement(
                     "div"
                 );
-
 
             info.className =
                 "class-assigned-module-info";
@@ -2463,20 +2501,41 @@ function renderAssignedModules() {
                     "strong"
                 );
 
-
             title.textContent =
                 getModuleTitle(
                     module
                 );
 
 
+            const type =
+                document.createElement(
+                    "span"
+                );
+
+            type.className =
+                "class-module-file-type";
+
+            type.textContent =
+                fileType
+                    ? fileType.toUpperCase()
+                    : "No file";
+
+
             info.append(
-                title
+                title,
+                type
             );
 
 
-            item.appendChild(
+            item.append(
+                icon,
                 info
+            );
+
+
+            item.addEventListener(
+                "click",
+                () => openAssignedModuleFile(module)
             );
 
 
@@ -2489,6 +2548,151 @@ function renderAssignedModules() {
 
 
     initializeIcons();
+}
+
+
+/* File type of a module, from its file name ("pdf", "docx"...). */
+function getModuleFileType(
+    module
+) {
+
+    const name =
+        String(
+            module?.fileName ||
+            module?.filePath ||
+            ""
+        ).trim();
+
+    const dot =
+        name.lastIndexOf(".");
+
+    if (dot < 0) {
+        return String(module?.fileType || "").toLowerCase();
+    }
+
+    return name
+        .slice(dot + 1)
+        .toLowerCase();
+}
+
+
+function getModuleFileIcon(
+    fileType
+) {
+
+    if (["png", "jpg", "jpeg", "gif", "webp"].includes(fileType)) {
+        return "file-image";
+    }
+
+    if (["mp4", "m4v", "webm", "mov", "mp3", "wav"].includes(fileType)) {
+        return "file-video";
+    }
+
+    if (["xls", "xlsx", "csv"].includes(fileType)) {
+        return "file-spreadsheet";
+    }
+
+    if (["ppt", "pptx"].includes(fileType)) {
+        return "presentation";
+    }
+
+    if (!fileType) {
+        return "file";
+    }
+
+    return "file-text";
+}
+
+
+/* Opens the module's file in a new tab with the shared file viewer. */
+async function openAssignedModuleFile(
+    module
+) {
+
+    if (!module?.filePath) {
+        alert("This module has no uploaded file yet.");
+        return;
+    }
+
+    const token =
+        getClassDetailsApiToken();
+
+    if (!token) {
+        window.handleAdminSessionExpired?.();
+        return;
+    }
+
+    // Open the tab right away so the browser doesn't block it.
+    const fileTab =
+        window.open("about:blank", "_blank");
+
+    if (!fileTab) {
+        alert("Please allow pop-ups for this site to open module files.");
+        return;
+    }
+
+    try {
+
+        const query =
+            new URLSearchParams({
+                path: module.filePath,
+                name: module.fileName || "module-file"
+            });
+
+        const response =
+            await fetch(
+                `${CLASS_DETAILS_API_BASE_URL}/admin/module-files?${query}`,
+                {
+                    headers: {
+                        Accept: "*/*",
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+        if (!response.ok) {
+
+            let message =
+                `Unable to open the file (${response.status}).`;
+
+            try {
+                const payload = await response.json();
+                message = payload.message || message;
+            } catch {
+                // Keep the default message.
+            }
+
+            throw new Error(message);
+        }
+
+        const blob =
+            await response.blob();
+
+        if (window.SiknayanFileViewer) {
+            await window.SiknayanFileViewer.show(
+                blob,
+                module.fileName || "module-file",
+                fileTab
+            );
+            return;
+        }
+
+        const fileUrl =
+            URL.createObjectURL(blob);
+
+        fileTab.location.href = fileUrl;
+
+        setTimeout(() => URL.revokeObjectURL(fileUrl), 300000);
+
+    } catch (error) {
+
+        fileTab.close();
+
+        alert(
+            error.message ||
+            "Unable to open the module file."
+        );
+    }
 }
 
 

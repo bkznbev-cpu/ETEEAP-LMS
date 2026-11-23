@@ -2888,18 +2888,10 @@ const payload = {
             getActualLearnerCount(classItem)
         );
 
-        // Only enrolled learners block deletion; a class without
-        // learners can be deleted (with its modules), active or not.
-        const blockReasons = [];
-
-        if (learnerCount > 0) {
-            blockReasons.push(
-                `it has ${learnerCount} enrolled learner${learnerCount === 1 ? "" : "s"}`
-            );
-        }
-
-        const canDelete =
-            blockReasons.length === 0;
+        // A class can always be deleted, even with enrolled learners.
+        // The learners are unenrolled (their accounts are kept), and the
+        // class's modules and learner work in it are deleted with it.
+        const canDelete = true;
 
 
         const overlay =
@@ -2931,24 +2923,24 @@ const payload = {
                     </h3>
 
                     <p>
-                        ${
-                            canDelete
-                                ? `Are you sure you want to delete <strong>${escapeHtml(classItem.classCode)}</strong>? This cannot be undone.`
-                                : `<strong>${escapeHtml(classItem.classCode)}</strong> cannot be deleted because ${escapeHtml(blockReasons.join(" and "))}.`
-                        }
+                        Are you sure you want to delete <strong>${escapeHtml(classItem.classCode)}</strong>? This cannot be undone.
                     </p>
 
                 </div>
 
                 ${
-                    canDelete
-                        ? ""
-                        : `
+                    learnerCount > 0
+                        ? `
                             <div class="field-help">
-                                A class with enrolled learners cannot be
-                                deleted; remove its learners first.
+                                This class has ${learnerCount} enrolled
+                                learner${learnerCount === 1 ? "" : "s"}.
+                                They will be removed from the class (their
+                                accounts are kept), and their submissions,
+                                grades and progress in this class will be
+                                deleted.
                             </div>
                           `
+                        : ""
                 }
 
                 <div
