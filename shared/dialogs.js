@@ -62,6 +62,18 @@
                 height: 34px; padding: 0 10px; border: 1px solid #cfd8d3; border-radius: 7px;
                 background: #ffffff; color: #1f2a24; font: inherit; font-size: 14px; }
             .sik-password-field input:focus { outline: 2px solid #087443; outline-offset: 1px; }
+            .sik-password-box { position: relative; max-width: 320px; }
+            .sik-password-box input { max-width: none; padding-right: 40px; }
+            .sik-dialog .sik-password-box { max-width: none; margin: -6px 0 18px; }
+            .sik-dialog .sik-password-box input { margin: 0; padding-right: 44px; }
+            .sik-dialog .sik-password-box .sik-password-eye,
+            .sik-password-field .sik-password-box button.sik-password-eye { position: absolute; top: 50%; right: 4px; transform: translateY(-50%);
+                width: 32px; height: 30px; min-width: 0; min-height: 0; padding: 0; display: grid;
+                place-items: center; border: 0; border-radius: 6px; background: transparent;
+                color: #5b6b62; cursor: pointer; }
+            .sik-password-box button.sik-password-eye:hover { background: #eef3f0; color: #087443; }
+            .sik-password-eye:focus-visible { outline: 2px solid #087443; outline-offset: 1px; }
+            .sik-password-eye svg { width: 18px; height: 18px; }
             .sik-password-error { margin-top: 6px; color: #b42318; font-size: 13px; }
             .sik-password-error[hidden] { display: none; }
             .sik-dialog-actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
@@ -255,8 +267,11 @@
                     <label class="sik-dialog-label" for="sikDialogPassword">
                         Enter your password to continue
                     </label>
-                    <input type="password" id="sikDialogPassword" class="sik-dialog-input"
-                           autocomplete="current-password" required>
+                    <div class="sik-password-box">
+                        <input type="password" id="sikDialogPassword" class="sik-dialog-input"
+                               autocomplete="current-password" required>
+                        ${EYE_BUTTON}
+                    </div>
                     <div class="sik-dialog-error" role="alert" hidden></div>
                     <div class="sik-dialog-actions">
                         <button type="button" class="sik-dialog-cancel">Cancel</button>
@@ -266,6 +281,7 @@
 
             const form = overlay.querySelector("form");
             const input = overlay.querySelector("input");
+            setupEye(input, overlay.querySelector(".sik-password-eye"));
             const error = overlay.querySelector(".sik-dialog-error");
             const ok = overlay.querySelector(".sik-dialog-ok");
             const cancel = overlay.querySelector(".sik-dialog-cancel");
@@ -339,6 +355,27 @@
         return result;
     }
 
+    /* Eye button: shows or hides the typed password. */
+    const ICON_EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+    const ICON_EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c6.5 0 10 8 10 8a17.6 17.6 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M17.94 17.94A10.1 10.1 0 0 1 12 20c-6.5 0-10-8-10-8a17.8 17.8 0 0 1 4.06-5.94"/><path d="m2 2 20 20"/></svg>';
+    const EYE_BUTTON = `<button type="button" class="sik-password-eye" aria-label="Show password" title="Show password">${ICON_EYE}</button>`;
+
+    function setupEye(input, eye) {
+        eye.setPassword = function (show) {
+            input.type = show ? "text" : "password";
+            eye.innerHTML = show ? ICON_EYE_OFF : ICON_EYE;
+            const label = show ? "Hide password" : "Show password";
+            eye.setAttribute("aria-label", label);
+            eye.title = label;
+            eye.setAttribute("aria-pressed", String(show));
+        };
+
+        eye.addEventListener("click", () => {
+            eye.setPassword(input.type === "password");
+            input.focus();
+        });
+    }
+
     /* -----------------------------------------------------
        PASSWORD FIELD INSIDE A PAGE'S OWN DELETE BOX
 
@@ -367,7 +404,10 @@
         wrap.className = "sik-password-field";
         wrap.innerHTML = `
             <label for="${id}">Enter your password to confirm</label>
-            <input type="password" id="${id}" autocomplete="current-password">
+            <div class="sik-password-box">
+                <input type="password" id="${id}" autocomplete="current-password">
+                ${EYE_BUTTON}
+            </div>
             <div class="sik-password-error" role="alert" hidden></div>`;
 
         row.parentElement.insertBefore(wrap, row);
@@ -383,6 +423,9 @@
 
         const input = wrap.querySelector("input");
         const error = wrap.querySelector(".sik-password-error");
+        const eye = wrap.querySelector(".sik-password-eye");
+
+        setupEye(input, eye);
 
         // Enter in the field works like clicking the delete button.
         input.addEventListener("keydown", event => {
@@ -401,6 +444,8 @@
                 input.value = "";
                 error.textContent = "";
                 error.hidden = true;
+                // Hidden again each time the box opens.
+                eye.setPassword(false);
             },
             focus() {
                 input.focus();
