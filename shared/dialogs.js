@@ -269,8 +269,8 @@
                     </label>
                     <div class="sik-password-box">
                         ${USERNAME_DECOY}
-                        <input type="password" id="sikDialogPassword" class="sik-dialog-input"
-                               autocomplete="current-password" required>
+                        <input type="password" id="sikDialogPassword" class="sik-dialog-input sik-password-input" ${NO_AUTOFILL}
+                               required>
                         ${EYE_BUTTON}
                     </div>
                     <div class="sik-dialog-error" role="alert" hidden></div>
@@ -281,7 +281,7 @@
                 </form>`;
 
             const form = overlay.querySelector("form");
-            const input = overlay.querySelector("input");
+            const input = overlay.querySelector(".sik-password-input");
             setupEye(input, overlay.querySelector(".sik-password-eye"));
             const error = overlay.querySelector(".sik-dialog-error");
             const ok = overlay.querySelector(".sik-dialog-ok");
@@ -364,9 +364,20 @@
     const USERNAME_DECOY = `<input type="text" autocomplete="username" tabindex="-1" aria-hidden="true"
         style="position:absolute;width:1px;height:1px;padding:0;border:0;opacity:0;pointer-events:none;">`;
 
+    // The password must be typed each time: no saved password is filled in.
+    // "new-password" tells the browser not to fill it, and read-only (lifted
+    // as soon as the box is used, see setupEye) stops browsers that ignore that.
+    const NO_AUTOFILL = 'autocomplete="new-password" readonly data-lpignore="true" data-1p-ignore="true"';
+
     const EYE_BUTTON = `<button type="button" class="sik-password-eye" aria-label="Show password" title="Show password">${ICON_EYE}</button>`;
 
     function setupEye(input, eye) {
+        // Read-only only until the box is used (see NO_AUTOFILL).
+        const unlock = () => input.removeAttribute("readonly");
+        input.addEventListener("focus", unlock);
+        input.addEventListener("pointerdown", unlock);
+        input.addEventListener("keydown", unlock);
+
         eye.setPassword = function (show) {
             input.type = show ? "text" : "password";
             eye.innerHTML = show ? ICON_EYE_OFF : ICON_EYE;
@@ -412,7 +423,7 @@
             <label for="${id}">Enter your password to confirm</label>
             <div class="sik-password-box">
                 ${USERNAME_DECOY}
-                <input type="password" id="${id}" autocomplete="current-password">
+                <input type="password" id="${id}" class="sik-password-input" ${NO_AUTOFILL}>
                 ${EYE_BUTTON}
             </div>
             <div class="sik-password-error" role="alert" hidden></div>`;
@@ -428,7 +439,7 @@
             wrap.style.paddingRight = rowStyle.paddingRight;
         }
 
-        const input = wrap.querySelector("input");
+        const input = wrap.querySelector(".sik-password-input");
         const error = wrap.querySelector(".sik-password-error");
         const eye = wrap.querySelector(".sik-password-eye");
 
