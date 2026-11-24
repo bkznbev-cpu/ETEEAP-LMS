@@ -64,6 +64,7 @@
             .sik-password-field input:focus { outline: 2px solid #087443; outline-offset: 1px; }
             .sik-password-box { position: relative; max-width: 320px; }
             .sik-password-box input { max-width: none; padding-right: 40px; }
+            .sik-password-input.sik-masked { -webkit-text-security: disc; text-security: disc; }
             .sik-dialog .sik-password-box { max-width: none; margin: -6px 0 18px; }
             .sik-dialog .sik-password-box input { margin: 0; padding-right: 44px; }
             .sik-dialog .sik-password-box .sik-password-eye,
@@ -268,9 +269,7 @@
                         Enter your password to continue
                     </label>
                     <div class="sik-password-box">
-                        ${USERNAME_DECOY}
-                        <input type="password" id="sikDialogPassword" class="sik-dialog-input sik-password-input" ${NO_AUTOFILL}
-                               required>
+                        ${passwordInput("sikDialogPassword", "sik-dialog-input", "required")}
                         ${EYE_BUTTON}
                     </div>
                     <div class="sik-dialog-error" role="alert" hidden></div>
@@ -359,27 +358,39 @@
     /* Eye button: shows or hides the typed password. */
     const ICON_EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
     const ICON_EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c6.5 0 10 8 10 8a17.6 17.6 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M17.94 17.94A10.1 10.1 0 0 1 12 20c-6.5 0-10-8-10-8a17.8 17.8 0 0 1 4.06-5.94"/><path d="m2 2 20 20"/></svg>';
-    // An invisible username box right before each password box. The browser
-    // puts the saved username here instead of into the page's search bar.
-    const USERNAME_DECOY = `<input type="text" autocomplete="username" tabindex="-1" aria-hidden="true"
-        style="position:absolute;width:1px;height:1px;padding:0;border:0;opacity:0;pointer-events:none;">`;
+    // The password must be typed each time: the browser must not fill in or
+    // list saved passwords. Browsers do that for every type="password" box,
+    // so where the browser can hide typed text with dots (Chrome, Edge,
+    // Safari, Firefox) the box is a plain text box shown as dots instead.
+    // Older browsers keep a password box with autofill turned off.
+    const CAN_MASK = !!(window.CSS && CSS.supports && CSS.supports("-webkit-text-security", "disc"));
 
-    // The password must be typed each time: no saved password is filled in.
-    // "new-password" tells the browser not to fill it, and read-only (lifted
-    // as soon as the box is used, see setupEye) stops browsers that ignore that.
-    const NO_AUTOFILL = 'autocomplete="new-password" readonly data-lpignore="true" data-1p-ignore="true"';
+    function passwordInput(id, classes, extra = "") {
+        const common = `id="${id}" class="${classes} sik-password-input" name="sik-confirm-${id}" ` +
+            'autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" ' +
+            'data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other"';
+        return CAN_MASK
+            ? `<input type="text" ${common} ${extra}>`
+            : `<input type="password" ${common} ${extra}>`;
+    }
 
     const EYE_BUTTON = `<button type="button" class="sik-password-eye" aria-label="Show password" title="Show password">${ICON_EYE}</button>`;
 
     function setupEye(input, eye) {
-        // Read-only only until the box is used (see NO_AUTOFILL).
-        const unlock = () => input.removeAttribute("readonly");
-        input.addEventListener("focus", unlock);
-        input.addEventListener("pointerdown", unlock);
-        input.addEventListener("keydown", unlock);
+        let shown = false;
+
+        if (CAN_MASK) {
+            input.classList.add("sik-masked");
+            // The hidden password cannot be copied out of the box.
+            ["copy", "cut"].forEach(type => input.addEventListener(type, event => {
+                if (!shown) event.preventDefault();
+            }));
+        }
 
         eye.setPassword = function (show) {
-            input.type = show ? "text" : "password";
+            shown = show;
+            if (CAN_MASK) input.classList.toggle("sik-masked", !show);
+            else input.type = show ? "text" : "password";
             eye.innerHTML = show ? ICON_EYE_OFF : ICON_EYE;
             const label = show ? "Hide password" : "Show password";
             eye.setAttribute("aria-label", label);
@@ -388,7 +399,7 @@
         };
 
         eye.addEventListener("click", () => {
-            eye.setPassword(input.type === "password");
+            eye.setPassword(!shown);
             input.focus();
         });
     }
@@ -422,8 +433,7 @@
         wrap.innerHTML = `
             <label for="${id}">Enter your password to confirm</label>
             <div class="sik-password-box">
-                ${USERNAME_DECOY}
-                <input type="password" id="${id}" class="sik-password-input" ${NO_AUTOFILL}>
+                ${passwordInput(id, "")}
                 ${EYE_BUTTON}
             </div>
             <div class="sik-password-error" role="alert" hidden></div>`;
