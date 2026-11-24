@@ -77,7 +77,7 @@ class EmailChangeTest extends TestCase
     #[Group('FR-AU'), Group('FR-AU-04')]
     public function test_every_role_can_change_their_email_after_verifying_it(): void
     {
-        foreach (['learner', 'instructor', 'academic_admin', 'system_admin'] as $role) {
+        foreach (['learner', 'academic_admin', 'system_admin'] as $role) {
             $user = $this->account($role);
             $old = $user->email;
             $new = "new.{$role}@example.com";
@@ -103,6 +103,18 @@ class EmailChangeTest extends TestCase
             $this->assertNotNull($fresh->email_verified_at);
             $this->assertSame(0, EmailChangeRequest::where('user_id', $user->id)->count());
         }
+    }
+
+    #[Group('FR-AU'), Group('FR-AU-04')]
+    public function test_instructors_cannot_change_their_own_email(): void
+    {
+        $user = $this->account('instructor');
+        $old = $user->email;
+
+        $this->request($user, 'new.instructor@example.com')->assertForbidden();
+
+        $this->assertSame($old, $user->fresh()->email);
+        $this->assertSame(0, EmailChangeRequest::where('user_id', $user->id)->count());
     }
 
     #[Group('FR-AU'), Group('FR-AU-04')]

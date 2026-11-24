@@ -12,11 +12,6 @@
 (function () {
     "use strict";
 
-    // shared/email-change.js: the verified "Change Email" row.
-    const EMAIL_CHANGE_SRC = document.currentScript
-        ? new URL("../../shared/email-change.js", document.currentScript.src).href
-        : "../shared/email-change.js";
-
     const API_ROOT = window.SIKNAYAN_API_ROOT;
     const token = sessionStorage.getItem("authToken") || sessionStorage.getItem("token");
     if (!API_ROOT || !token) return;
@@ -128,7 +123,7 @@
                         </div>
                     </div>
                     <p class="lp-profile-note" id="lpEditNote" hidden>
-                        Correct your full name here. To change your email, use “Change Email” under Account &amp; Security. Your instructor ID is managed by your administrator.
+                        Correct your full name here. Your email and instructor ID are managed by your administrator.
                     </p>
                 </form>
 
@@ -202,30 +197,8 @@
         </section>`;
     document.body.appendChild(overlay);
 
-    // Edit Profile corrects the full name. The email is changed in Account &
-    // Security (verified with a code), the password with the Password row.
-
-    let emailChangeMounted = false;
-
-    function mountEmailChange() {
-        if (emailChangeMounted) return;
-        emailChangeMounted = true;
-
-        const start = () => window.SiknayanEmailChange.mount(overlay.querySelector(".lp-profile-security"), {
-            email: profile?.email,
-            onChanged: email => {
-                if (profile) profile.email = email;
-                $("lpEmail").textContent = email || "—";
-            }
-        });
-
-        if (window.SiknayanEmailChange) return start();
-
-        const script = document.createElement("script");
-        script.src = EMAIL_CHANGE_SRC;
-        script.onload = start;
-        document.head.appendChild(script);
-    }
+    // Edit Profile corrects the full name; the password is changed with the
+    // Password row. Instructors cannot change their email (admin does it).
 
     const $ = id => document.getElementById(id);
 
@@ -324,7 +297,6 @@
         document.body.style.overflow = "hidden";
         $("lpProfileClose").focus();
         load();
-        mountEmailChange();
     }
 
     function close() {

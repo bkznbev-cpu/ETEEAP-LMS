@@ -59,6 +59,14 @@ class EmailChangeController extends Controller
     {
         $user = $request->user();
 
+        // Instructors cannot change their own email; an admin does it for them.
+        if ($user->role === 'instructor') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Instructors cannot change their email. Please ask your administrator.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'new_email' => ['required', 'string', 'email', 'max:255', new EmailDomainExists()],
             'current_password' => ['required', 'string', 'max:255'],
