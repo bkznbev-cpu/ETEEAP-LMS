@@ -2024,7 +2024,7 @@ async function openStoredModuleFile(module) {
     }
 
     // Open the tab immediately to avoid the browser blocking it.
-    const fileTab = window.open("about:blank", "_blank");
+    const fileTab = window.SiknayanFileViewer ? window.SiknayanFileViewer.openTab(module.fileName || "module-file") : window.open("about:blank", "_blank");
 
     if (!fileTab) {
         alert("Please allow pop-ups for this site to open module files.");
@@ -2862,12 +2862,23 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
             deleteModal
         );
 
-        // Password box above Cancel / Delete.
+        // Password box above Cancel / Delete: only modules need it.
+        // Deleting a course (which must already be empty) does not.
         const passwordField =
             window.SiknayanDialog.passwordField(confirmDeleteButton);
 
+        const passwordWrap =
+            confirmDeleteButton.parentElement?.previousElementSibling;
+
         passwordField.reset();
-        passwordField.focus();
+
+        if (passwordWrap?.classList.contains("sik-password-field")) {
+            passwordWrap.hidden = type === "course";
+        }
+
+        if (type !== "course") {
+            passwordField.focus();
+        }
     }
 
     function closeDeleteModal() {
@@ -2896,16 +2907,20 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
                 return;
             }
 
-            // The admin must enter their password before anything is deleted.
-            const passwordField =
-                window.SiknayanDialog.passwordField(confirmDeleteButton);
+            // Deleting a module needs the admin's password; a course does not.
+            let deletePassword = null;
 
-            confirmDeleteButton.disabled = true;
-            const deletePassword = await passwordField.verify();
-            confirmDeleteButton.disabled = false;
+            if (deleteType !== "course") {
+                const passwordField =
+                    window.SiknayanDialog.passwordField(confirmDeleteButton);
 
-            if (!deletePassword) {
-                return;
+                confirmDeleteButton.disabled = true;
+                deletePassword = await passwordField.verify();
+                confirmDeleteButton.disabled = false;
+
+                if (!deletePassword) {
+                    return;
+                }
             }
 
             if (

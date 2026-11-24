@@ -3920,10 +3920,11 @@ async function openSubmissionFile(
      */
 
     const newWindow =
-        window.open(
-            "",
-            "_blank"
-        );
+        window.SiknayanFileViewer
+            ? window.SiknayanFileViewer.openTab(
+                findSubmissionById(submissionId)?.file_name || "submission"
+            )
+            : window.open("", "_blank");
 
 
     try {

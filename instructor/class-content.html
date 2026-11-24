@@ -3359,7 +3359,7 @@
             const isView = button.dataset.materialAction === "view";
 
             // Open the tab right away so the browser doesn't block it.
-            const tab = isView ? window.open("about:blank", "_blank") : null;
+            const tab = isView ? (window.SiknayanFileViewer ? window.SiknayanFileViewer.openTab(button.dataset.fileName || "module-material") : window.open("about:blank", "_blank")) : null;
             button.disabled = true;
 
             try {
@@ -4034,7 +4034,7 @@
                 if (!button) return;
 
                 const isView = button.dataset.submissionFile === "view";
-                const tab = isView ? window.open("about:blank", "_blank") : null;
+                const tab = isView ? (window.SiknayanFileViewer ? window.SiknayanFileViewer.openTab(button.dataset.fileName || "submission") : window.open("about:blank", "_blank")) : null;
                 button.disabled = true;
 
                 try {

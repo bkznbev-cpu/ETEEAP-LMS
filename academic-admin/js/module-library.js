@@ -727,13 +727,8 @@
         deleteProgramModal.setAttribute("aria-hidden", "false");
         refreshIcons();
 
-        // Password box above Cancel / Delete (needed to delete).
-        const passwordField =
-            window.SiknayanDialog.passwordField(confirmDeleteProgramButton);
-        passwordField.reset();
-
         setTimeout(
-            () => (modules ? cancelDeleteProgramButton : passwordField).focus(),
+            () => (modules ? cancelDeleteProgramButton : confirmDeleteProgramButton).focus(),
             50
         );
     }
@@ -767,16 +762,6 @@
 
     confirmDeleteProgramButton?.addEventListener("click", async () => {
         if (!programToDelete || confirmDeleteProgramButton.disabled) return;
-
-        // The admin must enter their password before the program is deleted.
-        const code = programToDelete;
-        confirmDeleteProgramButton.disabled = true;
-        const password = await window.SiknayanDialog
-            .passwordField(confirmDeleteProgramButton)
-            .verify();
-        confirmDeleteProgramButton.disabled = false;
-
-        if (!password || programToDelete !== code) return;
 
         const result = data.deleteProgram(programToDelete);
 

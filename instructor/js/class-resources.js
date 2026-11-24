@@ -296,7 +296,7 @@
 
         const isView = action === "view";
         // Open the tab right away so the browser doesn't block it.
-        const tab = isView ? window.open("about:blank", "_blank") : null;
+        const tab = isView ? (window.SiknayanFileViewer ? window.SiknayanFileViewer.openTab(resource.file_name || resource.title || "resource") : window.open("about:blank", "_blank")) : null;
         button.disabled = true;
 
         try {

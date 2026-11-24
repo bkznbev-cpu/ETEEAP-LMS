@@ -143,7 +143,7 @@
      */
     async function openFile(path, { inline = false, fileName = "file" } = {}) {
         // Open the tab right away so the browser doesn't block it.
-        const tab = inline ? window.open("about:blank", "_blank") : null;
+        const tab = inline ? (window.SiknayanFileViewer ? window.SiknayanFileViewer.openTab(fileName) : window.open("about:blank", "_blank")) : null;
 
         try {
             let response;

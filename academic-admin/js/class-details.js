@@ -2624,7 +2624,7 @@ async function openAssignedModuleFile(
 
     // Open the tab right away so the browser doesn't block it.
     const fileTab =
-        window.open("about:blank", "_blank");
+        window.SiknayanFileViewer ? window.SiknayanFileViewer.openTab(module.fileName || "module-file") : window.open("about:blank", "_blank");
 
     if (!fileTab) {
         alert("Please allow pop-ups for this site to open module files.");
