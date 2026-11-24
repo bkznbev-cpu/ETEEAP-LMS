@@ -2363,9 +2363,10 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
     /* =====================================================
        ASSIGN MODULE
        -----------------------------------------------------
-       One module in one subject: Assign creates a class for
-       the module's course, with one instructor, the ticked
-       learners of this program, and only this module.
+       Assign adds the module to a class of this program that
+       is already set up for the module's course, or creates a
+       new class for that course, with one instructor, the
+       ticked learners of this program, and only this module.
     ===================================================== */
 
     async function assignApiRequest(path, options = {}) {
@@ -2441,6 +2442,37 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
 
                 <form id="assignModuleForm" novalidate>
                     <div class="form-group">
+                        <label>Assign to</label>
+                        <div class="assign-target-options">
+                            <label class="assign-pick-item">
+                                <input type="radio" name="assignTarget" value="existing">
+                                <span>
+                                    <strong>An existing class</strong>
+                                    <small id="assignExistingHint">Looking for classes in ${escapeHtml(programCode)}…</small>
+                                </span>
+                            </label>
+                            <label class="assign-pick-item">
+                                <input type="radio" name="assignTarget" value="new">
+                                <span>
+                                    <strong>A new class</strong>
+                                    <small>Create a class for ${escapeHtml(course.code)} with this module.</small>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="assignExistingSection" style="display: none;">
+                        <label>Classes in ${escapeHtml(programCode)}</label>
+                        <div class="assign-pick-list" id="assignClassList">
+                            <p class="assign-pick-empty">Loading classes…</p>
+                        </div>
+                        <div class="form-error" id="assignClassError">
+                            Please choose a class.
+                        </div>
+                    </div>
+
+                    <div id="assignNewSection" style="display: none;">
+                    <div class="form-group">
                         <label for="assignClassName">Name of Class</label>
                         <input
                             type="text"
@@ -2492,6 +2524,7 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
                             Please tick at least one learner.
                         </div>
                     </div>
+                    </div>
 
                     <div class="form-error" id="assignGeneralError"></div>
 
@@ -2518,6 +2551,11 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
         const selectAll = overlay.querySelector("#assignSelectAll");
         const submitButton = overlay.querySelector("#assignSubmit");
         const generalError = overlay.querySelector("#assignGeneralError");
+        const classList = overlay.querySelector("#assignClassList");
+        const existingSection = overlay.querySelector("#assignExistingSection");
+        const newSection = overlay.querySelector("#assignNewSection");
+        const existingHint = overlay.querySelector("#assignExistingHint");
+        const targetBoxes = Array.from(overlay.querySelectorAll('input[name="assignTarget"]'));
 
         let saving = false;
 
@@ -2547,18 +2585,78 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
             });
         };
 
-        setTimeout(() => nameInput.focus(), 40);
+        // Existing class or a new one: show only the fields that choice needs.
+        const target = () =>
+            overlay.querySelector('input[name="assignTarget"]:checked')?.value || "";
 
-        /* Load instructors and learners */
+        const showTarget = () => {
+            existingSection.style.display = target() === "existing" ? "" : "none";
+            newSection.style.display = target() === "new" ? "" : "none";
+            submitButton.textContent = target() === "existing" ? "Add to Class" : "Assign";
+            clearErrors();
+        };
+
+        targetBoxes.forEach(box => box.addEventListener("change", showTarget));
+
+        /* Load classes, instructors and learners */
 
         let instructors = [];
         let learners = [];
+        let matchingClasses = [];
 
         try {
-            const [instructorResult, learnerResult] = await Promise.all([
+            const [instructorResult, learnerResult, classResult] = await Promise.all([
                 assignApiRequest("/admin/instructors"),
-                assignApiRequest("/admin/learners")
+                assignApiRequest("/admin/learners"),
+                assignApiRequest("/admin/classes")
             ]);
+
+            // Classes of this program. Only those set up for this module's
+            // course can take it (the server checks this too).
+            const courseCode = data.normalizeCode(course.code);
+            const programClasses = (classResult.classes || []).filter(inThisProgram);
+
+            matchingClasses = programClasses.filter(item =>
+                data.normalizeCode(item.subject_code || "") === courseCode
+            );
+
+            const otherClasses = programClasses.filter(item => !matchingClasses.includes(item));
+
+            const plural = (count, word) => `${count} ${word}${Number(count) === 1 ? "" : "s"}`;
+
+            const classItem = (item, enabled) => `
+                <label class="assign-pick-item${enabled ? "" : " is-disabled"}">
+                    <input type="radio" name="assignClass" value="${escapeHtml(item.id)}"${enabled ? "" : " disabled"}>
+                    <span>
+                        <strong>${escapeHtml(item.code)} · ${escapeHtml(item.name)}</strong>
+                        <small>${escapeHtml(enabled
+                            ? `${item.instructor?.name || "No instructor"} · ` +
+                              `${plural(item.learners_count ?? 0, "learner")} · ` +
+                              `${plural(item.modules_count ?? 0, "module")}` +
+                              (item.is_active === false || item.is_active === 0 ? " · inactive" : "")
+                            : item.subject_code
+                                ? `For course ${item.subject_code}, not ${course.code}`
+                                : "No course set for this class")}</small>
+                    </span>
+                </label>`;
+
+            classList.innerHTML =
+                (matchingClasses.length
+                    ? matchingClasses.map(item => classItem(item, true)).join("")
+                    : `<p class="assign-pick-empty">No class in ${escapeHtml(programCode)} is set up for ${escapeHtml(course.code)} yet.</p>`) +
+                (otherClasses.length
+                    ? `<p class="assign-pick-empty">Other classes in ${escapeHtml(programCode)} (another course):</p>` +
+                      otherClasses.map(item => classItem(item, false)).join("")
+                    : "");
+
+            existingHint.textContent = matchingClasses.length
+                ? `${plural(matchingClasses.length, "class").replace("classs", "classes")} in ${programCode} for ${course.code}.`
+                : `No class in ${programCode} for ${course.code} yet.`;
+
+            const existingBox = targetBoxes.find(box => box.value === "existing");
+            existingBox.disabled = matchingClasses.length === 0;
+            (matchingClasses.length ? existingBox : targetBoxes.find(box => box.value === "new")).checked = true;
+            showTarget();
 
             const allInstructors = (instructorResult.instructors || []).filter(isActiveAccount);
             const programInstructors = allInstructors.filter(inThisProgram);
@@ -2573,7 +2671,8 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
         } catch (error) {
             instructorList.innerHTML = "";
             learnerList.innerHTML = "";
-            showError("assignGeneralError", error.message || "Unable to load instructors and learners.");
+            classList.innerHTML = "";
+            showError("assignGeneralError", error.message || "Unable to load classes, instructors and learners.");
             return;
         }
 
@@ -2648,6 +2747,83 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
         updateLearnerState();
         submitButton.disabled = false;
 
+        /* Add to an existing class: its modules stay, this one is added. */
+
+        async function addToExistingClass() {
+            const classId = overlay.querySelector('input[name="assignClass"]:checked')?.value || "";
+            const chosen = matchingClasses.find(item => String(item.id) === classId);
+
+            if (!chosen) {
+                showError("assignClassError");
+                return;
+            }
+
+            saving = true;
+            submitButton.disabled = true;
+            submitButton.textContent = "Adding…";
+
+            try {
+                const current = await assignApiRequest(
+                    `/admin/classes/${encodeURIComponent(chosen.id)}/modules`
+                );
+
+                // The update replaces the class's library modules, so send
+                // the ones it has plus this one.
+                const libraryModules = (current.modules || []).filter(item => item.library_key);
+
+                if (libraryModules.some(item => String(item.library_key) === String(module.id))) {
+                    throw new Error(`Class ${chosen.code} already has this module.`);
+                }
+
+                const lastOrder = (current.modules || []).reduce(
+                    (highest, item) => Math.max(highest, Number(item.module_order) || 0),
+                    0
+                );
+
+                await assignApiRequest(
+                    `/admin/classes/${encodeURIComponent(chosen.id)}/modules/sync`,
+                    {
+                        method: "PUT",
+                        body: JSON.stringify({
+                            modules: [
+                                ...libraryModules.map(item => ({
+                                    library_key: String(item.library_key),
+                                    title: String(item.title || "Untitled Module"),
+                                    description: item.description ?? null,
+                                    material_path: item.material_path || null,
+                                    material_name: item.material_name || null,
+                                    module_order: Number(item.module_order) || 1,
+                                    is_published: Boolean(item.is_published)
+                                })),
+                                {
+                                    library_key: String(module.id),
+                                    title: String(module.title || "Untitled Module"),
+                                    description: null,
+                                    material_path: module.filePath || null,
+                                    material_name: module.fileName || null,
+                                    module_order: lastOrder + 1,
+                                    is_published: module.status === "active"
+                                }
+                            ]
+                        })
+                    }
+                );
+            } catch (error) {
+                saving = false;
+                submitButton.disabled = false;
+                submitButton.textContent = "Add to Class";
+                showError("assignGeneralError", error.message || "Unable to add this module to the class.");
+                return;
+            }
+
+            saving = false;
+            overlay.remove();
+
+            alert(`"${module.title}" is added to class ${chosen.code}.`);
+
+            renderAll();
+        }
+
         /* Save */
 
         form.addEventListener("submit", async event => {
@@ -2656,6 +2832,11 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
             if (saving) return;
 
             clearErrors();
+
+            if (target() === "existing") {
+                await addToExistingClass();
+                return;
+            }
 
             const className = nameInput.value.trim();
             const instructorId =

@@ -11527,6 +11527,40 @@ body:has(.instructor-accounts-page) .instructor-accounts-page .learner-accounts-
     font-size: 12px;
 }
 
+/* Assign to: an existing class or a new one */
+.module-assign-modal .assign-target-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.module-assign-modal .assign-target-options label.assign-pick-item {
+    border: 1px solid #dcdcdc;
+    border-radius: 6px;
+}
+
+.module-assign-modal .assign-target-options label.assign-pick-item:has(input:checked) {
+    border-color: #08733d;
+    background: #f3f8f5;
+}
+
+/* Classes of this program set up for another course */
+.module-assign-modal .form-group label.assign-pick-item.is-disabled,
+.module-assign-modal .assign-target-options label.assign-pick-item:has(input:disabled) {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.module-assign-modal .assign-pick-item.is-disabled:hover {
+    background: transparent;
+}
+
+@media (max-width: 520px) {
+    .module-assign-modal .assign-target-options {
+        grid-template-columns: 1fr;
+    }
+}
+
 .module-assign-modal .assign-learner-heading {
     display: flex;
     align-items: baseline;
