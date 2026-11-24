@@ -11527,38 +11527,88 @@ body:has(.instructor-accounts-page) .instructor-accounts-page .learner-accounts-
     font-size: 12px;
 }
 
-/* Assign to: an existing class or a new one */
-.module-assign-modal .assign-target-options {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+/* Name of Class: dropdown of the program's classes while typing */
+.module-assign-modal .assign-class-combo {
+    position: relative;
 }
 
-.module-assign-modal .assign-target-options label.assign-pick-item {
+.module-assign-modal .assign-class-suggest {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 5;
+    max-height: 240px;
+    margin: 0;
+    padding: 4px 0;
+    overflow-y: auto;
+    list-style: none;
+    background: #fff;
     border: 1px solid #dcdcdc;
     border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
 }
 
-.module-assign-modal .assign-target-options label.assign-pick-item:has(input:checked) {
-    border-color: #08733d;
+.module-assign-modal .assign-class-suggest[hidden] {
+    display: none;
+}
+
+.module-assign-modal .assign-class-option {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.module-assign-modal .assign-class-option strong {
+    color: #08733d;
+    font-size: 13px;
+}
+
+.module-assign-modal .assign-class-option span {
+    min-width: 0;
+    overflow: hidden;
+    color: #333;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.module-assign-modal .assign-class-option small {
+    grid-column: 1 / -1;
+    color: #888;
+    font-size: 11px;
+}
+
+.module-assign-modal .assign-class-option:hover,
+.module-assign-modal .assign-class-option.is-active {
     background: #f3f8f5;
 }
 
 /* Classes of this program set up for another course */
-.module-assign-modal .form-group label.assign-pick-item.is-disabled,
-.module-assign-modal .assign-target-options label.assign-pick-item:has(input:disabled) {
+.module-assign-modal .assign-class-option.is-disabled {
     opacity: 0.55;
     cursor: not-allowed;
 }
 
-.module-assign-modal .assign-pick-item.is-disabled:hover {
+.module-assign-modal .assign-class-option.is-disabled:hover {
     background: transparent;
 }
 
-@media (max-width: 520px) {
-    .module-assign-modal .assign-target-options {
-        grid-template-columns: 1fr;
-    }
+.module-assign-modal .assign-existing-note {
+    margin-top: 6px;
+    padding: 8px 10px;
+    border-left: 3px solid #08733d;
+    border-radius: 4px;
+    background: #f3f8f5;
+    color: #2b4a38;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.module-assign-modal .assign-existing-note[hidden] {
+    display: none;
 }
 
 .module-assign-modal .assign-learner-heading {

@@ -2442,55 +2442,34 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
 
                 <form id="assignModuleForm" novalidate>
                     <div class="form-group">
-                        <label>Assign to</label>
-                        <div class="assign-target-options">
-                            <label class="assign-pick-item">
-                                <input type="radio" name="assignTarget" value="existing">
-                                <span>
-                                    <strong>An existing class</strong>
-                                    <small id="assignExistingHint">Looking for classes in ${escapeHtml(programCode)}…</small>
-                                </span>
-                            </label>
-                            <label class="assign-pick-item">
-                                <input type="radio" name="assignTarget" value="new">
-                                <span>
-                                    <strong>A new class</strong>
-                                    <small>Create a class for ${escapeHtml(course.code)} with this module.</small>
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="form-group" id="assignExistingSection" style="display: none;">
-                        <label>Classes in ${escapeHtml(programCode)}</label>
-                        <div class="assign-pick-list" id="assignClassList">
-                            <p class="assign-pick-empty">Loading classes…</p>
-                        </div>
-                        <div class="form-error" id="assignClassError">
-                            Please choose a class.
-                        </div>
-                    </div>
-
-                    <div id="assignNewSection" style="display: none;">
-                    <div class="form-group">
                         <label for="assignClassName">Name of Class</label>
-                        <input
-                            type="text"
-                            id="assignClassName"
-                            class="form-input"
-                            maxlength="100"
-                            placeholder="e.g. ${escapeHtml(course.code)}-A"
-                            autocomplete="off"
-                            required
-                        >
-                        <div class="field-help">
-                            A new class is created for ${escapeHtml(course.code)} with this module only.
+                        <div class="assign-class-combo">
+                            <input
+                                type="text"
+                                id="assignClassName"
+                                class="form-input"
+                                maxlength="100"
+                                placeholder="Type to find a class, or a new name e.g. ${escapeHtml(course.code)}-A"
+                                autocomplete="off"
+                                role="combobox"
+                                aria-autocomplete="list"
+                                aria-expanded="false"
+                                aria-controls="assignClassSuggest"
+                                required
+                            >
+                            <ul class="assign-class-suggest" id="assignClassSuggest" role="listbox" hidden></ul>
                         </div>
+                        <div class="field-help" id="assignClassHelp">
+                            Type the name of a class already in ${escapeHtml(programCode)} to add this module to it,
+                            or a new name to create a class for ${escapeHtml(course.code)}.
+                        </div>
+                        <div class="assign-existing-note" id="assignExistingNote" hidden></div>
                         <div class="form-error" id="assignClassNameError">
                             Please enter the name of the class.
                         </div>
                     </div>
 
+                    <div id="assignNewSection">
                     <div class="form-group">
                         <label>Instructor</label>
                         <div class="assign-pick-list" id="assignInstructorList">
@@ -2551,11 +2530,10 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
         const selectAll = overlay.querySelector("#assignSelectAll");
         const submitButton = overlay.querySelector("#assignSubmit");
         const generalError = overlay.querySelector("#assignGeneralError");
-        const classList = overlay.querySelector("#assignClassList");
-        const existingSection = overlay.querySelector("#assignExistingSection");
+        const suggestList = overlay.querySelector("#assignClassSuggest");
+        const existingNote = overlay.querySelector("#assignExistingNote");
+        const classHelp = overlay.querySelector("#assignClassHelp");
         const newSection = overlay.querySelector("#assignNewSection");
-        const existingHint = overlay.querySelector("#assignExistingHint");
-        const targetBoxes = Array.from(overlay.querySelectorAll('input[name="assignTarget"]'));
 
         let saving = false;
 
@@ -2585,24 +2563,17 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
             });
         };
 
-        // Existing class or a new one: show only the fields that choice needs.
-        const target = () =>
-            overlay.querySelector('input[name="assignTarget"]:checked')?.value || "";
+        // The existing class the typed name points to, or null for a new class.
+        let selectedClass = null;
 
-        const showTarget = () => {
-            existingSection.style.display = target() === "existing" ? "" : "none";
-            newSection.style.display = target() === "new" ? "" : "none";
-            submitButton.textContent = target() === "existing" ? "Add to Class" : "Assign";
-            clearErrors();
-        };
-
-        targetBoxes.forEach(box => box.addEventListener("change", showTarget));
+        setTimeout(() => nameInput.focus(), 40);
 
         /* Load classes, instructors and learners */
 
         let instructors = [];
         let learners = [];
         let matchingClasses = [];
+        let otherClasses = [];
 
         try {
             const [instructorResult, learnerResult, classResult] = await Promise.all([
@@ -2620,43 +2591,7 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
                 data.normalizeCode(item.subject_code || "") === courseCode
             );
 
-            const otherClasses = programClasses.filter(item => !matchingClasses.includes(item));
-
-            const plural = (count, word) => `${count} ${word}${Number(count) === 1 ? "" : "s"}`;
-
-            const classItem = (item, enabled) => `
-                <label class="assign-pick-item${enabled ? "" : " is-disabled"}">
-                    <input type="radio" name="assignClass" value="${escapeHtml(item.id)}"${enabled ? "" : " disabled"}>
-                    <span>
-                        <strong>${escapeHtml(item.code)} · ${escapeHtml(item.name)}</strong>
-                        <small>${escapeHtml(enabled
-                            ? `${item.instructor?.name || "No instructor"} · ` +
-                              `${plural(item.learners_count ?? 0, "learner")} · ` +
-                              `${plural(item.modules_count ?? 0, "module")}` +
-                              (item.is_active === false || item.is_active === 0 ? " · inactive" : "")
-                            : item.subject_code
-                                ? `For course ${item.subject_code}, not ${course.code}`
-                                : "No course set for this class")}</small>
-                    </span>
-                </label>`;
-
-            classList.innerHTML =
-                (matchingClasses.length
-                    ? matchingClasses.map(item => classItem(item, true)).join("")
-                    : `<p class="assign-pick-empty">No class in ${escapeHtml(programCode)} is set up for ${escapeHtml(course.code)} yet.</p>`) +
-                (otherClasses.length
-                    ? `<p class="assign-pick-empty">Other classes in ${escapeHtml(programCode)} (another course):</p>` +
-                      otherClasses.map(item => classItem(item, false)).join("")
-                    : "");
-
-            existingHint.textContent = matchingClasses.length
-                ? `${plural(matchingClasses.length, "class").replace("classs", "classes")} in ${programCode} for ${course.code}.`
-                : `No class in ${programCode} for ${course.code} yet.`;
-
-            const existingBox = targetBoxes.find(box => box.value === "existing");
-            existingBox.disabled = matchingClasses.length === 0;
-            (matchingClasses.length ? existingBox : targetBoxes.find(box => box.value === "new")).checked = true;
-            showTarget();
+            otherClasses = programClasses.filter(item => !matchingClasses.includes(item));
 
             const allInstructors = (instructorResult.instructors || []).filter(isActiveAccount);
             const programInstructors = allInstructors.filter(inThisProgram);
@@ -2671,7 +2606,6 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
         } catch (error) {
             instructorList.innerHTML = "";
             learnerList.innerHTML = "";
-            classList.innerHTML = "";
             showError("assignGeneralError", error.message || "Unable to load classes, instructors and learners.");
             return;
         }
@@ -2747,16 +2681,143 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
         updateLearnerState();
         submitButton.disabled = false;
 
+        /* Name of Class: suggests the program's classes as the admin types */
+
+        // "BSCRIM LAW1-A", "bscrim-law1 a" and "BscrimLaw1A" all match.
+        const squash = value => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        const plural = (count, word, many) => `${count} ${Number(count) === 1 ? word : (many || `${word}s`)}`;
+
+        const classDetails = item =>
+            `${item.instructor?.name || "No instructor"} · ` +
+            `${plural(item.learners_count ?? 0, "learner")} · ` +
+            `${plural(item.modules_count ?? 0, "module")}` +
+            (item.is_active === false || item.is_active === 0 ? " · inactive" : "");
+
+        const matches = (item, query) =>
+            !query || squash(item.code).includes(query) || squash(item.name).includes(query);
+
+        let options = [];
+        let activeIndex = -1;
+
+        function closeSuggestions() {
+            suggestList.hidden = true;
+            nameInput.setAttribute("aria-expanded", "false");
+            nameInput.removeAttribute("aria-activedescendant");
+            activeIndex = -1;
+        }
+
+        function highlight(index) {
+            const items = Array.from(suggestList.querySelectorAll('[role="option"]:not([aria-disabled="true"])'));
+            items.forEach(item => item.classList.remove("is-active"));
+            activeIndex = items.length ? (index + items.length) % items.length : -1;
+            const item = items[activeIndex];
+            if (item) {
+                item.classList.add("is-active");
+                item.scrollIntoView({ block: "nearest" });
+                nameInput.setAttribute("aria-activedescendant", item.id);
+            }
+        }
+
+        function showSuggestions() {
+            const query = squash(nameInput.value);
+            const usable = matchingClasses.filter(item => matches(item, query)).slice(0, 8);
+            const other = query ? otherClasses.filter(item => matches(item, query)).slice(0, 4) : [];
+
+            options = usable;
+
+            if (!usable.length && !other.length) {
+                closeSuggestions();
+                return;
+            }
+
+            suggestList.innerHTML =
+                usable.map((item, index) => `
+                    <li role="option" id="assignClassOption${index}" data-index="${index}" class="assign-class-option">
+                        <strong>${escapeHtml(item.code)}</strong>
+                        <span>${escapeHtml(item.name)}</span>
+                        <small>${escapeHtml(classDetails(item))}</small>
+                    </li>`).join("") +
+                other.map(item => `
+                    <li role="option" aria-disabled="true" class="assign-class-option is-disabled">
+                        <strong>${escapeHtml(item.code)}</strong>
+                        <span>${escapeHtml(item.name)}</span>
+                        <small>${escapeHtml(item.subject_code
+                            ? `For course ${item.subject_code}, so this module (${course.code}) can't be added`
+                            : "No course set for this class")}</small>
+                    </li>`).join("");
+
+            suggestList.hidden = false;
+            nameInput.setAttribute("aria-expanded", "true");
+            activeIndex = -1;
+        }
+
+        // Existing class: only the module is added, so instructor and
+        // learners are not asked. New class: they are.
+        function setSelected(item) {
+            selectedClass = item || null;
+
+            newSection.style.display = selectedClass ? "none" : "";
+            classHelp.hidden = Boolean(selectedClass);
+            existingNote.hidden = !selectedClass;
+            existingNote.textContent = selectedClass
+                ? `This module will be added to the existing class ${selectedClass.code} ` +
+                  `(${classDetails(selectedClass)}). Its learners and other modules stay as they are.`
+                : "";
+            submitButton.textContent = selectedClass ? "Add to Class" : "Assign";
+        }
+
+        function choose(item) {
+            nameInput.value = item.code;
+            setSelected(item);
+            closeSuggestions();
+            clearErrors();
+        }
+
+        nameInput.addEventListener("input", () => {
+            // A name typed in full picks that class too.
+            const typed = squash(nameInput.value);
+            setSelected(typed ? matchingClasses.find(item => squash(item.code) === typed) : null);
+            showSuggestions();
+        });
+
+        nameInput.addEventListener("focus", showSuggestions);
+
+        nameInput.addEventListener("keydown", event => {
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                event.preventDefault();
+                if (suggestList.hidden) showSuggestions();
+                highlight(activeIndex + (event.key === "ArrowDown" ? 1 : -1));
+            } else if (event.key === "Enter" && !suggestList.hidden && activeIndex >= 0) {
+                event.preventDefault();
+                choose(options[activeIndex]);
+            } else if (event.key === "Escape" && !suggestList.hidden) {
+                event.preventDefault();
+                event.stopPropagation();
+                closeSuggestions();
+            }
+        });
+
+        nameInput.addEventListener("blur", () => setTimeout(closeSuggestions, 120));
+
+        // mousedown, so the input doesn't lose focus before the pick.
+        suggestList.addEventListener("mousedown", event => {
+            event.preventDefault();
+            const item = event.target.closest('[role="option"]');
+            if (!item || item.getAttribute("aria-disabled") === "true") return;
+            choose(options[Number(item.dataset.index)]);
+        });
+
+        // Something typed while the classes were loading: check it now.
+        if (nameInput.value) {
+            nameInput.dispatchEvent(new Event("input"));
+        } else if (document.activeElement === nameInput) {
+            showSuggestions();
+        }
+
         /* Add to an existing class: its modules stay, this one is added. */
 
         async function addToExistingClass() {
-            const classId = overlay.querySelector('input[name="assignClass"]:checked')?.value || "";
-            const chosen = matchingClasses.find(item => String(item.id) === classId);
-
-            if (!chosen) {
-                showError("assignClassError");
-                return;
-            }
+            const chosen = selectedClass;
 
             saving = true;
             submitButton.disabled = true;
@@ -2833,7 +2894,7 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
 
             clearErrors();
 
-            if (target() === "existing") {
+            if (selectedClass) {
                 await addToExistingClass();
                 return;
             }
