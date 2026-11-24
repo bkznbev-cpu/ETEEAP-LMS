@@ -11634,3 +11634,12 @@ body:has(.instructor-accounts-page) .instructor-accounts-page .learner-accounts-
     color: #666;
     text-align: center;
 }
+
+/* Assign Module: learners already in the chosen class */
+.module-assign-modal .form-group label.assign-pick-item.is-enrolled {
+    cursor: default;
+}
+
+.module-assign-modal .assign-pick-item.is-enrolled small {
+    color: #08733d;
+}

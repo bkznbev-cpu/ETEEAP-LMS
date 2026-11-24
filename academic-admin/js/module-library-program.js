@@ -2533,7 +2533,6 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
         const suggestList = overlay.querySelector("#assignClassSuggest");
         const existingNote = overlay.querySelector("#assignExistingNote");
         const classHelp = overlay.querySelector("#assignClassHelp");
-        const newSection = overlay.querySelector("#assignNewSection");
 
         let saving = false;
 
@@ -2634,7 +2633,7 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
                     <input type="checkbox" name="assignLearner" value="${escapeHtml(learner.id)}">
                     <span>
                         <strong>${escapeHtml(learner.name)}</strong>
-                        <small>${escapeHtml(learner.school_id || learner.email || "")}</small>
+                        <small data-default="${escapeHtml(learner.school_id || learner.email || "")}">${escapeHtml(learner.school_id || learner.email || "")}</small>
                     </span>
                 </label>
             `).join("")
@@ -2650,19 +2649,22 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
             const boxes = visibleBoxes();
             const checkedVisible = boxes.filter(box => box.checked).length;
             const checkedAll = learnerBoxes().filter(box => box.checked).length;
+            const alreadyIn = learnerBoxes().filter(box => box.disabled).length;
 
             selectAll.checked = boxes.length > 0 && checkedVisible === boxes.length;
             selectAll.indeterminate = checkedVisible > 0 && checkedVisible < boxes.length;
             selectAll.disabled = boxes.length === 0;
 
-            learnerCount.textContent = `${checkedAll} of ${learners.length} selected`;
+            learnerCount.textContent = alreadyIn
+                ? `${checkedAll - alreadyIn} new · ${alreadyIn} already in the class`
+                : `${checkedAll} of ${learners.length} selected`;
         };
 
         learnerList.addEventListener("change", updateLearnerState);
 
         selectAll.addEventListener("change", () => {
             visibleBoxes().forEach(box => {
-                box.checked = selectAll.checked;
+                if (!box.disabled) box.checked = selectAll.checked;
             });
             updateLearnerState();
         });
@@ -2751,19 +2753,52 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
             activeIndex = -1;
         }
 
-        // Existing class: only the module is added, so instructor and
-        // learners are not asked. New class: they are.
+        // Existing class: the instructor and learner steps stay. The class's
+        // instructor is picked, and its learners are ticked and marked
+        // "Already in this class"; the admin ticks who else to add.
         function setSelected(item) {
+            const previous = selectedClass;
             selectedClass = item || null;
 
-            newSection.style.display = selectedClass ? "none" : "";
+            if (previous === selectedClass) return;
+
             classHelp.hidden = Boolean(selectedClass);
             existingNote.hidden = !selectedClass;
             existingNote.textContent = selectedClass
-                ? `This module will be added to the existing class ${selectedClass.code} ` +
-                  `(${classDetails(selectedClass)}). Its learners and other modules stay as they are.`
+                ? `Existing class ${selectedClass.code} (${classDetails(selectedClass)}). ` +
+                  "This module is added to it; tick the learners to add, then Assign."
                 : "";
-            submitButton.textContent = selectedClass ? "Add to Class" : "Assign";
+
+            const enrolled = new Set(
+                (selectedClass?.learners || []).map(learner => String(learner.id))
+            );
+
+            learnerBoxes().forEach(box => {
+                const label = box.closest(".assign-pick-item");
+                const small = label.querySelector("small");
+                const isIn = enrolled.has(String(box.value));
+
+                if (isIn) {
+                    box.checked = true;
+                } else if (box.disabled) {
+                    box.checked = false;
+                }
+
+                box.disabled = isIn;
+                label.classList.toggle("is-enrolled", isIn);
+                small.textContent = isIn
+                    ? `${small.dataset.default ? `${small.dataset.default} · ` : ""}Already in this class`
+                    : small.dataset.default || "";
+            });
+
+            if (selectedClass?.instructor_id) {
+                const radio = instructorList.querySelector(
+                    `input[name="assignInstructor"][value="${CSS.escape(String(selectedClass.instructor_id))}"]`
+                );
+                if (radio) radio.checked = true;
+            }
+
+            updateLearnerState();
         }
 
         function choose(item) {
@@ -2816,73 +2851,55 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
 
         /* Add to an existing class: its modules stay, this one is added. */
 
-        async function addToExistingClass() {
-            const chosen = selectedClass;
+        async function addModuleToClass(chosen) {
+            const current = await assignApiRequest(
+                `/admin/classes/${encodeURIComponent(chosen.id)}/modules`
+            );
 
-            saving = true;
-            submitButton.disabled = true;
-            submitButton.textContent = "Adding…";
+            // The update replaces the class's library modules, so send
+            // the ones it has plus this one.
+            const libraryModules = (current.modules || []).filter(item => item.library_key);
 
-            try {
-                const current = await assignApiRequest(
-                    `/admin/classes/${encodeURIComponent(chosen.id)}/modules`
-                );
-
-                // The update replaces the class's library modules, so send
-                // the ones it has plus this one.
-                const libraryModules = (current.modules || []).filter(item => item.library_key);
-
-                if (libraryModules.some(item => String(item.library_key) === String(module.id))) {
-                    throw new Error(`Class ${chosen.code} already has this module.`);
-                }
-
-                const lastOrder = (current.modules || []).reduce(
-                    (highest, item) => Math.max(highest, Number(item.module_order) || 0),
-                    0
-                );
-
-                await assignApiRequest(
-                    `/admin/classes/${encodeURIComponent(chosen.id)}/modules/sync`,
-                    {
-                        method: "PUT",
-                        body: JSON.stringify({
-                            modules: [
-                                ...libraryModules.map(item => ({
-                                    library_key: String(item.library_key),
-                                    title: String(item.title || "Untitled Module"),
-                                    description: item.description ?? null,
-                                    material_path: item.material_path || null,
-                                    material_name: item.material_name || null,
-                                    module_order: Number(item.module_order) || 1,
-                                    is_published: Boolean(item.is_published)
-                                })),
-                                {
-                                    library_key: String(module.id),
-                                    title: String(module.title || "Untitled Module"),
-                                    description: null,
-                                    material_path: module.filePath || null,
-                                    material_name: module.fileName || null,
-                                    module_order: lastOrder + 1,
-                                    is_published: module.status === "active"
-                                }
-                            ]
-                        })
-                    }
-                );
-            } catch (error) {
-                saving = false;
-                submitButton.disabled = false;
-                submitButton.textContent = "Add to Class";
-                showError("assignGeneralError", error.message || "Unable to add this module to the class.");
-                return;
+            // Already there: nothing to add (learners may still be added).
+            if (libraryModules.some(item => String(item.library_key) === String(module.id))) {
+                return false;
             }
 
-            saving = false;
-            overlay.remove();
+            const lastOrder = (current.modules || []).reduce(
+                (highest, item) => Math.max(highest, Number(item.module_order) || 0),
+                0
+            );
 
-            alert(`"${module.title}" is added to class ${chosen.code}.`);
+            await assignApiRequest(
+                `/admin/classes/${encodeURIComponent(chosen.id)}/modules/sync`,
+                {
+                    method: "PUT",
+                    body: JSON.stringify({
+                        modules: [
+                            ...libraryModules.map(item => ({
+                                library_key: String(item.library_key),
+                                title: String(item.title || "Untitled Module"),
+                                description: item.description ?? null,
+                                material_path: item.material_path || null,
+                                material_name: item.material_name || null,
+                                module_order: Number(item.module_order) || 1,
+                                is_published: Boolean(item.is_published)
+                            })),
+                            {
+                                library_key: String(module.id),
+                                title: String(module.title || "Untitled Module"),
+                                description: null,
+                                material_path: module.filePath || null,
+                                material_name: module.fileName || null,
+                                module_order: lastOrder + 1,
+                                is_published: module.status === "active"
+                            }
+                        ]
+                    })
+                }
+            );
 
-            renderAll();
+            return true;
         }
 
         /* Save */
@@ -2894,17 +2911,14 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
 
             clearErrors();
 
-            if (selectedClass) {
-                await addToExistingClass();
-                return;
-            }
-
             const className = nameInput.value.trim();
             const instructorId =
                 overlay.querySelector('input[name="assignInstructor"]:checked')?.value || "";
+            // Learners to enrol now (those already in the class are skipped).
             const learnerIds = learnerBoxes()
-                .filter(box => box.checked)
+                .filter(box => box.checked && !box.disabled)
                 .map(box => Number(box.value));
+            const alreadyIn = learnerBoxes().filter(box => box.disabled).length;
 
             let valid = true;
 
@@ -2918,7 +2932,7 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
                 valid = false;
             }
 
-            if (learnerIds.length === 0) {
+            if (learnerIds.length === 0 && alreadyIn === 0) {
                 showError("assignLearnerError");
                 valid = false;
             }
@@ -2930,45 +2944,61 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
             submitButton.textContent = "Assigning…";
 
             let createdClass = null;
+            let moduleAdded = true;
+            const existing = selectedClass;
 
             try {
-                // 1. The class for this module's course, with its instructor.
-                const classResult = await assignApiRequest("/admin/classes", {
-                    method: "POST",
-                    body: JSON.stringify({
-                        name: course.name,
-                        code: className,
-                        subject_code: course.code,
-                        program: programCode,
-                        description: "",
-                        instructor_id: Number(instructorId),
-                        is_active: true
-                    })
-                });
-
-                createdClass = classResult.class;
-
-                // 2. This module only.
-                await assignApiRequest(
-                    `/admin/classes/${encodeURIComponent(createdClass.id)}/modules/sync`,
-                    {
-                        method: "PUT",
-                        body: JSON.stringify({
-                            modules: [{
-                                library_key: String(module.id),
-                                title: String(module.title || "Untitled Module"),
-                                description: null,
-                                material_path: module.filePath || null,
-                                material_name: module.fileName || null,
-                                module_order: 1,
-                                is_published: module.status === "active"
-                            }]
-                        })
+                if (existing) {
+                    // 1. A different instructor was picked: the class gets them.
+                    if (String(existing.instructor_id || "") !== String(instructorId)) {
+                        await assignApiRequest(`/admin/classes/${encodeURIComponent(existing.id)}`, {
+                            method: "PUT",
+                            body: JSON.stringify({ instructor_id: Number(instructorId) })
+                        });
                     }
-                );
+
+                    // 2. This module, after the class's other modules.
+                    moduleAdded = await addModuleToClass(existing);
+                    createdClass = existing;
+                } else {
+                    // 1. The class for this module's course, with its instructor.
+                    const classResult = await assignApiRequest("/admin/classes", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            name: course.name,
+                            code: className,
+                            subject_code: course.code,
+                            program: programCode,
+                            description: "",
+                            instructor_id: Number(instructorId),
+                            is_active: true
+                        })
+                    });
+
+                    createdClass = classResult.class;
+
+                    // 2. This module only.
+                    await assignApiRequest(
+                        `/admin/classes/${encodeURIComponent(createdClass.id)}/modules/sync`,
+                        {
+                            method: "PUT",
+                            body: JSON.stringify({
+                                modules: [{
+                                    library_key: String(module.id),
+                                    title: String(module.title || "Untitled Module"),
+                                    description: null,
+                                    material_path: module.filePath || null,
+                                    material_name: module.fileName || null,
+                                    module_order: 1,
+                                    is_published: module.status === "active"
+                                }]
+                            })
+                        }
+                    );
+                }
             } catch (error) {
                 // Don't leave an empty class behind when the module could not be added.
-                if (createdClass) {
+                if (createdClass && !existing) {
                     await assignApiRequest(
                         `/admin/classes/${encodeURIComponent(createdClass.id)}`,
                         { method: "DELETE" }
@@ -3011,8 +3041,13 @@ overlay.querySelector("[data-download-module-file]")?.addEventListener("click", 
             const enrolled = learnerIds.length - failed.length;
 
             alert(
-                `"${module.title}" is assigned to class ${className} ` +
-                `with ${enrolled} learner${enrolled === 1 ? "" : "s"}.` +
+                (existing
+                    ? (moduleAdded
+                        ? `"${module.title}" is added to class ${existing.code}`
+                        : `Class ${existing.code} already had "${module.title}"`) +
+                      `; ${enrolled} new learner${enrolled === 1 ? "" : "s"} enrolled.`
+                    : `"${module.title}" is assigned to class ${className} ` +
+                      `with ${enrolled} learner${enrolled === 1 ? "" : "s"}.`) +
                 (failed.length
                     ? `\n\nThese learners could not be enrolled:\n${failed.join("\n")}`
                     : "")
