@@ -268,6 +268,7 @@
                         Enter your password to continue
                     </label>
                     <div class="sik-password-box">
+                        ${USERNAME_DECOY}
                         <input type="password" id="sikDialogPassword" class="sik-dialog-input"
                                autocomplete="current-password" required>
                         ${EYE_BUTTON}
@@ -358,6 +359,11 @@
     /* Eye button: shows or hides the typed password. */
     const ICON_EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
     const ICON_EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c6.5 0 10 8 10 8a17.6 17.6 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M17.94 17.94A10.1 10.1 0 0 1 12 20c-6.5 0-10-8-10-8a17.8 17.8 0 0 1 4.06-5.94"/><path d="m2 2 20 20"/></svg>';
+    // An invisible username box right before each password box. The browser
+    // puts the saved username here instead of into the page's search bar.
+    const USERNAME_DECOY = `<input type="text" autocomplete="username" tabindex="-1" aria-hidden="true"
+        style="position:absolute;width:1px;height:1px;padding:0;border:0;opacity:0;pointer-events:none;">`;
+
     const EYE_BUTTON = `<button type="button" class="sik-password-eye" aria-label="Show password" title="Show password">${ICON_EYE}</button>`;
 
     function setupEye(input, eye) {
@@ -405,6 +411,7 @@
         wrap.innerHTML = `
             <label for="${id}">Enter your password to confirm</label>
             <div class="sik-password-box">
+                ${USERNAME_DECOY}
                 <input type="password" id="${id}" autocomplete="current-password">
                 ${EYE_BUTTON}
             </div>
