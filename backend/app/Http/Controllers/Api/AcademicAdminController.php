@@ -1128,6 +1128,21 @@ public function destroyClass(Request $request, int $id): JsonResponse
         ], 404);
     }
 
+    // Deleting a class cascades to its modules and from there to learner
+    // submissions, grades and progress. Refuse once any learner has
+    // submitted work, including on a module that was removed (soft-deleted).
+    $hasSubmissions = Submission::whereIn(
+        'module_id',
+        Module::withTrashed()->where('course_id', $class->id)->select('id')
+    )->exists();
+
+    if ($hasSubmissions) {
+        return response()->json([
+            'success' => false,
+            'message' => 'This class already has learner submissions and cannot be deleted. Deactivate the class instead.',
+        ], 409);
+    }
+
     // Deleting needs the admin's password. The one exception: the Module
     // Library undoing a class it created moments ago when adding its
     // module failed (no learners, no modules yet), so nothing is lost.
@@ -1141,10 +1156,9 @@ public function destroyClass(Request $request, int $id): JsonResponse
         return $response;
     }
 
-    // A class can be deleted even with enrolled learners. The database
-    // removes its enrollments, modules (including soft-deleted ones) and,
-    // from there, submissions, grades and progress. The learner accounts
-    // themselves are kept.
+    // A class without submissions can be deleted even with enrolled
+    // learners. The database removes its enrollments, modules (including
+    // soft-deleted ones) and any progress. The learner accounts are kept.
     $snapshot = $this->classSnapshot($class);
 
     DB::transaction(function () use ($class) {

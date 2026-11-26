@@ -2888,9 +2888,9 @@ const payload = {
             getActualLearnerCount(classItem)
         );
 
-        // A class can always be deleted, even with enrolled learners.
-        // The learners are unenrolled (their accounts are kept), and the
-        // class's modules and learner work in it are deleted with it.
+        // A class can be deleted with enrolled learners (they are
+        // unenrolled, accounts kept), but the server refuses (409) once any
+        // learner has submitted work; that message shows in the modal.
         const canDelete = true;
 
 
@@ -2935,9 +2935,9 @@ const payload = {
                                 This class has ${learnerCount} enrolled
                                 learner${learnerCount === 1 ? "" : "s"}.
                                 They will be removed from the class (their
-                                accounts are kept), and their submissions,
-                                grades and progress in this class will be
-                                deleted.
+                                accounts are kept). A class that already has
+                                learner submissions cannot be deleted;
+                                deactivate it instead.
                             </div>
                           `
                         : ""
