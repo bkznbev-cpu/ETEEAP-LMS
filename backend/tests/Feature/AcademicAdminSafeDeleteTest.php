@@ -263,6 +263,26 @@ class AcademicAdminSafeDeleteTest extends TestCase
     }
 
     #[Group('FR-CM'), Group('FR-CM-01')]
+    public function test_class_list_says_which_classes_have_submissions(): void
+    {
+        $learner = $this->user('learner');
+        [$withWork, $module] = $this->classWithModule();
+        [$empty] = $this->classWithModule();
+        Submission::create([
+            'module_id' => $module->id,
+            'learner_id' => $learner->id,
+            'status' => 'submitted',
+        ]);
+        $module->delete(); // a removed module's submissions still count
+
+        $classes = collect($this->actingAs($this->admin())->getJson('/api/admin/classes')
+            ->assertOk()->json('classes'))->keyBy('id');
+
+        $this->assertTrue($classes[$withWork->id]['has_submissions']);
+        $this->assertFalse($classes[$empty->id]['has_submissions']);
+    }
+
+    #[Group('FR-CM'), Group('FR-CM-01')]
     public function test_class_with_submissions_on_a_removed_module_cannot_be_deleted(): void
     {
         $learner = $this->user('learner');

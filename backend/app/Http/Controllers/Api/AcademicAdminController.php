@@ -988,6 +988,20 @@ $learner = User::create([
             ->latest()
             ->get();
 
+        // Classes with learner submissions (also on removed modules) cannot
+        // be deleted; the page uses this flag to offer only Close.
+        $withSubmissions = Module::withTrashed()
+            ->whereIn('course_id', $classes->pluck('id'))
+            ->whereHas('submissions')
+            ->distinct()
+            ->pluck('course_id')
+            ->flip();
+
+        $classes->each(fn (Course $class) => $class->setAttribute(
+            'has_submissions',
+            $withSubmissions->has($class->id)
+        ));
+
         return response()->json([
             'success' => true,
             'classes' => $classes,

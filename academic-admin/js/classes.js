@@ -757,7 +757,11 @@ function normalizeApiClass(
         status:
             classItem.is_active
                 ? "active"
-                : "inactive"
+                : "inactive",
+
+
+        hasSubmissions:
+            Boolean(classItem.has_submissions)
 
     };
 }
@@ -2837,6 +2841,10 @@ const payload = {
             normalizeApiClass(result.class);
 
         if (isEdit) {
+            // The save response has no submissions flag; keep the old one.
+            savedClass.hasSubmissions =
+                Boolean(existingClass?.hasSubmissions);
+
             const index =
                 classes.findIndex(
                     item =>
@@ -2889,9 +2897,10 @@ const payload = {
         );
 
         // A class can be deleted with enrolled learners (they are
-        // unenrolled, accounts kept), but the server refuses (409) once any
-        // learner has submitted work; that message shows in the modal.
-        const canDelete = true;
+        // unenrolled, accounts kept), but not once any learner has
+        // submitted work. Then the modal only explains and offers Close.
+        // The server refuses (409) as well, in case this flag is stale.
+        const canDelete = !classItem.hasSubmissions;
 
 
         const overlay =
@@ -2919,25 +2928,27 @@ const payload = {
                 <div class="modal-header">
 
                     <h3>
-                        Delete Class
+                        ${canDelete ? "Delete Class" : "Cannot Delete Class"}
                     </h3>
 
                     <p>
-                        Are you sure you want to delete <strong>${escapeHtml(classItem.classCode)}</strong>? This cannot be undone.
+                        ${
+                            canDelete
+                                ? `Are you sure you want to delete <strong>${escapeHtml(classItem.classCode)}</strong>? This cannot be undone.`
+                                : `<strong>${escapeHtml(classItem.classCode)}</strong> already has learner submissions, so it cannot be deleted. Deactivate the class instead.`
+                        }
                     </p>
 
                 </div>
 
                 ${
-                    learnerCount > 0
+                    canDelete && learnerCount > 0
                         ? `
                             <div class="field-help">
                                 This class has ${learnerCount} enrolled
                                 learner${learnerCount === 1 ? "" : "s"}.
                                 They will be removed from the class (their
-                                accounts are kept). A class that already has
-                                learner submissions cannot be deleted;
-                                deactivate it instead.
+                                accounts are kept).
                             </div>
                           `
                         : ""
@@ -2956,7 +2967,7 @@ const payload = {
                         class="modal-button cancel"
                         id="dynamicDeleteCancel"
                     >
-                        Cancel
+                        ${canDelete ? "Cancel" : "Close"}
                     </button>
 
 
@@ -3007,10 +3018,14 @@ const payload = {
         );
 
 
-        // Password box above Cancel / Delete.
-        window.SiknayanDialog.passwordField(
-            overlay.querySelector("#dynamicDeleteConfirm")
-        ).focus();
+        // Password box above Cancel / Delete; none when deleting is blocked.
+        if (canDelete) {
+            window.SiknayanDialog.passwordField(
+                overlay.querySelector("#dynamicDeleteConfirm")
+            ).focus();
+        } else {
+            overlay.querySelector("#dynamicDeleteCancel").focus();
+        }
 
 
         refreshIcons();
